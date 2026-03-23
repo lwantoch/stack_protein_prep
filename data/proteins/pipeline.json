@@ -1,0 +1,28 @@
+[
+    {
+        "pdb_id": "2AFX",
+        "range": "10-200",
+        "pdb_directory": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX",
+        "fasta_directory": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta",
+        "alignment_directory": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/alignments",
+        "pdb_sync_done": "success",
+        "fasta_files_done": "success",
+        "sequence_alignment_done": "success",
+        "numbering_check_done": "",
+        "modeller_done": "",
+        "protonation_done": ""
+    },
+    {
+        "pdb_id": "2W8Y",
+        "range": "5-150",
+        "pdb_directory": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y",
+        "fasta_directory": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/fasta",
+        "alignment_directory": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/fasta/alignments",
+        "pdb_sync_done": "success",
+        "fasta_files_done": "success",
+        "sequence_alignment_done": "success",
+        "numbering_check_done": "",
+        "modeller_done": "",
+        "protonation_done": ""
+    }
+]

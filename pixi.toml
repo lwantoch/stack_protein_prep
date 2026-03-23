@@ -17,7 +17,7 @@ pillow = ">=12.1.1,<13"
 pdb2pqr = "*"
 propka = "*"
 openpyxl = "*"
-matplotlib = "*"
+matplotlib = ">=3.10.8,<4"
 biopython = "*"
 pytest = "*"
 
