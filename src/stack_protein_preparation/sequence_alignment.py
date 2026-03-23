@@ -1,6 +1,6 @@
-# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/sequence_alignment.py
-
 """
+/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/sequence_alignment.py
+
 Run pairwise sequence alignments with MAFFT for local protein FASTA files.
 
 Responsibilities
@@ -50,6 +50,8 @@ Design choices
   sequence to residue positions in the UniProt sequence based on the alignment.
 - This does NOT automatically reconstruct original author residue IDs from the PDB file.
   It maps sequence indices unless another upstream step provides explicit residue numbering.
+- Alignment rendering is imported lazily so that non-visual tests do not require
+  matplotlib at import time.
 
 What this module does NOT do
 ----------------------------
@@ -63,6 +65,7 @@ Testing note
 ------------
 - MAFFT execution should usually be mocked in unit tests.
 - HTTP calls should usually be mocked in unit tests.
+- alignment PNG rendering should remain optional in tests and at runtime.
 """
 
 from __future__ import annotations
@@ -76,8 +79,6 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
-from stack_protein_preparation.alignment_visualization import alignment_to_image
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -124,11 +125,34 @@ class AlignmentJob:
 
 
 # ---------------------------------------------------------------------------
+# Optional visualization import
+# ---------------------------------------------------------------------------
+
+
+def render_alignment_image(
+    alignment_fasta_path: Path,
+    output_png_path: Path,
+) -> None:
+    """
+    Render one alignment PNG using the optional visualization module.
+
+    This import is intentionally local so that importing sequence_alignment.py
+    does not require matplotlib unless image rendering is actually requested.
+    """
+    from stack_protein_preparation.alignment_visualization import alignment_to_image
+
+    alignment_to_image(alignment_fasta_path, output_png_path)
+
+
+# ---------------------------------------------------------------------------
 # Public high-level function
 # ---------------------------------------------------------------------------
 
 
-def run_alignments_for_pdb_directory(pdb_directory: Path) -> None:
+def run_alignments_for_pdb_directory(
+    pdb_directory: Path,
+    render_images: bool = True,
+) -> None:
     """
     Run standard MAFFT alignments for one local PDB directory.
 
@@ -142,6 +166,9 @@ def run_alignments_for_pdb_directory(pdb_directory: Path) -> None:
     pdb_directory
         Directory such as:
             data/proteins/1W4R
+    render_images
+        If True, render alignment PNG files after successful MAFFT execution.
+        If False, skip visualization entirely.
     """
     pdb_id = pdb_directory.name.upper()
     fasta_directory = pdb_directory / "fasta"
@@ -214,7 +241,12 @@ def run_alignments_for_pdb_directory(pdb_directory: Path) -> None:
                 alignment_fasta_path=alignment_path,
                 output_mapping_tsv_path=mapping_path,
             )
-            alignment_to_image(alignment_path, output_png_path)
+
+            if render_images:
+                render_alignment_image(
+                    alignment_fasta_path=alignment_path,
+                    output_png_path=output_png_path,
+                )
         else:
             print(f"[WARNING] Alignment file missing or empty: {alignment_path}")
 
@@ -918,7 +950,10 @@ def _format_optional_int(value: int | None) -> str:
 # ---------------------------------------------------------------------------
 
 
-def run_alignments_for_all_pdb_directories(protein_root_directory: Path) -> None:
+def run_alignments_for_all_pdb_directories(
+    protein_root_directory: Path,
+    render_images: bool = True,
+) -> None:
     """
     Run standard alignment jobs for all PDB subdirectories in a root protein folder.
     """
@@ -936,4 +971,7 @@ def run_alignments_for_all_pdb_directories(protein_root_directory: Path) -> None
         return
 
     for pdb_directory in pdb_directory_list:
-        run_alignments_for_pdb_directory(pdb_directory)
+        run_alignments_for_pdb_directory(
+            pdb_directory=pdb_directory,
+            render_images=render_images,
+        )

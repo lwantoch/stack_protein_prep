@@ -1,7 +1,5 @@
-# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_state.py
-
 """
-pipeline_state.py
+/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_state.py
 
 Central state definition for the protein preparation pipeline.
 
@@ -32,6 +30,9 @@ PDB_DIRECTORY_COLUMN_NAME = "pdb_directory"
 FASTA_DIRECTORY_COLUMN_NAME = "fasta_directory"
 ALIGNMENT_DIRECTORY_COLUMN_NAME = "alignment_directory"
 
+N_GAPS_COLUMN_NAME = "n_gaps"
+GAP_SIZES_COLUMN_NAME = "gap_sizes"
+
 PDB_SYNC_DONE_COLUMN_NAME = "pdb_sync_done"
 FASTA_FILES_DONE_COLUMN_NAME = "fasta_files_done"
 SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME = "sequence_alignment_done"
@@ -46,6 +47,8 @@ STATE_COLUMN_NAME_LIST = [
     PDB_DIRECTORY_COLUMN_NAME,
     FASTA_DIRECTORY_COLUMN_NAME,
     ALIGNMENT_DIRECTORY_COLUMN_NAME,
+    N_GAPS_COLUMN_NAME,
+    GAP_SIZES_COLUMN_NAME,
     PDB_SYNC_DONE_COLUMN_NAME,
     FASTA_FILES_DONE_COLUMN_NAME,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,

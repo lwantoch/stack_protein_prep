@@ -1,7 +1,5 @@
-# /home/grheco/repositorios/stack_protein_prep/scripts/run_pipeline.py
-
 """
-run_pipeline.py
+/home/grheco/repositorios/stack_protein_prep/scripts/run_pipeline.py
 
 Main entry point for the protein preparation pipeline.
 
@@ -21,12 +19,16 @@ Current implemented steps
 2. fasta_files
 3. sequence_alignment
 4. insertion_codes
+5. gap_detection
 
 Important
 ---------
 - pipeline state is persisted in pipeline.json
 - pipeline overview is exported to pipeline.xlsx
 - each module updates its corresponding pipeline status column
+- gap information is stored as:
+    - n_gaps
+    - gap_sizes
 """
 
 from __future__ import annotations
@@ -44,6 +46,7 @@ if str(SRC_DIR) not in sys.path:
 from stack_protein_preparation.fasta_files import (
     create_fasta_files_for_pdb_directory,
 )
+from stack_protein_preparation.gaps import summarize_gaps
 from stack_protein_preparation.insertion_codes import (
     STATUS_FAILED as INSERTION_STATUS_FAILED,
 )
@@ -65,7 +68,9 @@ from stack_protein_preparation.pipeline_state import (
     ALIGNMENT_DIRECTORY_COLUMN_NAME,
     FASTA_DIRECTORY_COLUMN_NAME,
     FASTA_FILES_DONE_COLUMN_NAME,
+    GAP_SIZES_COLUMN_NAME,
     INSERTION_CODES_DONE_COLUMN_NAME,
+    N_GAPS_COLUMN_NAME,
     PDB_DIRECTORY_COLUMN_NAME,
     PDB_ID_COLUMN_NAME,
     PDB_SYNC_DONE_COLUMN_NAME,
@@ -204,6 +209,8 @@ def run_pipeline() -> None:
             pipeline_record[FASTA_FILES_DONE_COLUMN_NAME] = STATUS_REQUIRED
             pipeline_record[SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME] = STATUS_REQUIRED
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
 
     print("[PIPELINE] Step 6: Run sequence alignment")
     for pipeline_record in pipeline_record_list:
@@ -217,6 +224,8 @@ def run_pipeline() -> None:
             )
             pipeline_record[SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME] = STATUS_REQUIRED
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
             continue
 
         print(f"[PIPELINE] sequence_alignment -> {pdb_id}")
@@ -228,6 +237,8 @@ def run_pipeline() -> None:
             print(f"[PIPELINE] sequence_alignment failed for {pdb_id}: {error}")
             pipeline_record[SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME] = STATUS_REQUIRED
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
 
     print("[PIPELINE] Step 7: Handle insertion codes")
     for pipeline_record in pipeline_record_list:
@@ -243,6 +254,8 @@ def run_pipeline() -> None:
                 "(sequence alignment step failed)"
             )
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
             continue
 
         print(f"[PIPELINE] insertion_codes -> {pdb_id}")
@@ -253,6 +266,8 @@ def run_pipeline() -> None:
                 f"[PIPELINE] insertion_codes failed for {pdb_id}: input PDB not found"
             )
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
             continue
 
         output_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
@@ -265,6 +280,8 @@ def run_pipeline() -> None:
         except Exception as error:
             print(f"[PIPELINE] insertion_codes failed for {pdb_id}: {error}")
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
             continue
 
         insertion_status = str(insertion_result.get("status", "")).strip().lower()
@@ -273,16 +290,69 @@ def run_pipeline() -> None:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_SUCCESS
         elif insertion_status == INSERTION_STATUS_FAILED:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
         else:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
 
-    print("[PIPELINE] Step 8: Save pipeline JSON")
+    print("[PIPELINE] Step 8: Detect gaps")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        if pipeline_record.get(INSERTION_CODES_DONE_COLUMN_NAME, "") != STATUS_SUCCESS:
+            print(
+                f"[PIPELINE] gap_detection skipped for {pdb_id} "
+                "(insertion_codes step failed)"
+            )
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
+            continue
+
+        gap_input_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
+
+        if not gap_input_pdb_path.exists():
+            print(
+                f"[PIPELINE] gap_detection skipped for {pdb_id}: "
+                f"missing file {gap_input_pdb_path}"
+            )
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
+            continue
+
+        print(f"[PIPELINE] gap_detection -> {pdb_id}")
+
+        try:
+            gap_summary = summarize_gaps(gap_input_pdb_path)
+        except Exception as error:
+            print(f"[PIPELINE] gap_detection failed for {pdb_id}: {error}")
+            pipeline_record[N_GAPS_COLUMN_NAME] = ""
+            pipeline_record[GAP_SIZES_COLUMN_NAME] = ""
+            continue
+
+        n_gaps = int(gap_summary.get("n_gaps", 0))
+        gap_sizes = gap_summary.get("gap_sizes", [])
+
+        pipeline_record[N_GAPS_COLUMN_NAME] = str(n_gaps)
+        pipeline_record[GAP_SIZES_COLUMN_NAME] = "|".join(
+            str(gap_size) for gap_size in gap_sizes
+        )
+
+        print(
+            f"[PIPELINE] gap_detection result for {pdb_id}: "
+            f"n_gaps={pipeline_record[N_GAPS_COLUMN_NAME]}, "
+            f"gap_sizes={pipeline_record[GAP_SIZES_COLUMN_NAME]!r}"
+        )
+
+    print("[PIPELINE] Step 9: Save pipeline JSON")
     save_pipeline_table(
         pipeline_record_list,
         pipeline_json_path,
     )
 
-    print("[PIPELINE] Step 9: Write pipeline XLSX")
+    print("[PIPELINE] Step 10: Write pipeline XLSX")
     write_pipeline_to_xlsx(
         pipeline_record_list,
         pipeline_xlsx_path,
