@@ -1,5 +1,34 @@
 # /home/grheco/repositorios/stack_protein_prep/scripts/run_pipeline.py
 
+"""
+run_pipeline.py
+
+Main entry point for the protein preparation pipeline.
+
+Responsibilities
+----------------
+- define working directories
+- make the src directory importable
+- synchronize input CSV and protein directories
+- build and merge pipeline records
+- run implemented pipeline modules in order
+- save pipeline state to JSON
+- export pipeline overview to XLSX
+
+Current implemented steps
+-------------------------
+1. pdb_sync
+2. fasta_files
+3. sequence_alignment
+4. insertion_codes
+
+Important
+---------
+- pipeline state is persisted in pipeline.json
+- pipeline overview is exported to pipeline.xlsx
+- each module updates its corresponding pipeline status column
+"""
+
 from __future__ import annotations
 
 import sys
@@ -15,6 +44,19 @@ if str(SRC_DIR) not in sys.path:
 from stack_protein_preparation.fasta_files import (
     create_fasta_files_for_pdb_directory,
 )
+from stack_protein_preparation.insertion_codes import (
+    STATUS_FAILED as INSERTION_STATUS_FAILED,
+)
+from stack_protein_preparation.insertion_codes import (
+    STATUS_NONE as INSERTION_STATUS_NONE,
+)
+from stack_protein_preparation.insertion_codes import (
+    STATUS_SUCCESS as INSERTION_STATUS_SUCCESS,
+)
+from stack_protein_preparation.insertion_codes import (
+    find_input_pdb_for_protein,
+    process_pdb_for_delinsertion,
+)
 from stack_protein_preparation.pdb_sync import (
     read_pdb_records_from_csv,
     sync_pdb_csv_and_directories,
@@ -23,6 +65,7 @@ from stack_protein_preparation.pipeline_state import (
     ALIGNMENT_DIRECTORY_COLUMN_NAME,
     FASTA_DIRECTORY_COLUMN_NAME,
     FASTA_FILES_DONE_COLUMN_NAME,
+    INSERTION_CODES_DONE_COLUMN_NAME,
     PDB_DIRECTORY_COLUMN_NAME,
     PDB_ID_COLUMN_NAME,
     PDB_SYNC_DONE_COLUMN_NAME,
@@ -160,6 +203,7 @@ def run_pipeline() -> None:
             print(f"[PIPELINE] fasta_files failed for {pdb_id}: {error}")
             pipeline_record[FASTA_FILES_DONE_COLUMN_NAME] = STATUS_REQUIRED
             pipeline_record[SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
 
     print("[PIPELINE] Step 6: Run sequence alignment")
     for pipeline_record in pipeline_record_list:
@@ -168,9 +212,11 @@ def run_pipeline() -> None:
 
         if pipeline_record.get(FASTA_FILES_DONE_COLUMN_NAME, "") != STATUS_SUCCESS:
             print(
-                f"[PIPELINE] sequence_alignment skipped for {pdb_id} (FASTA step failed)"
+                f"[PIPELINE] sequence_alignment skipped for {pdb_id} "
+                "(FASTA step failed)"
             )
             pipeline_record[SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
             continue
 
         print(f"[PIPELINE] sequence_alignment -> {pdb_id}")
@@ -181,14 +227,62 @@ def run_pipeline() -> None:
         except Exception as error:
             print(f"[PIPELINE] sequence_alignment failed for {pdb_id}: {error}")
             pipeline_record[SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
 
-    print("[PIPELINE] Step 7: Save pipeline JSON")
+    print("[PIPELINE] Step 7: Handle insertion codes")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        if (
+            pipeline_record.get(SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME, "")
+            != STATUS_SUCCESS
+        ):
+            print(
+                f"[PIPELINE] insertion_codes skipped for {pdb_id} "
+                "(sequence alignment step failed)"
+            )
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            continue
+
+        print(f"[PIPELINE] insertion_codes -> {pdb_id}")
+
+        input_pdb_path = find_input_pdb_for_protein(pdb_dir)
+        if input_pdb_path is None:
+            print(
+                f"[PIPELINE] insertion_codes failed for {pdb_id}: input PDB not found"
+            )
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            continue
+
+        output_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
+
+        try:
+            insertion_result = process_pdb_for_delinsertion(
+                input_pdb_path=input_pdb_path,
+                output_pdb_path=output_pdb_path,
+            )
+        except Exception as error:
+            print(f"[PIPELINE] insertion_codes failed for {pdb_id}: {error}")
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            continue
+
+        insertion_status = str(insertion_result.get("status", "")).strip().lower()
+
+        if insertion_status in {INSERTION_STATUS_NONE, INSERTION_STATUS_SUCCESS}:
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_SUCCESS
+        elif insertion_status == INSERTION_STATUS_FAILED:
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+        else:
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+
+    print("[PIPELINE] Step 8: Save pipeline JSON")
     save_pipeline_table(
         pipeline_record_list,
         pipeline_json_path,
     )
 
-    print("[PIPELINE] Step 8: Write pipeline XLSX")
+    print("[PIPELINE] Step 9: Write pipeline XLSX")
     write_pipeline_to_xlsx(
         pipeline_record_list,
         pipeline_xlsx_path,
@@ -200,6 +294,9 @@ def run_pipeline() -> None:
 
 
 def main() -> None:
+    """
+    Command line entry point.
+    """
     run_pipeline()
 
 

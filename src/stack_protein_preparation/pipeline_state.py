@@ -1,6 +1,8 @@
 # /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_state.py
 
 """
+pipeline_state.py
+
 Central state definition for the protein preparation pipeline.
 
 Purpose
@@ -33,6 +35,7 @@ ALIGNMENT_DIRECTORY_COLUMN_NAME = "alignment_directory"
 PDB_SYNC_DONE_COLUMN_NAME = "pdb_sync_done"
 FASTA_FILES_DONE_COLUMN_NAME = "fasta_files_done"
 SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME = "sequence_alignment_done"
+INSERTION_CODES_DONE_COLUMN_NAME = "insertion_codes_done"
 NUMBERING_CHECK_DONE_COLUMN_NAME = "numbering_check_done"
 MODELLER_DONE_COLUMN_NAME = "modeller_done"
 PROTONATION_DONE_COLUMN_NAME = "protonation_done"
@@ -46,6 +49,7 @@ STATE_COLUMN_NAME_LIST = [
     PDB_SYNC_DONE_COLUMN_NAME,
     FASTA_FILES_DONE_COLUMN_NAME,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
+    INSERTION_CODES_DONE_COLUMN_NAME,
     NUMBERING_CHECK_DONE_COLUMN_NAME,
     MODELLER_DONE_COLUMN_NAME,
     PROTONATION_DONE_COLUMN_NAME,
@@ -55,6 +59,7 @@ STEP_STATUS_COLUMN_NAME_LIST = [
     PDB_SYNC_DONE_COLUMN_NAME,
     FASTA_FILES_DONE_COLUMN_NAME,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
+    INSERTION_CODES_DONE_COLUMN_NAME,
     NUMBERING_CHECK_DONE_COLUMN_NAME,
     MODELLER_DONE_COLUMN_NAME,
     PROTONATION_DONE_COLUMN_NAME,

@@ -1,6 +1,8 @@
 # /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_xlsx.py
 
 """
+pipeline_xlsx.py
+
 Excel export for pipeline state.
 
 Purpose

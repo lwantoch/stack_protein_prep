@@ -8,6 +8,7 @@
         "pdb_sync_done": "success",
         "fasta_files_done": "success",
         "sequence_alignment_done": "success",
+        "insertion_codes_done": "success",
         "numbering_check_done": "",
         "modeller_done": "",
         "protonation_done": ""
@@ -21,6 +22,7 @@
         "pdb_sync_done": "success",
         "fasta_files_done": "success",
         "sequence_alignment_done": "success",
+        "insertion_codes_done": "success",
         "numbering_check_done": "",
         "modeller_done": "",
         "protonation_done": ""

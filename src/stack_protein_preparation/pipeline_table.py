@@ -1,6 +1,8 @@
 # /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_table.py
 
 """
+pipeline_table.py
+
 Central table management for the pipeline.
 
 Purpose
