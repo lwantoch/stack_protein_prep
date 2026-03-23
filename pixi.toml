@@ -24,3 +24,4 @@ pytest = "*"
 [pypi-dependencies]
 openpyxl = ">=3.1.5,<4"
 et_xmlfile = ">=2.0.0,<3"
+alphafoldfetch = ">=0.0.1, <0.0.2"
