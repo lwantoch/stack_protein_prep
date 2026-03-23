@@ -1,0 +1,26 @@
+[workspace]
+authors = ["lwantoch <l.wantoch@icloud.com>"]
+channels = ["conda-forge"]
+name = "stack-protein_preparation"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+pipeline = "python scripts/run_pipeline.py"
+tests = "pytest"
+
+[dependencies]
+python = "3.12.*"
+openmm = ">=8.4.0,<9"
+mafft = "*"
+pillow = ">=12.1.1,<13"
+pdb2pqr = "*"
+propka = "*"
+openpyxl = "*"
+matplotlib = "*"
+biopython = "*"
+pytest = "*"
+
+[pypi-dependencies]
+openpyxl = ">=3.1.5,<4"
+et_xmlfile = ">=2.0.0,<3"
