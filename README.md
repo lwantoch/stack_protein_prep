@@ -1,73 +1,182 @@
-# `stack_protein_prep` — Pipeline Overview
+# FRUTON
 
-## Goal
+```text
+███████╗██████╗ ██╗   ██╗████████╗ ██████╗ ███╗   ██╗
+██╔════╝██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗████╗  ██║
+█████╗  ██████╔╝██║   ██║   ██║   ██║   ██║██╔██╗ ██║
+██╔══╝  ██╔══██╗██║   ██║   ██║   ██║   ██║██║╚██╗██║
+██║     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██║ ╚████║
+╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝
+```
 
-`stack_protein_prep` is a modular protein-preparation pipeline designed to take raw protein structure inputs and transform them into progressively more useful, reproducible, and downstream-ready files.
+> **Framework for Reconstruction, UniProt Alignment, and Topology-Oriented Protein Normalization**
 
-The long-term goal is to support a full preparation workflow for protein systems that may contain:
+A modular protein-preparation pipeline for **alignment-aware cleanup**, **gap handling**, **protonation**, **AMBER renaming**, **final numbering**, and **metal-site preparation**.
 
-- missing residues / gaps
+---
+
+## Why FRUTON exists
+
+Preparing a protein structure for downstream work is rarely a single cleanup step.  
+Real systems are messy. They contain:
+
 - insertion codes
+- missing internal residues
+- UniProt mismatches
 - ligands
-- water
+- waters
 - metals
-- protonation-state ambiguities
-- AMBER naming issues
-- final numbering restoration requirements
-- later metal parametrization and MD preparation
+- protonation ambiguities
+- force-field naming issues
+- numbering inconsistencies after modelling
 
-This repository is built as a **stepwise pipeline with explicit state tracking**, so that each protein can be processed reproducibly and partially rerun if needed.
+FRUTON exists to turn that mess into a **traceable**, **reproducible**, and **inspectable** workflow.
+
+Instead of hiding everything inside one opaque script, FRUTON treats protein preparation as a chain of explicit transformations:
+
+```text
+raw PDB
+→ FASTA generation
+→ UniProt alignment
+→ insertion cleanup
+→ component split
+→ gap detection
+→ MODELLER / AlphaFold filler
+→ protonation
+→ AMBER renaming
+→ final numbering
+→ metal preparation
+```
+
+Each important step produces files, updates state, and leaves enough evidence on disk to debug what happened.
 
 ---
 
-# High-Level Design
+## What makes FRUTON different
 
-The pipeline operates on a directory structure like:
+FRUTON is built around a few strong design ideas:
 
-```text
-data/proteins/<PDB_ID>/
-```
+| Principle | Meaning in practice |
+|---|---|
+| **Filesystem-first** | Intermediate files are intentionally written and kept. |
+| **State-driven** | Every protein has an explicit record in `pipeline.json` and `pipeline.xlsx`. |
+| **Alignment-aware** | Sequence logic is not an afterthought; UniProt alignment is central. |
+| **Modular** | Each preparation stage lives in its own module. |
+| **Debuggable** | Paths, outputs, statuses, and logs are visible and inspectable. |
+| **Extensible** | Metal parametrization and downstream MD preparation can grow naturally from the current architecture. |
 
-and stores global state in:
-
-```text
-data/proteins/pipeline.json
-data/proteins/pipeline.xlsx
-```
-
-Each protein gets its own record in the pipeline state.
-
-The pipeline is designed around these principles:
-
-- each step produces explicit files
-- each step updates explicit state fields
-- failures should be local to a protein where possible
-- downstream steps rely on well-defined upstream outputs
-- files are preferred over implicit in-memory state
-- the final pipeline should be easy to debug from filesystem + logs alone
+This makes FRUTON useful not only as a pipeline, but as a **scientific working framework**.
 
 ---
 
-# Core Directory Structure
+## Pipeline at a glance
 
-## Global level
+### Structural flow
 
 ```text
-data/proteins/
-├── pdb_ids.csv
-├── pipeline.json
-├── pipeline.xlsx
-├── 1IOO/
-├── 2AFX/
-├── 2P1T/
-└── ...
+[ RAW PDB ]
+     │
+     ▼
+[ FASTA FILES ]
+     │
+     ▼
+[ UNIPROT ALIGNMENT ]
+     │
+     ▼
+[ INSERTION CLEANUP ]
+     │
+     ▼
+[ COMPONENT SPLIT ]
+     │
+     ▼
+[ GAP DETECTION ]
+     │
+     ├─────────────── no internal gaps ───────────────┐
+     │                                                │
+     ▼                                                │
+[ FILLER: MODELLER / ALPHAFOLD ]                      │
+     │                                                │
+     ▼                                                │
+[ PROTONATION ]                                       │
+     │                                                │
+     ▼                                                │
+[ AMBER RENAMING ]                                    │
+     │                                                │
+     ▼                                                │
+[ FINAL NUMBERING ]                                   │
+     │                                                │
+     ▼                                                ▼
+[ FINAL PROTEIN ] ----------------------------> [ METAL PREPARATION ]
+```
+
+### Conceptual layers
+
+| Layer | Purpose |
+|---|---|
+| **Sequence layer** | FASTA generation, UniProt matching, mapping TSVs |
+| **Structure layer** | insertion cleanup, component split, gap detection |
+| **Reconstruction layer** | MODELLER / AlphaFold-based filling |
+| **Chemistry layer** | protonation, AMBER-compatible residue naming |
+| **Finalization layer** | final output numbering and normalization |
+| **Metal branch** | preparation for later MCPB / Gaussian workflows |
+
+---
+
+## What FRUTON currently does
+
+### Implemented steps
+
+| Step | Module / Logic | Current role |
+|---|---|---|
+| 1 | `pdb_sync` | synchronize protein set from CSV |
+| 2 | `fasta_files` | generate PDB- and UniProt-derived FASTA files |
+| 3 | `sequence_alignment` | align chain-specific PDB sequences to UniProt |
+| 4 | `insertion_codes` | remove insertion-code complications |
+| 5 | `pdb_components` | split protein / water / ligand / metal |
+| 6 | `gaps` | detect and summarize structural gaps |
+| 7 | `filler` | use MODELLER or AlphaFold fallback |
+| 8 | `protonation` | protonate structural protein |
+| 9 | `amber_renaming` | assign AMBER-compatible residue names |
+| 10 | `finalize_protein` | create final numbered output |
+| 11 | `metall_params` | prepare metal-containing systems for later parametrization |
+
+---
+
+## Repository layout
+
+```text
+stack_protein_prep/
+├── pixi.toml
+├── scripts/
+│   └── run_pipeline.py
+├── src/
+│   └── stack_protein_preparation/
+│       ├── fasta_files.py
+│       ├── sequence_alignment.py
+│       ├── insertion_codes.py
+│       ├── pdb_components.py
+│       ├── gaps.py
+│       ├── filler.py
+│       ├── protonation.py
+│       ├── amber_renaming.py
+│       ├── finalize_protein.py
+│       ├── metall_params.py
+│       ├── pipeline_state.py
+│       ├── pipeline_table.py
+│       └── pipeline_xlsx.py
+└── data/
+    └── proteins/
+        ├── pdb_ids.csv
+        ├── pipeline.json
+        ├── pipeline.xlsx
+        └── <PDB_ID>/
 ```
 
 ---
 
-## Per-protein level
+## Per-protein data layout
 
-Typical structure:
+A typical protein directory currently looks like this:
 
 ```text
 data/proteins/<PDB_ID>/
@@ -95,532 +204,173 @@ data/proteins/<PDB_ID>/
 │   ├── <PDB_ID>_proteinH.pdb
 │   ├── <PDB_ID>_protein_as_Amber.pdb
 │   └── <PDB_ID>_protein_final.pdb
-├── MODELLER/
-├── metall_params/
-│   ├── tmp_param.pdb
-│   ├── metal_only.pdb
-│   ├── chimera_contacts.py
-│   ├── contacts.data
-│   └── chimera_run.log
-└── ...
+└── metall_params/
+    ├── tmp_param.pdb
+    ├── metal_only.pdb
+    ├── chimera_contacts.py
+    ├── contacts.data
+    └── chimera_run.log
 ```
 
 ---
 
-# Main Pipeline Script
+## Key outputs and their meaning
 
-Main entry point:
-
-```text
-/home/grheco/repositorios/stack_protein_prep/scripts/run_pipeline.py
-```
-
-This script orchestrates the currently implemented steps.
-
----
-
-# Implemented Pipeline Steps
-
-## Step 1 — `pdb_sync`
-
-### Purpose
-
-Synchronize the input CSV with the actual protein directories.
-
-### Inputs
-
-- `data/proteins/pdb_ids.csv`
-
-### Outputs
-
-- creates / updates protein directories
-- ensures the working data tree is aligned with CSV contents
-
-### Main idea
-
-This step defines **which proteins are in scope** for the current run.
+| File | Meaning |
+|---|---|
+| `<PDB_ID>_delins.pdb` | insertion-cleaned PDB |
+| `PDB-<PDB_ID>-SEQRES.fasta` | sequence extracted from SEQRES |
+| `PDB-<PDB_ID>-ATOM.fasta` | sequence extracted from observed ATOM records |
+| `UniProt_<UNIPROT_ID>.fasta` | UniProt reference sequence |
+| `*_vs_UniProt.aln.fasta` | aligned chain-specific comparison |
+| `*_vs_UniProt.mapping.tsv` | alignment mapping table |
+| `<PDB_ID>_protein.pdb` | protein component only |
+| `<PDB_ID>_proteinH.pdb` | protonated protein |
+| `<PDB_ID>_protein_as_Amber.pdb` | AMBER-renamed protein |
+| `<PDB_ID>_protein_final.pdb` | final normalized protein |
+| `<PDB_ID>_metal.pdb` | metal component |
+| `<PDB_ID>_finalize_numbering.tsv` | explicit final numbering table |
+| `metall_params/tmp_param.pdb` | combined metal-analysis input |
+| `metall_params/contacts.data` | Chimera clash/contact output |
 
 ---
 
-## Step 2 — Read input CSV
+## Why each stage matters
 
-### Purpose
+### FASTA generation and UniProt alignment
 
-Load the CSV records that define the active protein set.
+FRUTON does not treat sequence logic as optional decoration.  
+Sequence alignment is one of the structural backbone layers of the whole project.
 
-### Typical fields
+It is used to:
 
-At least:
+- compare observed structure to reference biology
+- map chains against UniProt
+- detect terminal truncation or missing regions
+- support gap classification
+- support later numbering logic
 
-- `pdb_id`
-- `range` (optional residue-range restriction)
-
-### Effect
-
-These values are used to construct the initial pipeline records.
-
----
-
-## Step 3 — Load existing pipeline state
-
-### Purpose
-
-Load previously saved state from:
-
-```text
-data/proteins/pipeline.json
-```
-
-### Effect
-
-Allows continuation and partial reruns without rebuilding everything from scratch.
+Without that layer, later “fixes” would be much less reliable.
 
 ---
 
-## Step 4 — Build and merge pipeline state
+### Insertion cleanup
 
-### Purpose
+Insertion codes are one of those structural annoyances that seem small until they break everything:
 
-Construct fresh pipeline records from CSV and merge them with existing records.
-
-### Output fields initialized / maintained
-
-Examples:
-
-- `pdb_id`
-- `range`
-- `pdb_directory`
-- `fasta_directory`
-- `alignment_directory`
-- `components_directory`
-
----
-
-## Step 5 — `fasta_files`
-
-### Purpose
-
-Generate the FASTA inputs required for alignment.
-
-### Inputs
-
-Typically based on raw or cleaned PDB structure.
-
-### Outputs
-
-```text
-fasta/PDB-<PDB_ID>-SEQRES.fasta
-fasta/PDB-<PDB_ID>-ATOM.fasta
-fasta/UniProt_<UNIPROT_ID>.fasta
-```
-
-### Additional behavior
-
-If no UniProt FASTA is available locally, the module can try to:
-
-1. resolve a UniProt accession via RCSB
-2. download UniProt FASTA
-
-### Stored state
-
-- `fasta_files_done`
-- `uniprot_id`
-
----
-
-## Step 6 — `sequence_alignment`
-
-### Purpose
-
-Align chain-specific PDB-derived sequences against UniProt.
-
-### Comparisons currently created
-
-- each `SEQRES` chain vs UniProt
-- each `ATOM` chain vs UniProt
-
-### Outputs per chain
-
-```text
-SEQRES_chain_A_vs_UniProt.input.fasta
-SEQRES_chain_A_vs_UniProt.aln.fasta
-SEQRES_chain_A_vs_UniProt.mapping.tsv
-SEQRES_chain_A_vs_UniProt.png
-
-ATOM_chain_A_vs_UniProt.input.fasta
-ATOM_chain_A_vs_UniProt.aln.fasta
-ATOM_chain_A_vs_UniProt.mapping.tsv
-ATOM_chain_A_vs_UniProt.png
-```
-
-### Important note
-
-The mapping TSV written here is an **alignment mapping**, not automatically the final numbering source for the final prepared model.
-
-### Stored state
-
-- `sequence_alignment_done`
-
----
-
-## Step 7 — `insertion_codes`
-
-### Purpose
-
-Handle insertion codes in PDB residue numbering and create a cleaned structure.
-
-### Inputs
-
-- raw input PDB
-
-### Output
-
-```text
-<PDB_ID>_delins.pdb
-```
-
-### Why this matters
-
-Insertion codes often cause downstream mismatch problems in:
-
-- sequence extraction
 - residue mapping
-- gap detection
-- MODELLER alignment interpretation
+- indexing
+- chain sequence extraction
+- modelling assumptions
+- alignment interpretation
 
-### Stored state
-
-- `insertion_codes_done`
-
----
-
-## Step 8 — `component_split`
-
-### Purpose
-
-Split the cleaned PDB into structural components.
-
-### Inputs
-
-```text
-<PDB_ID>_delins.pdb
-```
-
-### Outputs
-
-```text
-components/<PDB_ID>_protein.pdb
-components/<PDB_ID>_water.pdb
-components/<PDB_ID>_ligand.pdb
-components/<PDB_ID>_metal.pdb
-```
-
-### Current component summary logic
-
-The pipeline tracks booleans / statuses for:
-
-- `has_metals`
-- `has_ligands`
-- `has_nonstandard_residues`
-
-### Stored state
-
-- `components_directory`
-- `has_metals`
-- `has_ligands`
-- `has_nonstandard_residues`
+Cleaning them early reduces downstream ambiguity.
 
 ---
 
-## Step 9 — `gap_detection`
+### Component split
 
-### Purpose
+Once a structure is split into:
 
-Detect structural gaps in the protein component.
+- protein
+- water
+- ligand
+- metal
 
-### Input
+the rest of the pipeline becomes far more manageable.
 
-```text
-components/<PDB_ID>_protein.pdb
-```
-
-### Outputs in state
-
-- `n_gaps`
-- `gap_sizes`
-
-### Example semantics
-
-- `n_gaps = 0`
-- `gap_sizes = "none"`
-
-or
-
-- `n_gaps = 2`
-- `gap_sizes = "6|6"`
-
-### Why this matters
-
-Gap size classification affects whether:
-
-- filler is skipped
-- MODELLER is run
-- AlphaFold fallback is preferred
+This step makes later logic cleaner because downstream modules no longer need to guess whether a residue is protein, solvent, ligand, or ion.
 
 ---
 
-## Step 10 — `filler`
+### Gap detection and filler
 
-### Purpose
+This is where FRUTON stops being a simple cleanup tool and becomes a reconstruction workflow.
 
-Fill internal missing regions using either:
+Internal gaps are detected, classified, and used to decide whether to:
 
-- MODELLER
-- AlphaFold fallback
+- skip filling
+- run MODELLER
+- use AlphaFold fallback
 
-depending on the gap classification.
-
-### Current gap logic in `filler.py`
-
-- internal gaps only
-- `1–5` residues → green
-- `6–8` residues → yellow
-- `>8` residues → AlphaFold candidate
-
-### Inputs
-
-- alignment files
-- protein template PDB
-- UniProt information
-- optional residue range
-
-### Outputs
-
-Typical:
-
-```text
-fasta/alignments/filler/A/<PDB_ID>_protein_mod.pdb
-```
-
-### Current behavior
-
-- no internal gaps → skip
-- large internal gap → AlphaFold fallback if possible
-- moderate / small internal gaps → MODELLER
-
-### Stored state
-
-- `filler_directory`
-- `filler_model_path`
-- `filler_status`
+This makes the workflow explicit and inspectable instead of manual and ad hoc.
 
 ---
 
-## Step 11 — `protonation`
+### Protonation and AMBER renaming
 
-### Purpose
+FRUTON separates:
 
-Create a protonated protein structure.
+1. **adding hydrogens / assigning protonation**
+2. **renaming residues for AMBER-style semantics**
 
-### Input preference
+This is important because those are related, but not identical, tasks.
 
-- filler model if present
-- otherwise protein component
-
-### Output
-
-```text
-components/<PDB_ID>_proteinH.pdb
-```
-
-### Stored state
-
-- `protonation.status`
-- `protonation.input_source`
-- `protonation.input_path`
-- `protonation.output_path`
-- `protonation.ph`
-- `protonation.input_atom_count`
-- `protonation.output_atom_count`
-- `protonation.atom_count_increased`
+The result is a chemically more meaningful and downstream-ready structure.
 
 ---
 
-## Step 12 — `amber_renaming`
+### Finalize protein
 
-### Purpose
+The final structural output is not just “the latest PDB”.  
+It is the result of a deliberate normalization step.
 
-Rename protonated residues into AMBER-compatible residue names.
+This includes:
 
-### Input
+- selecting the final structural source
+- applying a dedicated numbering policy
+- producing a canonical final protein file
 
-```text
-components/<PDB_ID>_proteinH.pdb
-```
-
-### Output
-
-```text
-components/<PDB_ID>_protein_as_Amber.pdb
-```
-
-### Examples of tracked renames
-
-- HIS → HID / HIE / HIP
-- ASP → ASH
-- GLU → GLH
-- CYS → CYM / CYX
-
-### Stored state
-
-- `amber_renaming.status`
-- `amber_renaming.input_path`
-- `amber_renaming.output_path`
-- `amber_renaming.his_to_hid`
-- `amber_renaming.his_to_hie`
-- `amber_renaming.his_to_hip`
-- `amber_renaming.asp_to_ash`
-- `amber_renaming.glu_to_glh`
-- `amber_renaming.cys_to_cym`
-- `amber_renaming.cys_to_cyx`
+That file is the current preferred handoff to later stages.
 
 ---
 
-## Step 13 — `finalize_protein`
+### Metal preparation
 
-### Purpose
+The metal branch is where FRUTON begins to connect structural preparation to later **parametrization workflows**.
 
-Create the final prepared protein structure with final numbering.
+Current goal:
 
-### Current output
+- combine final protein + optional water + optional ligand + metal
+- analyze local contacts around the metal with Chimera
+- generate starting input for later MCPB / Gaussian preparation
 
-```text
-components/<PDB_ID>_protein_final.pdb
-```
-
-### Current numbering logic
-
-This step uses a **dedicated finalize-numbering TSV**, not directly the older alignment mapping file.
-
-Typical file:
-
-```text
-fasta/alignments/<PDB_ID>_finalize_numbering.tsv
-```
-
-### Why this step is separate
-
-The alignment mapping TSV from `sequence_alignment.py` describes alignment columns, but the final model may include:
-
-- original residues
-- modeled residues
-- gap-filled residues
-- AlphaFold/MODELLER-generated residues
-
-Therefore a **final explicit numbering table** is more reliable.
-
-### State fields currently reused
-
-The pipeline currently stores this under the older `numbering_restore.*` fields:
-
-- `numbering_restore.status`
-- `numbering_restore.input_path`
-- `numbering_restore.output_path`
-- `numbering_restore.mapping_path`
-- `numbering_restore.source`
-- `numbering_restore.renumbered_atoms`
-- `numbering_restore.renumbered_residues`
-- `numbering_restore.message`
+This is still evolving, but the branch architecture is already in place.
 
 ---
 
-## Step 14 — `metall_params`
+## Pipeline state
 
-### Purpose
-
-Prepare metal-containing systems for downstream metal parametrization.
-
-### Inputs
-
-Usually:
-
-- `components/<PDB_ID>_protein_final.pdb`
-- `components/<PDB_ID>_water.pdb`
-- `components/<PDB_ID>_ligand.pdb`
-- `components/<PDB_ID>_metal.pdb`
-
-### Outputs
-
-```text
-metall_params/tmp_param.pdb
-metall_params/metal_only.pdb
-metall_params/chimera_contacts.py
-metall_params/contacts.data
-metall_params/chimera_run.log
-```
-
-### Current status
-
-This step is still in active debugging.
-
-### Current known issues addressed recently
-
-- file naming mismatch: `metal.pdb` vs `metals.pdb`
-- Chimera executable resolution
-- incorrect Chimera selection logic (`#0 test other`)
-- need for more explicit debug logging
-
-### Current intended Chimera logic
-
-- open full system as one model
-- open metal-only file as another model
-- run contact search from metal to system
-
----
-
-## Step 15 — Save pipeline JSON
-
-### Purpose
-
-Persist the entire pipeline state to:
+FRUTON tracks pipeline state in:
 
 ```text
 data/proteins/pipeline.json
-```
-
-This is the main machine-readable state file.
-
----
-
-## Step 16 — Write pipeline XLSX
-
-### Purpose
-
-Write a human-readable Excel summary to:
-
-```text
 data/proteins/pipeline.xlsx
 ```
 
-Useful for quick review of:
+### JSON
+Machine-readable, complete, debug-friendly.
 
-- status overview
-- paths
-- gaps
-- protonation
-- AMBER renaming
-- finalize status
-- metal-prep status
+### XLSX
+Human-readable overview for quick inspection.
+
+### Why this matters
+
+The flat state model makes it easy to answer:
+
+- Which proteins still have gaps?
+- Which proteins already have final outputs?
+- Which proteins contain metals?
+- Which ones failed protonation?
+- Which ones are ready for metal preparation?
+
+This is one of the most useful parts of the project.
 
 ---
 
-# State Model
+## Example state fields
 
-The pipeline uses a **flat record per protein**.
-
-## Example record sections
-
-### Identity and directory fields
+### Identity and directories
 
 - `pdb_id`
 - `range`
@@ -638,7 +388,15 @@ The pipeline uses a **flat record per protein**.
 - `has_ligands`
 - `has_nonstandard_residues`
 
-### Step status fields
+### Chemistry / model outputs
+
+- `filler_directory`
+- `filler_model_path`
+- `protonation.output_path`
+- `amber_renaming.output_path`
+- `numbering_restore.output_path`
+
+### Status fields
 
 - `pdb_sync_done`
 - `fasta_files_done`
@@ -648,234 +406,75 @@ The pipeline uses a **flat record per protein**.
 - `protonation.status`
 - `amber_renaming.status`
 - `numbering_restore.status`
-- `metall_params.status` (currently stored as flat string keys if present)
+- `metall_params.status`
 
 ---
 
-# File Semantics by Preparation Level
+## Current strengths
 
-## `*_protein.pdb`
+FRUTON already has a strong foundation for:
 
-Basic protein-only structural component after component split.
-
-## `*_proteinH.pdb`
-
-Protonated protein.
-
-## `*_protein_as_Amber.pdb`
-
-Protonated protein with AMBER naming.
-
-## `*_protein_final.pdb`
-
-Final prepared protein after final numbering logic.
-
-This is currently the preferred protein input for metal preparation.
+- alignment-aware structure preparation
+- explicit intermediate files
+- reproducible state tracking
+- modular stepwise orchestration
+- chain-specific sequence logic
+- chemistry-aware structural normalization
+- branching toward metal-site workflows
 
 ---
 
-# Current Metal Preparation Logic
+## Current limitations
 
-## Why a separate `metall_params` directory?
+FRUTON is still actively evolving, especially in the later stages.
 
-Because metal parametrization is not just another cleanup step. It is the beginning of a separate downstream branch that may later create:
+### Areas still being refined
 
-- MCPB input
-- Gaussian input
-- force-field files
-- topology fragments
+- finalize-numbering logic
+- MODELLER / AlphaFold edge cases
+- metal-site selection logic in Chimera
+- atom serial renumbering in merged PDBs
+- automatic contact parsing for metal workflows
 
-So it should stay isolated.
+### Known practical issue
 
----
+Merged files such as `tmp_param.pdb` may contain duplicate atom serial numbers because concatenation is currently used instead of full renumbering.
 
-## Current assembled file
-
-`tmp_param.pdb` is currently built by concatenating:
-
-1. final protein
-2. water
-3. ligand
-4. metal
-
-This is intentionally simple and debuggable.
+That is usually survivable, but it should eventually be cleaned up.
 
 ---
 
-## Known caveat
+## Recommended next steps
 
-The merged PDB may contain duplicate atom serial numbers because it is created by concatenation rather than full renumbering.
-
-This can trigger Chimera warnings but is not necessarily fatal.
-
----
-
-# Finalize / Numbering Philosophy
-
-The project originally used alignment mapping files directly, but this proved insufficient once modelled residues were introduced.
-
-The current direction is:
-
-- keep alignment TSVs for sequence logic and diagnostics
-- create a separate finalize-numbering TSV for final structural numbering
-- let `finalize_protein.py` apply only that explicit numbering table
-
-This separation is important because:
-
-- alignment logic and numbering logic are not identical
-- modeled residues need explicit policy
-- final output should be deterministic
+1. **formalize finalize numbering generation**
+2. **improve Chimera metal-selection logic**
+3. **renumber merged atom serials**
+4. **parse `contacts.data` into structured machine-readable output**
+5. **build MCPB input automatically**
+6. **extend the metal branch toward Gaussian preparation**
+7. **improve rerun granularity for later pipeline stages**
 
 ---
 
-# Current Debugging Strategy
+## Running FRUTON
 
-The project increasingly favors **explicit, verbose, step-local debugging**.
+Typical full pipeline run:
 
-Especially for difficult steps like:
-
-- filler
-- finalize_protein
-- metall_params
-
-the preferred approach is:
-
-- print paths
-- print selected inputs
-- print booleans for each decision step
-- write logs to files
-- store exact paths in pipeline state
-
-This is consistent with the repository’s overall design philosophy:
-**debug from filesystem + state, not from guesswork.**
-
----
-
-# Current Status of the Pipeline
-
-## Stable / mostly established
-
-- PDB sync
-- FASTA generation
-- sequence alignment
-- insertion-code cleanup
-- component split
-- gap detection
-- protonation
-- AMBER renaming
-
-## Working but still evolving
-
-- filler
-- finalize_protein / finalize TSV logic
-- metall_params / Chimera logic
-
----
-
-# Typical End-to-End Flow for One Protein
-
-A simplified progression for one protein looks like this:
-
-```text
-raw PDB
-→ FASTA generation
-→ PDB vs UniProt alignment
-→ insertion-code cleanup
-→ component split
-→ gap detection
-→ filler (MODELLER / AlphaFold if needed)
-→ protonation
-→ AMBER residue renaming
-→ final numbering / final protein output
-→ metal preparation (if metal present)
+```bash
+pixi run python scripts/run_pipeline.py
 ```
 
 ---
 
-# Example Final Important Files
+## Main source files
 
-For a metal-free system:
-
-```text
-components/<PDB_ID>_protein_final.pdb
-```
-
-For a metal-containing system:
-
-```text
-components/<PDB_ID>_protein_final.pdb
-metall_params/tmp_param.pdb
-metall_params/contacts.data
-```
-
----
-
-# Naming Conventions Summary
-
-| Kind | Example |
-|---|---|
-| cleaned PDB | `2AFX_delins.pdb` |
-| protein component | `2AFX_protein.pdb` |
-| protonated protein | `2AFX_proteinH.pdb` |
-| AMBER-renamed protein | `2AFX_protein_as_Amber.pdb` |
-| final protein | `2AFX_protein_final.pdb` |
-| ligand component | `2AFX_ligand.pdb` |
-| water component | `2AFX_water.pdb` |
-| metal component | `2AFX_metal.pdb` |
-| finalize numbering TSV | `2AFX_finalize_numbering.tsv` |
-
----
-
-# Recommended Next Improvements
-
-## 1. Formalize finalize TSV generation
-The builder should be fully explicit and chain-aware.
-
-## 2. Improve metal selection logic
-Use metal-only model or explicit atom selection instead of whole-model `#0 test other`.
-
-## 3. Renumber merged PDB atom serials
-This would reduce Chimera warnings.
-
-## 4. Parse `contacts.data`
-Store structured contacts in JSON/TSV rather than raw text only.
-
-## 5. Add MCPB input builder
-Once metal contacts are robust, build the MCPB input step automatically.
-
-## 6. Improve rerun granularity
-Allow easy reruns from:
-- filler onward
-- finalize onward
-- metall_params onward
-
----
-
-# Repository Philosophy
-
-This repository is not built as one monolithic black box.
-
-It is built as a **traceable scientific workflow** where:
-
-- every important step writes files
-- every decision leaves traces
-- intermediate files are intentionally inspectable
-- pipeline state is explicit
-- debugging is expected and supported
-
-That is especially important for structural biology / MD preparation, where silent assumptions create bad downstream systems.
-
----
-
-# Main Files of Interest
-
-## Orchestration
+### Orchestration
 
 ```text
 scripts/run_pipeline.py
 ```
 
-## State handling
+### State and export
 
 ```text
 src/stack_protein_preparation/pipeline_state.py
@@ -883,28 +482,23 @@ src/stack_protein_preparation/pipeline_table.py
 src/stack_protein_preparation/pipeline_xlsx.py
 ```
 
-## FASTA / alignment
+### Sequence and alignment
 
 ```text
 src/stack_protein_preparation/fasta_files.py
 src/stack_protein_preparation/sequence_alignment.py
 ```
 
-## Structural cleanup
+### Structure processing
 
 ```text
 src/stack_protein_preparation/insertion_codes.py
 src/stack_protein_preparation/pdb_components.py
 src/stack_protein_preparation/gaps.py
-```
-
-## Model completion
-
-```text
 src/stack_protein_preparation/filler.py
 ```
 
-## Chemistry-related preparation
+### Chemistry and finalization
 
 ```text
 src/stack_protein_preparation/protonation.py
@@ -915,29 +509,8 @@ src/stack_protein_preparation/metall_params.py
 
 ---
 
-# Summary
+## In one sentence
 
-`stack_protein_prep` is a modular structural-preparation pipeline that currently:
+**FRUTON is a filesystem-explicit, state-driven protein-preparation framework that connects sequence-aware cleanup, structure reconstruction, chemistry-aware normalization, and metal-site preparation into one coherent workflow.**
 
-- prepares protein systems step by step
-- keeps explicit state in JSON/XLSX
-- handles alignment, cleanup, gap filling, protonation, renaming, finalization
-- is expanding toward metal parametrization support
-
-The pipeline is already useful as a structured preparation framework, but its later steps — especially:
-
-- `filler`
-- `finalize_protein`
-- `metall_params`
-
-are still actively being refined.
-
-The current architecture is solid because it already separates:
-
-- structural cleanup
-- sequence logic
-- chemical naming
-- final output generation
-- metal-preparation branching
-
-That separation will make future automation much easier.
+---
