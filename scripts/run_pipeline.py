@@ -25,6 +25,7 @@ Current implemented steps
 6. gap_detection
 7. filler
 8. protonation
+9. amber_renaming
 
 Important
 ---------
@@ -52,6 +53,17 @@ Important
     - protonation.input_atom_count
     - protonation.output_atom_count
     - protonation.atom_count_increased
+- AMBER renaming summary is stored as:
+    - amber_renaming.status
+    - amber_renaming.input_path
+    - amber_renaming.output_path
+    - amber_renaming.his_to_hid
+    - amber_renaming.his_to_hie
+    - amber_renaming.his_to_hip
+    - amber_renaming.asp_to_ash
+    - amber_renaming.glu_to_glh
+    - amber_renaming.cys_to_cym
+    - amber_renaming.cys_to_cyx
 - UniProt ID is stored as:
     - uniprot_id
 """
@@ -70,6 +82,7 @@ SRC_DIR = PROJECT_ROOT_DIR / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from stack_protein_preparation.amber_renaming import amber_rename_protein_structure
 from stack_protein_preparation.fasta_files import create_fasta_files_for_pdb_directory
 from stack_protein_preparation.filler import run_filler_for_chain
 from stack_protein_preparation.gaps import summarize_gaps
@@ -93,6 +106,16 @@ from stack_protein_preparation.pdb_sync import (
 )
 from stack_protein_preparation.pipeline_state import (
     ALIGNMENT_DIRECTORY_COLUMN_NAME,
+    AMBER_ASP_TO_ASH_COLUMN_NAME,
+    AMBER_CYS_TO_CYM_COLUMN_NAME,
+    AMBER_CYS_TO_CYX_COLUMN_NAME,
+    AMBER_GLU_TO_GLH_COLUMN_NAME,
+    AMBER_HIS_TO_HID_COLUMN_NAME,
+    AMBER_HIS_TO_HIE_COLUMN_NAME,
+    AMBER_HIS_TO_HIP_COLUMN_NAME,
+    AMBER_INPUT_PATH_COLUMN_NAME,
+    AMBER_OUTPUT_PATH_COLUMN_NAME,
+    AMBER_RENAMING_STATUS_COLUMN_NAME,
     COMPONENTS_DIRECTORY_COLUMN_NAME,
     FASTA_DIRECTORY_COLUMN_NAME,
     FASTA_FILES_DONE_COLUMN_NAME,
@@ -108,6 +131,14 @@ from stack_protein_preparation.pipeline_state import (
     PDB_DIRECTORY_COLUMN_NAME,
     PDB_ID_COLUMN_NAME,
     PDB_SYNC_DONE_COLUMN_NAME,
+    PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME,
+    PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME,
+    PROTONATION_INPUT_PATH_COLUMN_NAME,
+    PROTONATION_INPUT_SOURCE_COLUMN_NAME,
+    PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME,
+    PROTONATION_OUTPUT_PATH_COLUMN_NAME,
+    PROTONATION_PH_COLUMN_NAME,
+    PROTONATION_STATUS_COLUMN_NAME,
     RANGE_COLUMN_NAME,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
     STATUS_REQUIRED,
@@ -126,15 +157,6 @@ from stack_protein_preparation.protonation import protonate_protein_structure
 from stack_protein_preparation.sequence_alignment import (
     run_alignments_for_pdb_directory,
 )
-
-PROTONATION_STATUS_COLUMN_NAME = "protonation.status"
-PROTONATION_INPUT_SOURCE_COLUMN_NAME = "protonation.input_source"
-PROTONATION_INPUT_PATH_COLUMN_NAME = "protonation.input_path"
-PROTONATION_OUTPUT_PATH_COLUMN_NAME = "protonation.output_path"
-PROTONATION_PH_COLUMN_NAME = "protonation.ph"
-PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME = "protonation.input_atom_count"
-PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME = "protonation.output_atom_count"
-PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME = "protonation.atom_count_increased"
 
 
 def build_pipeline_records_from_input_csv(
@@ -167,15 +189,6 @@ def build_pipeline_records_from_input_csv(
         pipeline_record[ALIGNMENT_DIRECTORY_COLUMN_NAME] = str(alignment_directory)
         pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME] = str(components_directory)
         pipeline_record[PDB_SYNC_DONE_COLUMN_NAME] = STATUS_SUCCESS
-
-        pipeline_record[PROTONATION_STATUS_COLUMN_NAME] = ""
-        pipeline_record[PROTONATION_INPUT_SOURCE_COLUMN_NAME] = ""
-        pipeline_record[PROTONATION_INPUT_PATH_COLUMN_NAME] = ""
-        pipeline_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME] = ""
-        pipeline_record[PROTONATION_PH_COLUMN_NAME] = ""
-        pipeline_record[PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME] = ""
-        pipeline_record[PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME] = ""
-        pipeline_record[PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME] = ""
 
         pipeline_record_list.append(pipeline_record)
 
@@ -213,23 +226,6 @@ def merge_existing_and_new_pipeline_records(
             COMPONENTS_DIRECTORY_COLUMN_NAME
         ]
         merged_record[PDB_SYNC_DONE_COLUMN_NAME] = STATUS_SUCCESS
-
-        if PROTONATION_STATUS_COLUMN_NAME not in merged_record:
-            merged_record[PROTONATION_STATUS_COLUMN_NAME] = ""
-        if PROTONATION_INPUT_SOURCE_COLUMN_NAME not in merged_record:
-            merged_record[PROTONATION_INPUT_SOURCE_COLUMN_NAME] = ""
-        if PROTONATION_INPUT_PATH_COLUMN_NAME not in merged_record:
-            merged_record[PROTONATION_INPUT_PATH_COLUMN_NAME] = ""
-        if PROTONATION_OUTPUT_PATH_COLUMN_NAME not in merged_record:
-            merged_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME] = ""
-        if PROTONATION_PH_COLUMN_NAME not in merged_record:
-            merged_record[PROTONATION_PH_COLUMN_NAME] = ""
-        if PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME not in merged_record:
-            merged_record[PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME] = ""
-        if PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME not in merged_record:
-            merged_record[PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME] = ""
-        if PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME not in merged_record:
-            merged_record[PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME] = ""
 
         merged_record_list.append(merged_record)
 
@@ -274,6 +270,22 @@ def _clear_protonation_fields(pipeline_record: dict[str, str]) -> None:
     pipeline_record[PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME] = ""
     pipeline_record[PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME] = ""
     pipeline_record[PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME] = ""
+
+
+def _clear_amber_renaming_fields(pipeline_record: dict[str, str]) -> None:
+    """
+    Clear AMBER-renaming-related output fields.
+    """
+    pipeline_record[AMBER_RENAMING_STATUS_COLUMN_NAME] = ""
+    pipeline_record[AMBER_INPUT_PATH_COLUMN_NAME] = ""
+    pipeline_record[AMBER_OUTPUT_PATH_COLUMN_NAME] = ""
+    pipeline_record[AMBER_HIS_TO_HID_COLUMN_NAME] = ""
+    pipeline_record[AMBER_HIS_TO_HIE_COLUMN_NAME] = ""
+    pipeline_record[AMBER_HIS_TO_HIP_COLUMN_NAME] = ""
+    pipeline_record[AMBER_ASP_TO_ASH_COLUMN_NAME] = ""
+    pipeline_record[AMBER_GLU_TO_GLH_COLUMN_NAME] = ""
+    pipeline_record[AMBER_CYS_TO_CYM_COLUMN_NAME] = ""
+    pipeline_record[AMBER_CYS_TO_CYX_COLUMN_NAME] = ""
 
 
 def _set_component_status_fields(
@@ -330,6 +342,45 @@ def _set_protonation_fields(
     ).strip()
     pipeline_record[PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME] = str(
         protonation_result.get("atom_count_increased", "")
+    ).strip()
+
+
+def _set_amber_renaming_fields(
+    pipeline_record: dict[str, str],
+    amber_result: dict[str, object],
+) -> None:
+    """
+    Store AMBER renaming result fields in the flat pipeline record.
+    """
+    pipeline_record[AMBER_RENAMING_STATUS_COLUMN_NAME] = str(
+        amber_result.get("status", "")
+    ).strip()
+    pipeline_record[AMBER_INPUT_PATH_COLUMN_NAME] = str(
+        amber_result.get("input_path", "")
+    ).strip()
+    pipeline_record[AMBER_OUTPUT_PATH_COLUMN_NAME] = str(
+        amber_result.get("output_path", "")
+    ).strip()
+    pipeline_record[AMBER_HIS_TO_HID_COLUMN_NAME] = str(
+        amber_result.get("his_to_hid", "")
+    ).strip()
+    pipeline_record[AMBER_HIS_TO_HIE_COLUMN_NAME] = str(
+        amber_result.get("his_to_hie", "")
+    ).strip()
+    pipeline_record[AMBER_HIS_TO_HIP_COLUMN_NAME] = str(
+        amber_result.get("his_to_hip", "")
+    ).strip()
+    pipeline_record[AMBER_ASP_TO_ASH_COLUMN_NAME] = str(
+        amber_result.get("asp_to_ash", "")
+    ).strip()
+    pipeline_record[AMBER_GLU_TO_GLH_COLUMN_NAME] = str(
+        amber_result.get("glu_to_glh", "")
+    ).strip()
+    pipeline_record[AMBER_CYS_TO_CYM_COLUMN_NAME] = str(
+        amber_result.get("cys_to_cym", "")
+    ).strip()
+    pipeline_record[AMBER_CYS_TO_CYX_COLUMN_NAME] = str(
+        amber_result.get("cys_to_cyx", "")
     ).strip()
 
 
@@ -419,6 +470,44 @@ def run_protonation_for_protein(
         }
 
 
+def run_amber_renaming_for_protein(
+    pdb_id: str,
+    protein_dir: Path,
+) -> dict[str, object]:
+    """
+    Run AMBER residue renaming for one protein and return a flat result dictionary.
+    """
+    try:
+        result = amber_rename_protein_structure(
+            pdb_id=pdb_id,
+            protein_dir=protein_dir,
+            strict_his=False,
+            disulf_min=1.8,
+            disulf_max=2.2,
+        )
+
+        return {
+            "status": STATUS_SUCCESS
+            if result["amber_renaming_success"]
+            else STATUS_REQUIRED,
+            "input_path": result["amber_input_path"],
+            "output_path": result["amber_output_path"],
+            "his_to_hid": result["his_to_hid"],
+            "his_to_hie": result["his_to_hie"],
+            "his_to_hip": result["his_to_hip"],
+            "asp_to_ash": result["asp_to_ash"],
+            "glu_to_glh": result["glu_to_glh"],
+            "cys_to_cym": result["cys_to_cym"],
+            "cys_to_cyx": int(result["cys_to_cyx"]) + int(result["cym_to_cyx"]),
+        }
+
+    except Exception as error:
+        return {
+            "status": STATUS_REQUIRED,
+            "error": str(error),
+        }
+
+
 def run_pipeline() -> None:
     """
     Run the currently implemented protein preparation pipeline.
@@ -477,6 +566,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
 
     print("[PIPELINE] Step 6: Run sequence alignment")
     for pipeline_record in pipeline_record_list:
@@ -494,6 +584,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] sequence_alignment -> {pdb_id}")
@@ -514,6 +605,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
 
     print("[PIPELINE] Step 7: Handle insertion codes")
     for pipeline_record in pipeline_record_list:
@@ -533,6 +625,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] insertion_codes -> {pdb_id}")
@@ -547,6 +640,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         output_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
@@ -563,18 +657,27 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         insertion_status = str(insertion_result.get("status", "")).strip().lower()
 
         if insertion_status in {INSERTION_STATUS_NONE, INSERTION_STATUS_SUCCESS}:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_SUCCESS
+        elif insertion_status == INSERTION_STATUS_FAILED:
+            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
+            _clear_component_fields(pipeline_record)
+            _clear_gap_fields(pipeline_record)
+            _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
         else:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
 
     print("[PIPELINE] Step 8: Split components")
     for pipeline_record in pipeline_record_list:
@@ -591,6 +694,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         component_input_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
@@ -604,6 +708,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] component_split -> {pdb_id}")
@@ -620,6 +725,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME] = str(
@@ -648,6 +754,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         gap_input_pdb_path = components_dir / f"{pdb_id}_protein.pdb"
@@ -660,6 +767,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] gap_detection -> {pdb_id}")
@@ -671,6 +779,7 @@ def run_pipeline() -> None:
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         n_gaps = int(gap_summary.get("n_gaps", 0))
@@ -704,6 +813,7 @@ def run_pipeline() -> None:
             )
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         if not alignment_dir.exists():
@@ -713,6 +823,7 @@ def run_pipeline() -> None:
             )
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         template_pdb_path = _find_template_pdb_for_filler(
@@ -725,6 +836,7 @@ def run_pipeline() -> None:
             print(f"[PIPELINE] filler skipped for {pdb_id}: no template PDB found")
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         n_gaps_text = str(pipeline_record.get(N_GAPS_COLUMN_NAME, "")).strip()
@@ -735,6 +847,7 @@ def run_pipeline() -> None:
             )
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         if n_gaps_text == "0":
@@ -744,6 +857,7 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             pipeline_record[FILLER_STATUS_COLUMN_NAME] = STATUS_SUCCESS
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] filler -> {pdb_id}")
@@ -773,6 +887,7 @@ def run_pipeline() -> None:
             traceback.print_exc()
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         pipeline_record[FILLER_DIRECTORY_COLUMN_NAME] = str(filler_result.output_dir)
@@ -813,6 +928,7 @@ def run_pipeline() -> None:
                 "(insertion_codes step failed)"
             )
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         components_dir = Path(pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME])
@@ -824,6 +940,7 @@ def run_pipeline() -> None:
                 f"missing file {default_protein_path}"
             )
             _clear_protonation_fields(pipeline_record)
+            _clear_amber_renaming_fields(pipeline_record)
             continue
 
         filler_model_path_text = str(
@@ -855,6 +972,9 @@ def run_pipeline() -> None:
 
         _set_protonation_fields(pipeline_record, protonation_result)
 
+        if pipeline_record[PROTONATION_STATUS_COLUMN_NAME] != STATUS_SUCCESS:
+            _clear_amber_renaming_fields(pipeline_record)
+
         print(
             f"[PIPELINE] protonation result for {pdb_id}: "
             f"status={pipeline_record[PROTONATION_STATUS_COLUMN_NAME]!r}, "
@@ -862,13 +982,56 @@ def run_pipeline() -> None:
             f"output_path={pipeline_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME]!r}"
         )
 
-    print("[PIPELINE] Step 12: Save pipeline JSON")
+    print("[PIPELINE] Step 12: AMBER renaming")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        protein_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        if pipeline_record.get(PROTONATION_STATUS_COLUMN_NAME, "") != STATUS_SUCCESS:
+            print(
+                f"[PIPELINE] amber_renaming skipped for {pdb_id} "
+                "(protonation step failed)"
+            )
+            _clear_amber_renaming_fields(pipeline_record)
+            continue
+
+        protonated_input_path = (
+            Path(pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME])
+            / f"{pdb_id}_proteinH.pdb"
+        )
+
+        if not protonated_input_path.exists():
+            print(
+                f"[PIPELINE] amber_renaming skipped for {pdb_id}: "
+                f"missing file {protonated_input_path}"
+            )
+            _clear_amber_renaming_fields(pipeline_record)
+            continue
+
+        print(f"[PIPELINE] amber_renaming -> {pdb_id}")
+
+        amber_result = run_amber_renaming_for_protein(
+            pdb_id=pdb_id,
+            protein_dir=protein_dir,
+        )
+
+        _set_amber_renaming_fields(pipeline_record, amber_result)
+
+        print(
+            f"[PIPELINE] amber_renaming result for {pdb_id}: "
+            f"status={pipeline_record[AMBER_RENAMING_STATUS_COLUMN_NAME]!r}, "
+            f"his_to_hid={pipeline_record[AMBER_HIS_TO_HID_COLUMN_NAME]!r}, "
+            f"his_to_hie={pipeline_record[AMBER_HIS_TO_HIE_COLUMN_NAME]!r}, "
+            f"his_to_hip={pipeline_record[AMBER_HIS_TO_HIP_COLUMN_NAME]!r}"
+        )
+
+    print("[PIPELINE] Step 13: Save pipeline JSON")
     save_pipeline_table(
         pipeline_record_list,
         pipeline_json_path,
     )
 
-    print("[PIPELINE] Step 13: Write pipeline XLSX")
+    print("[PIPELINE] Step 14: Write pipeline XLSX")
     write_pipeline_to_xlsx(
         pipeline_record_list,
         pipeline_xlsx_path,

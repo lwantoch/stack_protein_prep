@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from stack_protein_preparation.alignment_visualization import alignment_to_image
 from stack_protein_preparation.sequence_alignment import (
     AlignmentJob,
     build_alignment_job,

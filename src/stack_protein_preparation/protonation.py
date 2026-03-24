@@ -199,6 +199,13 @@ def run_pdb2pqr_protonation(
     return result
 
 
+def count_atoms_in_pdb(pdb_path: str | Path) -> int:
+    """
+    Backward-compatible wrapper around count_atoms_in_structure_file.
+    """
+    return count_atoms_in_structure_file(pdb_path)
+
+
 def protonate_protein_structure(
     pdb_id: str,
     protein_dir: str | Path,

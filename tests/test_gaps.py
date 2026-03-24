@@ -104,7 +104,7 @@ def test_gaps_for_pdb_returns_empty_when_numbering_is_continuous(
     ]
     _write_test_pdb(pdb_path, lines)
 
-    assert gaps_for_pdb(pdb_path) == {}
+    assert gaps_for_pdb(pdb_path) == []
 
 
 def test_gaps_for_pdb_detects_single_gap(tmp_path: Path) -> None:
