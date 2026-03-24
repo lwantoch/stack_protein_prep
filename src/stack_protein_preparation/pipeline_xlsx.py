@@ -1,7 +1,7 @@
 # /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_xlsx.py
 
 """
-pipeline_xlsx.py
+/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_xlsx.py
 
 Excel export for pipeline state.
 
@@ -21,6 +21,9 @@ Important
 ---------
 - non-status metadata columns are not colored
 - only status columns are colored
+- column order follows STATE_COLUMN_NAME_LIST from pipeline_state.py
+- newly added state columns are exported automatically once they exist
+  in STATE_COLUMN_NAME_LIST
 """
 
 from __future__ import annotations
@@ -29,7 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from openpyxl import Workbook
-from openpyxl.styles import PatternFill
+from openpyxl.styles import Font, PatternFill
 
 from stack_protein_preparation.pipeline_state import (
     PDB_ID_COLUMN_NAME,
@@ -58,6 +61,14 @@ RED_FILL = PatternFill(
     end_color="FFC7CE",
     fill_type="solid",
 )
+
+HEADER_FILL = PatternFill(
+    start_color="D9E2F3",
+    end_color="D9E2F3",
+    fill_type="solid",
+)
+
+HEADER_FONT = Font(bold=True)
 
 
 def get_excel_column_order() -> list[str]:
@@ -189,6 +200,23 @@ def apply_status_cell_color(cell, value: str) -> None:
         cell.fill = RED_FILL
 
 
+def style_header_row(worksheet, column_order: list[str]) -> None:
+    """
+    Apply simple styling to the header row.
+
+    Parameters
+    ----------
+    worksheet
+        Openpyxl worksheet object.
+    column_order
+        Ordered list of column names written to row 1.
+    """
+    for column_index, _column_name in enumerate(column_order, start=1):
+        cell = worksheet.cell(row=1, column=column_index)
+        cell.fill = HEADER_FILL
+        cell.font = HEADER_FONT
+
+
 def autosize_worksheet_columns(worksheet) -> None:
     """
     Set worksheet column widths based on content length.
@@ -236,8 +264,10 @@ def write_pipeline_to_xlsx(
     workbook = Workbook()
     worksheet = workbook.active
     worksheet.title = "pipeline"
+    worksheet.freeze_panes = "A2"
 
     worksheet.append(column_order)
+    style_header_row(worksheet, column_order)
 
     for protein_record in unique_sorted_record_list:
         row_value_list = [
@@ -257,5 +287,6 @@ def write_pipeline_to_xlsx(
 
     autosize_worksheet_columns(worksheet)
 
+    output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)

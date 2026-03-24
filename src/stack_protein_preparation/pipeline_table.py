@@ -1,7 +1,7 @@
 # /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_table.py
 
 """
-pipeline_table.py
+/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_table.py
 
 Central table management for the pipeline.
 
@@ -80,6 +80,7 @@ def load_pipeline_table(json_path: Path) -> list[dict[str, str]]:
     ValueError
         If the JSON root object is not a list.
     """
+    json_path = Path(json_path)
     protein_record_list: list[dict[str, str]] = []
 
     if not json_path.exists():
@@ -147,9 +148,16 @@ def save_pipeline_table(
     json_path
         Path to the output JSON file.
     """
+    json_path = Path(json_path)
+
+    working_record_list = [
+        dict(protein_record) for protein_record in protein_record_list
+    ]
+    ensure_all_state_columns_exist(working_record_list)
+
     unique_record_by_pdb_id: dict[str, dict[str, str]] = {}
 
-    for protein_record in protein_record_list:
+    for protein_record in working_record_list:
         pdb_id = str(protein_record.get(PDB_ID_COLUMN_NAME, "")).strip().upper()
 
         if not pdb_id:
@@ -233,7 +241,16 @@ def update_record(
     ------
     KeyError
         If the protein record does not exist.
+    ValueError
+        If the column name is not a known pipeline state column.
     """
+    if column_name not in STATE_COLUMN_NAME_LIST:
+        allowed_column_name_string = ", ".join(STATE_COLUMN_NAME_LIST)
+        raise ValueError(
+            f"Unknown pipeline state column: '{column_name}'. "
+            f"Allowed columns: {allowed_column_name_string}"
+        )
+
     protein_record = get_record_by_pdb_id(protein_record_list, pdb_id)
 
     if protein_record is None:

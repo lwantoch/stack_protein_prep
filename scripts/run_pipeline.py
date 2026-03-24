@@ -1,3 +1,5 @@
+# /home/grheco/repositorios/stack_protein_prep/scripts/run_pipeline.py
+
 """
 /home/grheco/repositorios/stack_protein_prep/scripts/run_pipeline.py
 
@@ -22,6 +24,7 @@ Current implemented steps
 5. component_split
 6. gap_detection
 7. filler
+8. protonation
 
 Important
 ---------
@@ -40,6 +43,15 @@ Important
     - filler_directory
     - filler_model_path
     - filler_status
+- protonation summary is stored as:
+    - protonation.status
+    - protonation.input_source
+    - protonation.input_path
+    - protonation.output_path
+    - protonation.ph
+    - protonation.input_atom_count
+    - protonation.output_atom_count
+    - protonation.atom_count_increased
 - UniProt ID is stored as:
     - uniprot_id
 """
@@ -110,9 +122,19 @@ from stack_protein_preparation.pipeline_table import (
     save_pipeline_table,
 )
 from stack_protein_preparation.pipeline_xlsx import write_pipeline_to_xlsx
+from stack_protein_preparation.protonation import protonate_protein_structure
 from stack_protein_preparation.sequence_alignment import (
     run_alignments_for_pdb_directory,
 )
+
+PROTONATION_STATUS_COLUMN_NAME = "protonation.status"
+PROTONATION_INPUT_SOURCE_COLUMN_NAME = "protonation.input_source"
+PROTONATION_INPUT_PATH_COLUMN_NAME = "protonation.input_path"
+PROTONATION_OUTPUT_PATH_COLUMN_NAME = "protonation.output_path"
+PROTONATION_PH_COLUMN_NAME = "protonation.ph"
+PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME = "protonation.input_atom_count"
+PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME = "protonation.output_atom_count"
+PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME = "protonation.atom_count_increased"
 
 
 def build_pipeline_records_from_input_csv(
@@ -145,6 +167,15 @@ def build_pipeline_records_from_input_csv(
         pipeline_record[ALIGNMENT_DIRECTORY_COLUMN_NAME] = str(alignment_directory)
         pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME] = str(components_directory)
         pipeline_record[PDB_SYNC_DONE_COLUMN_NAME] = STATUS_SUCCESS
+
+        pipeline_record[PROTONATION_STATUS_COLUMN_NAME] = ""
+        pipeline_record[PROTONATION_INPUT_SOURCE_COLUMN_NAME] = ""
+        pipeline_record[PROTONATION_INPUT_PATH_COLUMN_NAME] = ""
+        pipeline_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME] = ""
+        pipeline_record[PROTONATION_PH_COLUMN_NAME] = ""
+        pipeline_record[PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME] = ""
+        pipeline_record[PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME] = ""
+        pipeline_record[PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME] = ""
 
         pipeline_record_list.append(pipeline_record)
 
@@ -183,6 +214,23 @@ def merge_existing_and_new_pipeline_records(
         ]
         merged_record[PDB_SYNC_DONE_COLUMN_NAME] = STATUS_SUCCESS
 
+        if PROTONATION_STATUS_COLUMN_NAME not in merged_record:
+            merged_record[PROTONATION_STATUS_COLUMN_NAME] = ""
+        if PROTONATION_INPUT_SOURCE_COLUMN_NAME not in merged_record:
+            merged_record[PROTONATION_INPUT_SOURCE_COLUMN_NAME] = ""
+        if PROTONATION_INPUT_PATH_COLUMN_NAME not in merged_record:
+            merged_record[PROTONATION_INPUT_PATH_COLUMN_NAME] = ""
+        if PROTONATION_OUTPUT_PATH_COLUMN_NAME not in merged_record:
+            merged_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME] = ""
+        if PROTONATION_PH_COLUMN_NAME not in merged_record:
+            merged_record[PROTONATION_PH_COLUMN_NAME] = ""
+        if PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME not in merged_record:
+            merged_record[PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME] = ""
+        if PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME not in merged_record:
+            merged_record[PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME] = ""
+        if PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME not in merged_record:
+            merged_record[PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME] = ""
+
         merged_record_list.append(merged_record)
 
     return merged_record_list
@@ -214,6 +262,20 @@ def _clear_filler_fields(pipeline_record: dict[str, str]) -> None:
     pipeline_record[FILLER_STATUS_COLUMN_NAME] = ""
 
 
+def _clear_protonation_fields(pipeline_record: dict[str, str]) -> None:
+    """
+    Clear protonation-related output fields.
+    """
+    pipeline_record[PROTONATION_STATUS_COLUMN_NAME] = ""
+    pipeline_record[PROTONATION_INPUT_SOURCE_COLUMN_NAME] = ""
+    pipeline_record[PROTONATION_INPUT_PATH_COLUMN_NAME] = ""
+    pipeline_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME] = ""
+    pipeline_record[PROTONATION_PH_COLUMN_NAME] = ""
+    pipeline_record[PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME] = ""
+    pipeline_record[PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME] = ""
+    pipeline_record[PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME] = ""
+
+
 def _set_component_status_fields(
     pipeline_record: dict[str, str],
     component_summary: dict[str, object],
@@ -236,6 +298,39 @@ def _set_component_status_fields(
         if bool(component_summary.get("has_nonstandard_residues", False))
         else STATUS_SUCCESS
     )
+
+
+def _set_protonation_fields(
+    pipeline_record: dict[str, str],
+    protonation_result: dict[str, object],
+) -> None:
+    """
+    Store protonation result fields in the flat pipeline record.
+    """
+    pipeline_record[PROTONATION_STATUS_COLUMN_NAME] = str(
+        protonation_result.get("status", "")
+    ).strip()
+    pipeline_record[PROTONATION_INPUT_SOURCE_COLUMN_NAME] = str(
+        protonation_result.get("input_source", "")
+    ).strip()
+    pipeline_record[PROTONATION_INPUT_PATH_COLUMN_NAME] = str(
+        protonation_result.get("input_path", "")
+    ).strip()
+    pipeline_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME] = str(
+        protonation_result.get("output_path", "")
+    ).strip()
+    pipeline_record[PROTONATION_PH_COLUMN_NAME] = str(
+        protonation_result.get("ph", "")
+    ).strip()
+    pipeline_record[PROTONATION_INPUT_ATOM_COUNT_COLUMN_NAME] = str(
+        protonation_result.get("input_atom_count", "")
+    ).strip()
+    pipeline_record[PROTONATION_OUTPUT_ATOM_COUNT_COLUMN_NAME] = str(
+        protonation_result.get("output_atom_count", "")
+    ).strip()
+    pipeline_record[PROTONATION_ATOM_COUNT_INCREASED_COLUMN_NAME] = str(
+        protonation_result.get("atom_count_increased", "")
+    ).strip()
 
 
 def _find_template_pdb_for_filler(
@@ -284,6 +379,44 @@ def _find_uniprot_id_for_protein(pdb_dir: Path) -> str:
             return match.group(1)
 
     return ""
+
+
+def run_protonation_for_protein(
+    pdb_id: str,
+    protein_dir: Path,
+    modeller_model_path: Path | None,
+    alphafold_model_path: Path | None,
+) -> dict[str, object]:
+    """
+    Run protonation for one protein and return a flat result dictionary.
+    """
+    try:
+        result = protonate_protein_structure(
+            pdb_id=pdb_id,
+            protein_dir=protein_dir,
+            modeller_model_path=modeller_model_path,
+            alphafold_model_path=alphafold_model_path,
+            ph=7.4,
+        )
+
+        return {
+            "status": STATUS_SUCCESS
+            if result["protonation_success"]
+            else STATUS_REQUIRED,
+            "input_source": result["protonation_input_source"],
+            "input_path": result["protonation_input_path"],
+            "output_path": result["protonation_output_path"],
+            "ph": result["protonation_ph"],
+            "input_atom_count": result["input_atom_count"],
+            "output_atom_count": result["output_atom_count"],
+            "atom_count_increased": result["atom_count_increased"],
+        }
+
+    except Exception as error:
+        return {
+            "status": STATUS_REQUIRED,
+            "error": str(error),
+        }
 
 
 def run_pipeline() -> None:
@@ -343,6 +476,7 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
 
     print("[PIPELINE] Step 6: Run sequence alignment")
     for pipeline_record in pipeline_record_list:
@@ -359,6 +493,7 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] sequence_alignment -> {pdb_id}")
@@ -378,6 +513,7 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
 
     print("[PIPELINE] Step 7: Handle insertion codes")
     for pipeline_record in pipeline_record_list:
@@ -396,6 +532,7 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] insertion_codes -> {pdb_id}")
@@ -409,6 +546,7 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         output_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
@@ -424,22 +562,19 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         insertion_status = str(insertion_result.get("status", "")).strip().lower()
 
         if insertion_status in {INSERTION_STATUS_NONE, INSERTION_STATUS_SUCCESS}:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_SUCCESS
-        elif insertion_status == INSERTION_STATUS_FAILED:
-            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
-            _clear_component_fields(pipeline_record)
-            _clear_gap_fields(pipeline_record)
-            _clear_filler_fields(pipeline_record)
         else:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
 
     print("[PIPELINE] Step 8: Split components")
     for pipeline_record in pipeline_record_list:
@@ -455,6 +590,7 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         component_input_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
@@ -467,6 +603,7 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] component_split -> {pdb_id}")
@@ -482,6 +619,7 @@ def run_pipeline() -> None:
             _clear_component_fields(pipeline_record)
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME] = str(
@@ -509,6 +647,7 @@ def run_pipeline() -> None:
             )
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         gap_input_pdb_path = components_dir / f"{pdb_id}_protein.pdb"
@@ -520,6 +659,7 @@ def run_pipeline() -> None:
             )
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] gap_detection -> {pdb_id}")
@@ -530,6 +670,7 @@ def run_pipeline() -> None:
             print(f"[PIPELINE] gap_detection failed for {pdb_id}: {error}")
             _clear_gap_fields(pipeline_record)
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         n_gaps = int(gap_summary.get("n_gaps", 0))
@@ -562,6 +703,7 @@ def run_pipeline() -> None:
                 f"[PIPELINE] filler skipped for {pdb_id} (insertion_codes step failed)"
             )
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         if not alignment_dir.exists():
@@ -570,6 +712,7 @@ def run_pipeline() -> None:
                 f"alignment directory not found: {alignment_dir}"
             )
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         template_pdb_path = _find_template_pdb_for_filler(
@@ -581,6 +724,7 @@ def run_pipeline() -> None:
         if template_pdb_path is None:
             print(f"[PIPELINE] filler skipped for {pdb_id}: no template PDB found")
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         n_gaps_text = str(pipeline_record.get(N_GAPS_COLUMN_NAME, "")).strip()
@@ -590,6 +734,7 @@ def run_pipeline() -> None:
                 f"[PIPELINE] filler skipped for {pdb_id} (gap_detection result missing)"
             )
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         if n_gaps_text == "0":
@@ -598,6 +743,7 @@ def run_pipeline() -> None:
             )
             _clear_filler_fields(pipeline_record)
             pipeline_record[FILLER_STATUS_COLUMN_NAME] = STATUS_SUCCESS
+            _clear_protonation_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] filler -> {pdb_id}")
@@ -626,6 +772,7 @@ def run_pipeline() -> None:
             print(f"[PIPELINE] filler failed for {pdb_id}: {error!r}")
             traceback.print_exc()
             _clear_filler_fields(pipeline_record)
+            _clear_protonation_fields(pipeline_record)
             continue
 
         pipeline_record[FILLER_DIRECTORY_COLUMN_NAME] = str(filler_result.output_dir)
@@ -655,13 +802,73 @@ def run_pipeline() -> None:
             f"filler_status={pipeline_record[FILLER_STATUS_COLUMN_NAME]!r}"
         )
 
-    print("[PIPELINE] Step 11: Save pipeline JSON")
+    print("[PIPELINE] Step 11: Protonation")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        protein_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        if pipeline_record.get(INSERTION_CODES_DONE_COLUMN_NAME, "") != STATUS_SUCCESS:
+            print(
+                f"[PIPELINE] protonation skipped for {pdb_id} "
+                "(insertion_codes step failed)"
+            )
+            _clear_protonation_fields(pipeline_record)
+            continue
+
+        components_dir = Path(pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME])
+        default_protein_path = components_dir / f"{pdb_id}_protein.pdb"
+
+        if not default_protein_path.exists():
+            print(
+                f"[PIPELINE] protonation skipped for {pdb_id}: "
+                f"missing file {default_protein_path}"
+            )
+            _clear_protonation_fields(pipeline_record)
+            continue
+
+        filler_model_path_text = str(
+            pipeline_record.get(FILLER_MODEL_PATH_COLUMN_NAME, "")
+        ).strip()
+
+        modeller_model_path: Path | None = None
+        alphafold_model_path: Path | None = None
+
+        if filler_model_path_text:
+            filler_model_path = Path(filler_model_path_text)
+
+            if filler_model_path.exists():
+                lower_name = filler_model_path.name.lower()
+
+                if "alphafold" in lower_name:
+                    alphafold_model_path = filler_model_path
+                else:
+                    modeller_model_path = filler_model_path
+
+        print(f"[PIPELINE] protonation -> {pdb_id}")
+
+        protonation_result = run_protonation_for_protein(
+            pdb_id=pdb_id,
+            protein_dir=protein_dir,
+            modeller_model_path=modeller_model_path,
+            alphafold_model_path=alphafold_model_path,
+        )
+
+        _set_protonation_fields(pipeline_record, protonation_result)
+
+        print(
+            f"[PIPELINE] protonation result for {pdb_id}: "
+            f"status={pipeline_record[PROTONATION_STATUS_COLUMN_NAME]!r}, "
+            f"input_source={pipeline_record[PROTONATION_INPUT_SOURCE_COLUMN_NAME]!r}, "
+            f"output_path={pipeline_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME]!r}"
+        )
+
+    print("[PIPELINE] Step 12: Save pipeline JSON")
     save_pipeline_table(
         pipeline_record_list,
         pipeline_json_path,
     )
 
-    print("[PIPELINE] Step 12: Write pipeline XLSX")
+    print("[PIPELINE] Step 13: Write pipeline XLSX")
     write_pipeline_to_xlsx(
         pipeline_record_list,
         pipeline_xlsx_path,
