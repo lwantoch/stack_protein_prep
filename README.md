@@ -9,7 +9,7 @@
 ╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝
 ```
 
-> **Framework for Reconstruction, UniProt Alignment, and Topology-Oriented Protein Normalization**
+> **Framework for Reconstruction, UniProt alignment, and Topology-Oriented protein Normalization**
 
 A modular protein-preparation pipeline for **alignment-aware cleanup**, **gap handling**, **protonation**, **AMBER renaming**, **final numbering**, and **metal-site preparation**.
 
