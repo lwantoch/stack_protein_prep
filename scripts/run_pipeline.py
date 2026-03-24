@@ -1,5 +1,3 @@
-# /home/grheco/repositorios/stack_protein_prep/scripts/run_pipeline.py
-
 """
 /home/grheco/repositorios/stack_protein_prep/scripts/run_pipeline.py
 
@@ -26,6 +24,8 @@ Current implemented steps
 7. filler
 8. protonation
 9. amber_renaming
+10. finalize_protein
+11. metall_params
 
 Important
 ---------
@@ -64,6 +64,26 @@ Important
     - amber_renaming.glu_to_glh
     - amber_renaming.cys_to_cym
     - amber_renaming.cys_to_cyx
+- finalize_protein reuses existing numbering_restore state columns:
+    - numbering_restore.status
+    - numbering_restore.input_path
+    - numbering_restore.output_path
+    - numbering_restore.mapping_path
+    - numbering_restore.source
+    - numbering_restore.message
+- metall_params is currently stored with flat string keys:
+    - metall_params.status
+    - metall_params.message
+    - metall_params.tmp_param_pdb
+    - metall_params.contacts_file
+    - metall_params.used_protein_input
+    - metall_params.used_water_input
+    - metall_params.used_ligand_input
+    - metall_params.used_metals_input
+    - metall_params.chimera_script
+    - metall_params.chimera_log
+    - metall_params.chimera_executable
+    - metall_params.metall_params_dir
 - UniProt ID is stored as:
     - uniprot_id
 """
@@ -85,6 +105,11 @@ if str(SRC_DIR) not in sys.path:
 from stack_protein_preparation.amber_renaming import amber_rename_protein_structure
 from stack_protein_preparation.fasta_files import create_fasta_files_for_pdb_directory
 from stack_protein_preparation.filler import run_filler_for_chain
+from stack_protein_preparation.finalize_protein import (
+    build_finalize_tsv_from_alignment_mapping,
+    finalize_protein_structure,
+)
+from stack_protein_preparation.finalize_tsv import build_finalize_tsv_against_uniprot
 from stack_protein_preparation.gaps import summarize_gaps
 from stack_protein_preparation.insertion_codes import (
     STATUS_FAILED as INSERTION_STATUS_FAILED,
@@ -98,6 +123,9 @@ from stack_protein_preparation.insertion_codes import (
 from stack_protein_preparation.insertion_codes import (
     find_input_pdb_for_protein,
     process_pdb_for_delinsertion,
+)
+from stack_protein_preparation.metall_params import (
+    run_metal_parametrization_for_protein_dir,
 )
 from stack_protein_preparation.pdb_components import split_pdb_components
 from stack_protein_preparation.pdb_sync import (
@@ -128,6 +156,14 @@ from stack_protein_preparation.pipeline_state import (
     HAS_NONSTANDARD_RESIDUES_COLUMN_NAME,
     INSERTION_CODES_DONE_COLUMN_NAME,
     N_GAPS_COLUMN_NAME,
+    NUMBERING_RESTORE_INPUT_PATH_COLUMN_NAME,
+    NUMBERING_RESTORE_MAPPING_PATH_COLUMN_NAME,
+    NUMBERING_RESTORE_MESSAGE_COLUMN_NAME,
+    NUMBERING_RESTORE_OUTPUT_PATH_COLUMN_NAME,
+    NUMBERING_RESTORE_RENUMBERED_ATOMS_COLUMN_NAME,
+    NUMBERING_RESTORE_RENUMBERED_RESIDUES_COLUMN_NAME,
+    NUMBERING_RESTORE_SOURCE_COLUMN_NAME,
+    NUMBERING_RESTORE_STATUS_COLUMN_NAME,
     PDB_DIRECTORY_COLUMN_NAME,
     PDB_ID_COLUMN_NAME,
     PDB_SYNC_DONE_COLUMN_NAME,
@@ -286,6 +322,38 @@ def _clear_amber_renaming_fields(pipeline_record: dict[str, str]) -> None:
     pipeline_record[AMBER_GLU_TO_GLH_COLUMN_NAME] = ""
     pipeline_record[AMBER_CYS_TO_CYM_COLUMN_NAME] = ""
     pipeline_record[AMBER_CYS_TO_CYX_COLUMN_NAME] = ""
+
+
+def _clear_numbering_restore_fields(pipeline_record: dict[str, object]) -> None:
+    """
+    Clear finalize/numbering-related output fields.
+    """
+    pipeline_record[NUMBERING_RESTORE_STATUS_COLUMN_NAME] = STATUS_REQUIRED
+    pipeline_record[NUMBERING_RESTORE_INPUT_PATH_COLUMN_NAME] = ""
+    pipeline_record[NUMBERING_RESTORE_OUTPUT_PATH_COLUMN_NAME] = ""
+    pipeline_record[NUMBERING_RESTORE_MAPPING_PATH_COLUMN_NAME] = ""
+    pipeline_record[NUMBERING_RESTORE_SOURCE_COLUMN_NAME] = ""
+    pipeline_record[NUMBERING_RESTORE_RENUMBERED_ATOMS_COLUMN_NAME] = 0
+    pipeline_record[NUMBERING_RESTORE_RENUMBERED_RESIDUES_COLUMN_NAME] = 0
+    pipeline_record[NUMBERING_RESTORE_MESSAGE_COLUMN_NAME] = ""
+
+
+def _clear_metall_params_fields(pipeline_record: dict[str, object]) -> None:
+    """
+    Clear metall_params-related output fields.
+    """
+    pipeline_record["metall_params.status"] = STATUS_REQUIRED
+    pipeline_record["metall_params.message"] = ""
+    pipeline_record["metall_params.tmp_param_pdb"] = ""
+    pipeline_record["metall_params.contacts_file"] = ""
+    pipeline_record["metall_params.used_protein_input"] = ""
+    pipeline_record["metall_params.used_water_input"] = ""
+    pipeline_record["metall_params.used_ligand_input"] = ""
+    pipeline_record["metall_params.used_metals_input"] = ""
+    pipeline_record["metall_params.chimera_script"] = ""
+    pipeline_record["metall_params.chimera_log"] = ""
+    pipeline_record["metall_params.chimera_executable"] = ""
+    pipeline_record["metall_params.metall_params_dir"] = ""
 
 
 def _set_component_status_fields(
@@ -567,6 +635,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
 
     print("[PIPELINE] Step 6: Run sequence alignment")
     for pipeline_record in pipeline_record_list:
@@ -585,6 +655,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] sequence_alignment -> {pdb_id}")
@@ -606,6 +678,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
 
     print("[PIPELINE] Step 7: Handle insertion codes")
     for pipeline_record in pipeline_record_list:
@@ -626,6 +700,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] insertion_codes -> {pdb_id}")
@@ -641,6 +717,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         output_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
@@ -658,19 +736,14 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         insertion_status = str(insertion_result.get("status", "")).strip().lower()
 
         if insertion_status in {INSERTION_STATUS_NONE, INSERTION_STATUS_SUCCESS}:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_SUCCESS
-        elif insertion_status == INSERTION_STATUS_FAILED:
-            pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
-            _clear_component_fields(pipeline_record)
-            _clear_gap_fields(pipeline_record)
-            _clear_filler_fields(pipeline_record)
-            _clear_protonation_fields(pipeline_record)
-            _clear_amber_renaming_fields(pipeline_record)
         else:
             pipeline_record[INSERTION_CODES_DONE_COLUMN_NAME] = STATUS_REQUIRED
             _clear_component_fields(pipeline_record)
@@ -678,6 +751,11 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
+
+            if insertion_status == INSERTION_STATUS_FAILED:
+                print(f"[PIPELINE] insertion_codes explicitly failed for {pdb_id}")
 
     print("[PIPELINE] Step 8: Split components")
     for pipeline_record in pipeline_record_list:
@@ -695,6 +773,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         component_input_pdb_path = pdb_dir / f"{pdb_id}_delins.pdb"
@@ -709,6 +789,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] component_split -> {pdb_id}")
@@ -726,6 +808,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME] = str(
@@ -755,6 +839,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         gap_input_pdb_path = components_dir / f"{pdb_id}_protein.pdb"
@@ -768,6 +854,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] gap_detection -> {pdb_id}")
@@ -780,6 +868,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         n_gaps = int(gap_summary.get("n_gaps", 0))
@@ -814,6 +904,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         if not alignment_dir.exists():
@@ -824,6 +916,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         template_pdb_path = _find_template_pdb_for_filler(
@@ -837,6 +931,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         n_gaps_text = str(pipeline_record.get(N_GAPS_COLUMN_NAME, "")).strip()
@@ -848,6 +944,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         if n_gaps_text == "0":
@@ -858,6 +956,8 @@ def run_pipeline() -> None:
             pipeline_record[FILLER_STATUS_COLUMN_NAME] = STATUS_SUCCESS
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] filler -> {pdb_id}")
@@ -878,7 +978,7 @@ def run_pipeline() -> None:
                 chain_id=chain_id,
                 final_model_name=f"{pdb_id}_protein_mod.pdb",
                 starting_model=1,
-                ending_model=20,
+                ending_model=2,
                 uniprot_id=uniprot_id,
                 residue_range=pipeline_record[RANGE_COLUMN_NAME],
             )
@@ -888,6 +988,8 @@ def run_pipeline() -> None:
             _clear_filler_fields(pipeline_record)
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         pipeline_record[FILLER_DIRECTORY_COLUMN_NAME] = str(filler_result.output_dir)
@@ -929,6 +1031,8 @@ def run_pipeline() -> None:
             )
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         components_dir = Path(pipeline_record[COMPONENTS_DIRECTORY_COLUMN_NAME])
@@ -941,6 +1045,8 @@ def run_pipeline() -> None:
             )
             _clear_protonation_fields(pipeline_record)
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         filler_model_path_text = str(
@@ -974,6 +1080,8 @@ def run_pipeline() -> None:
 
         if pipeline_record[PROTONATION_STATUS_COLUMN_NAME] != STATUS_SUCCESS:
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
 
         print(
             f"[PIPELINE] protonation result for {pdb_id}: "
@@ -993,6 +1101,8 @@ def run_pipeline() -> None:
                 "(protonation step failed)"
             )
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         protonated_input_path = (
@@ -1006,6 +1116,8 @@ def run_pipeline() -> None:
                 f"missing file {protonated_input_path}"
             )
             _clear_amber_renaming_fields(pipeline_record)
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
             continue
 
         print(f"[PIPELINE] amber_renaming -> {pdb_id}")
@@ -1025,13 +1137,201 @@ def run_pipeline() -> None:
             f"his_to_hip={pipeline_record[AMBER_HIS_TO_HIP_COLUMN_NAME]!r}"
         )
 
-    print("[PIPELINE] Step 13: Save pipeline JSON")
+    print("[PIPELINE] Step 13: finalize_protein")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        protein_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        if pipeline_record.get(AMBER_RENAMING_STATUS_COLUMN_NAME, "") != STATUS_SUCCESS:
+            print(
+                f"[PIPELINE] finalize_protein skipped for {pdb_id} "
+                "(amber_renaming step failed)"
+            )
+            _clear_numbering_restore_fields(pipeline_record)
+            _clear_metall_params_fields(pipeline_record)
+            continue
+
+        print(f"[PIPELINE] finalize_protein -> {pdb_id}")
+
+        try:
+            alignment_dir = protein_dir / "fasta" / "alignments"
+            mapping_files = sorted(
+                alignment_dir.glob("ATOM_chain_*_vs_UniProt.aln.mapping.tsv")
+            )
+
+            if not mapping_files:
+                print(
+                    f"[PIPELINE] finalize_protein skipped for {pdb_id}: "
+                    f"no alignment mapping TSV files found in {alignment_dir}"
+                )
+                _clear_numbering_restore_fields(pipeline_record)
+                pipeline_record[NUMBERING_RESTORE_STATUS_COLUMN_NAME] = STATUS_WARNING
+                pipeline_record[NUMBERING_RESTORE_MESSAGE_COLUMN_NAME] = (
+                    "No alignment mapping TSV files found."
+                )
+                _clear_metall_params_fields(pipeline_record)
+                continue
+
+            # TEMP: single-chain assumption
+            alignment_mapping_tsv_path = mapping_files[0]
+            finalize_tsv_path = alignment_dir / f"{pdb_id}_finalize_numbering.tsv"
+
+            alignment_mapping_tsv_path = mapping_files[0]
+
+            final_model_pdb_path = (
+                protein_dir / "components" / f"{pdb_id}_protein_as_Amber.pdb"
+            )
+            finalize_tsv_path = alignment_dir / f"{pdb_id}_finalize_numbering.tsv"
+
+            build_finalize_tsv_against_uniprot(
+                final_model_pdb_path=final_model_pdb_path,
+                alignment_mapping_tsv_path=alignment_mapping_tsv_path,
+                output_finalize_tsv_path=finalize_tsv_path,
+            )
+
+            finalize_result = finalize_protein_structure(
+                pdb_id=pdb_id,
+                protein_dir=protein_dir,
+                finalize_tsv_path=finalize_tsv_path,
+            )
+
+            finalize_result = finalize_protein_structure(
+                pdb_id=pdb_id,
+                protein_dir=protein_dir,
+                finalize_tsv_path=finalize_tsv_path,
+            )
+
+            pipeline_record[NUMBERING_RESTORE_STATUS_COLUMN_NAME] = (
+                STATUS_SUCCESS
+                if finalize_result.get("finalize_success", False)
+                else STATUS_WARNING
+            )
+            pipeline_record[NUMBERING_RESTORE_INPUT_PATH_COLUMN_NAME] = str(
+                protein_dir / "components" / f"{pdb_id}_protein_as_Amber.pdb"
+            )
+            pipeline_record[NUMBERING_RESTORE_OUTPUT_PATH_COLUMN_NAME] = str(
+                finalize_result.get("finalize_output_path", "")
+            )
+            pipeline_record[NUMBERING_RESTORE_MAPPING_PATH_COLUMN_NAME] = str(
+                finalize_result.get("finalize_tsv_path", finalize_tsv_path)
+            )
+            pipeline_record[NUMBERING_RESTORE_SOURCE_COLUMN_NAME] = "finalize_tsv"
+            pipeline_record[NUMBERING_RESTORE_RENUMBERED_ATOMS_COLUMN_NAME] = int(
+                finalize_result.get("renumbered_atoms", 0)
+            )
+            pipeline_record[NUMBERING_RESTORE_RENUMBERED_RESIDUES_COLUMN_NAME] = int(
+                finalize_result.get("renumbered_residues", 0)
+            )
+            pipeline_record[NUMBERING_RESTORE_MESSAGE_COLUMN_NAME] = ""
+
+            print(
+                f"[PIPELINE] finalize_protein result for {pdb_id}: "
+                f"status={pipeline_record[NUMBERING_RESTORE_STATUS_COLUMN_NAME]!r}, "
+                f"output_path={pipeline_record[NUMBERING_RESTORE_OUTPUT_PATH_COLUMN_NAME]!r}"
+            )
+
+        except Exception as exc:
+            _clear_numbering_restore_fields(pipeline_record)
+            pipeline_record[NUMBERING_RESTORE_STATUS_COLUMN_NAME] = STATUS_WARNING
+            pipeline_record[NUMBERING_RESTORE_MESSAGE_COLUMN_NAME] = repr(exc)
+            _clear_metall_params_fields(pipeline_record)
+            print(f"[PIPELINE] finalize_protein failed for {pdb_id}: {exc!r}")
+
+    print("[PIPELINE] Step 14: metall_params")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        protein_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        print(f"[PIPELINE] metall_params -> {pdb_id}")
+
+        try:
+            _clear_metall_params_fields(pipeline_record)
+
+            has_metals = (
+                pipeline_record.get(HAS_METALS_COLUMN_NAME, "") == STATUS_WARNING
+            )
+
+            if not has_metals:
+                pipeline_record["metall_params.status"] = STATUS_SUCCESS
+                pipeline_record["metall_params.message"] = "Skipped: no metals present."
+                print(
+                    f"[PIPELINE] metall_params skipped for {pdb_id}: no metals present"
+                )
+                continue
+
+            if (
+                pipeline_record.get(NUMBERING_RESTORE_STATUS_COLUMN_NAME, "")
+                != STATUS_SUCCESS
+            ):
+                pipeline_record["metall_params.status"] = STATUS_WARNING
+                pipeline_record["metall_params.message"] = (
+                    "Skipped: finalize_protein step failed."
+                )
+                print(
+                    f"[PIPELINE] metall_params skipped for {pdb_id}: finalize_protein step failed"
+                )
+                continue
+
+            metal_result = run_metal_parametrization_for_protein_dir(
+                protein_dir=protein_dir,
+            )
+
+            pipeline_record["metall_params.status"] = str(
+                metal_result.get("status", STATUS_WARNING)
+            )
+            pipeline_record["metall_params.message"] = str(
+                metal_result.get("message", "")
+            )
+            pipeline_record["metall_params.tmp_param_pdb"] = str(
+                metal_result.get("tmp_param_pdb", "")
+            )
+            pipeline_record["metall_params.contacts_file"] = str(
+                metal_result.get("contacts_file", "")
+            )
+            pipeline_record["metall_params.used_protein_input"] = str(
+                metal_result.get("used_protein_input", "")
+            )
+            pipeline_record["metall_params.used_water_input"] = str(
+                metal_result.get("used_water_input", "")
+            )
+            pipeline_record["metall_params.used_ligand_input"] = str(
+                metal_result.get("used_ligand_input", "")
+            )
+            pipeline_record["metall_params.used_metals_input"] = str(
+                metal_result.get("used_metals_input", "")
+            )
+            pipeline_record["metall_params.chimera_script"] = str(
+                metal_result.get("chimera_script", "")
+            )
+            pipeline_record["metall_params.chimera_log"] = str(
+                metal_result.get("chimera_log", "")
+            )
+            pipeline_record["metall_params.chimera_executable"] = str(
+                metal_result.get("chimera_executable", "")
+            )
+            pipeline_record["metall_params.metall_params_dir"] = str(
+                metal_result.get("metall_params_dir", "")
+            )
+
+            print(
+                f"[PIPELINE] metall_params result for {pdb_id}: "
+                f"status={pipeline_record['metall_params.status']!r}, "
+                f"contacts_file={pipeline_record['metall_params.contacts_file']!r}"
+            )
+
+        except Exception as exc:
+            _clear_metall_params_fields(pipeline_record)
+            pipeline_record["metall_params.status"] = STATUS_WARNING
+            pipeline_record["metall_params.message"] = repr(exc)
+            print(f"[PIPELINE] metall_params failed for {pdb_id}: {exc!r}")
+
+    print("[PIPELINE] Step 15: Save pipeline JSON")
     save_pipeline_table(
         pipeline_record_list,
         pipeline_json_path,
     )
 
-    print("[PIPELINE] Step 14: Write pipeline XLSX")
+    print("[PIPELINE] Step 16: Write pipeline XLSX")
     write_pipeline_to_xlsx(
         pipeline_record_list,
         pipeline_xlsx_path,

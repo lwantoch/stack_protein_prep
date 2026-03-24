@@ -1,0 +1,42 @@
+=== COMMAND ===
+/home/grheco/.local/bin/chimera --nogui chimera_contacts.py
+
+=== STDOUT ===
+Compiling chimera_contacts.py...
+Compiling chimera_contacts.py succeeded
+Executing chimera_contacts.py...
+Opening tmp_param.pdb...
+The following problems occurred while reading PDB file for tmp_param.pdb
+warning:  duplicate atom serial number found: 5259
+warning:  duplicate atom serial number found: 5260
+warning:  duplicate atom serial number found: 5261
+warning:  duplicate atom serial number found: 5262
+warning:  duplicate atom serial number found: 5263
+warning:  duplicate atom serial number found: 5264
+warning:  duplicate atom serial number found: 5265
+warning:  duplicate atom serial number found: 5266
+warning:  duplicate atom serial number found: 5267
+warning:  duplicate atom serial number found: 5268
+Suppressed 484 warnings about duplicate atom serial numbers
+
+Model 0 (tmp_param.pdb) appears to be a protein without secondary structure assignments.
+Automatically computing assignments using 'ksdssp' and parameter values:
+  energy cutoff -0.5
+  minimum helix length 3
+  minimum strand length 3
+Use command 'help ksdssp' for more information.
+
+Computing secondary structure assignments...
+Computed secondary structure assignments (see reply log)
+tmp_param.pdb opened
+
+
+
+=== STDERR ===
+Error while processing chimera_contacts.py:
+All atoms are in test set: no others available to test against
+
+
+
+=== RETURN CODE ===
+0

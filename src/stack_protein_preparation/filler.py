@@ -1,9 +1,10 @@
+# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/filler.py
+
 from __future__ import annotations
 
 import json
 import os
 import re
-import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -632,7 +633,7 @@ def write_modeller_script(
     template_id: str,
     target_id: str,
     starting_model: int = 1,
-    ending_model: int = 20,
+    ending_model: int = 1,
 ) -> Path:
     script_path = output_dir / "model.py"
 
@@ -842,7 +843,7 @@ def download_alphafold_structure(
     Returns
     -------
     Path | None
-        Local path to the downloaded file if available, else None.
+        Local path to the downloaded PDB file if available, else None.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -862,44 +863,106 @@ def download_alphafold_structure(
         return None
 
     record = payload[0]
-
-    # Prefer mmCIF if available, else PDB
     pdb_url = record.get("pdbUrl")
+
+    if not pdb_url:
+        return None
 
     target_path = output_dir / f"AF-{uniprot_id}-F1-model.pdb"
     urlretrieve(pdb_url, target_path)
+
+    if not target_path.is_file() or target_path.stat().st_size == 0:
+        return None
+
     return target_path
 
-    return None
 
-    _debug(f"Running AlphaFold download command: {' '.join(command)}")
+def align_protonated_alphafold_model_to_start_pdb(
+    reference_pdb_path: Path,
+    mobile_pdb_path: Path,
+    output_pdb_path: Path,
+) -> dict[str, str | float | bool]:
+    """
+    Align an AlphaFold model to a reference PDB using CA atoms.
 
-    result = subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-    )
+    Parameters
+    ----------
+    reference_pdb_path
+        Original structure used as the spatial reference.
+    mobile_pdb_path
+        AlphaFold model PDB to be aligned before protonation.
+    output_pdb_path
+        Output aligned structure. May be equal to mobile_pdb_path.
 
-    _debug("===== ALPHAFOLDFETCH STDOUT BEGIN =====")
-    print(result.stdout)
-    _debug("===== ALPHAFOLDFETCH STDOUT END =====")
-    _debug("===== ALPHAFOLDFETCH STDERR BEGIN =====")
-    print(result.stderr)
-    _debug("===== ALPHAFOLDFETCH STDERR END =====")
+    Returns
+    -------
+    dict
+        alignment metadata
+    """
+    from Bio.PDB import PDBIO, PDBParser, Superimposer
 
-    if result.returncode != 0:
-        raise RuntimeError(f"AlphaFold download failed for UniProt {uniprot_id!r}.")
+    if not reference_pdb_path.exists():
+        raise FileNotFoundError(reference_pdb_path)
 
-    pdb_file_list = sorted(output_dir.glob("*.pdb"))
-    if not pdb_file_list:
-        raise FileNotFoundError(
-            f"No AlphaFold PDB downloaded for UniProt {uniprot_id!r} in {output_dir}"
+    if not mobile_pdb_path.exists():
+        raise FileNotFoundError(mobile_pdb_path)
+
+    parser = PDBParser(QUIET=True)
+
+    reference_structure = parser.get_structure("ref", str(reference_pdb_path))
+    mobile_structure = parser.get_structure("mob", str(mobile_pdb_path))
+
+    def _collect_protein_ca_atoms(structure) -> list:
+        ca_atom_list: list = []
+
+        for model in structure:
+            for chain in model:
+                for residue in chain:
+                    if residue.id[0] != " ":
+                        continue
+                    if "CA" in residue:
+                        ca_atom_list.append(residue["CA"])
+
+        return ca_atom_list
+
+    reference_ca_atom_list = _collect_protein_ca_atoms(reference_structure)
+    mobile_ca_atom_list = _collect_protein_ca_atoms(mobile_structure)
+
+    if not reference_ca_atom_list:
+        raise ValueError(
+            f"No protein CA atoms found in reference: {reference_pdb_path}"
         )
 
-    if len(pdb_file_list) > 1:
-        _debug(f"Multiple AlphaFold PDB files found, using first: {pdb_file_list[0]}")
+    if not mobile_ca_atom_list:
+        raise ValueError(f"No protein CA atoms found in mobile: {mobile_pdb_path}")
 
-    return pdb_file_list[0]
+    n_matched_atoms = min(len(reference_ca_atom_list), len(mobile_ca_atom_list))
+
+    if n_matched_atoms < 3:
+        raise ValueError(
+            "Not enough CA atoms for reliable alignment: "
+            f"reference={len(reference_ca_atom_list)}, mobile={len(mobile_ca_atom_list)}"
+        )
+
+    fixed_atom_list = reference_ca_atom_list[:n_matched_atoms]
+    moving_atom_list = mobile_ca_atom_list[:n_matched_atoms]
+
+    superimposer = Superimposer()
+    superimposer.set_atoms(fixed_atom_list, moving_atom_list)
+    superimposer.apply(mobile_structure.get_atoms())
+
+    output_pdb_path.parent.mkdir(parents=True, exist_ok=True)
+
+    io = PDBIO()
+    io.set_structure(mobile_structure)
+    io.save(str(output_pdb_path))
+
+    return {
+        "alignment_success": output_pdb_path.exists()
+        and output_pdb_path.stat().st_size > 0,
+        "alignment_rmsd": float(superimposer.rms),
+        "alignment_output_path": str(output_pdb_path),
+    }
 
 
 def crop_pdb_to_range(
@@ -916,6 +979,9 @@ def crop_pdb_to_range(
     - keeps residues whose residue number is within the requested range
     - writes TER and END
     """
+    if input_pdb_path is None:
+        raise FileNotFoundError("AlphaFold download returned no PDB path")
+
     if not input_pdb_path.exists():
         raise FileNotFoundError(f"Input PDB not found: {input_pdb_path}")
 
@@ -965,14 +1031,18 @@ def crop_pdb_to_range(
 
 def run_alphafold_fallback_for_chain(
     output_dir: Path,
+    template_pdb_path: Path,
     uniprot_id: str,
     residue_range: str,
     final_model_name: str,
     model_version: int = 4,
 ) -> Path:
     """
-    Download AlphaFold PDB and crop it to the requested CSV range.
+    Download AlphaFold PDB, crop it to the requested CSV range,
+    align it to the starting template PDB, and write a cleaned final PDB.
     """
+    _ = model_version  # intentionally unused for AFDB API path
+
     alphafold_dir = output_dir / "alphafold"
 
     downloaded_pdb = download_alphafold_structure(
@@ -980,11 +1050,29 @@ def run_alphafold_fallback_for_chain(
         output_dir=alphafold_dir,
     )
 
+    if downloaded_pdb is None:
+        raise FileNotFoundError(
+            f"No AlphaFold PDB available for UniProt {uniprot_id!r}"
+        )
+
     cropped_path = output_dir / f"cropped_{final_model_name}"
     cropped_model_path = crop_pdb_to_range(
         input_pdb_path=downloaded_pdb,
         output_pdb_path=cropped_path,
         residue_range=residue_range,
+    )
+
+    alignment_result = align_protonated_alphafold_model_to_start_pdb(
+        reference_pdb_path=template_pdb_path,
+        mobile_pdb_path=cropped_model_path,
+        output_pdb_path=cropped_model_path,
+    )
+
+    _debug(
+        "AlphaFold alignment result: "
+        f"success={alignment_result['alignment_success']}, "
+        f"rmsd={alignment_result['alignment_rmsd']}, "
+        f"output={alignment_result['alignment_output_path']}"
     )
 
     final_model_path = output_dir / final_model_name
@@ -1005,7 +1093,7 @@ def run_filler_for_chain(
     chain_id: str,
     final_model_name: str | None = None,
     starting_model: int = 1,
-    ending_model: int = 20,
+    ending_model: int = 1,
     skip_if_no_internal_gaps: bool = True,
     uniprot_id: str | None = None,
     residue_range: str = "",
@@ -1117,6 +1205,7 @@ def run_filler_for_chain(
 
             alphafold_final_model_path = run_alphafold_fallback_for_chain(
                 output_dir=output_dir,
+                template_pdb_path=template_pdb_path,
                 uniprot_id=uniprot_id,
                 residue_range=residue_range,
                 final_model_name=final_model_name,
