@@ -101,12 +101,12 @@ Rather than burying everything in a monolithic script, FRUTON treats preparation
      ▼
 [ GAP DETECTION ]
      │
-     ├── n_gaps <= 5 ───────────────► [ SINGLE BEST-AVAILABLE PROTEIN VARIANT ] ─┐
-     │                                                                            │
-     └── n_gaps > 5 ────────────────┬──► [ GAPS VARIANT ] ───────────────────────┤
-                                    │                                              │
-                                    ├──► [ MODELLER-COMPLETE VARIANT ] ───────────┤
-                                    │                                              │
+     ├── n_gaps <= 5 ───────────────► [ SINGLE BEST-AVAILABLE PROTEIN VARIANT ] ─────────┐
+     │                                                                                   │
+     └── n_gaps > 5 ────────────────┬──► [ GAPS VARIANT ] ───────────────────────────────┤
+                                    │                                                    │
+                                    ├──► [ MODELLER-COMPLETE VARIANT ] ──────────────────┤
+                                    │                                                    │
                                     └── n_gaps >= 8 ───► [ ALPHAFOLD-COMPLETE VARIANT ] ─┘
                                                                                    │
                                                                                    ▼
