@@ -101,26 +101,43 @@ Rather than burying everything in a monolithic script, FRUTON treats preparation
      ▼
 [ GAP DETECTION ]
      │
-     ▼
-[ FILLER: MODELLER / ALPHAFOLD ]
-     │
-     ▼
-[ PROTONATION ]
-     │
-     ▼
-[ AMBER RENAMING ]
-     │
-     ▼
-[ AMBER TERMINI ]
-     │
-     ▼
-[ INTERNAL ACE/NME CAPPING ]
-     │
-     ▼
-[ PREPARED STRUCTURE ]
-     │
-     └──────────────────────────────► [ METAL PREPARATION ]
+     ├── n_gaps <= 5 ───────────────► [ SINGLE BEST-AVAILABLE PROTEIN VARIANT ] ─┐
+     │                                                                            │
+     └── n_gaps > 5 ────────────────┬──► [ GAPS VARIANT ] ───────────────────────┤
+                                    │                                              │
+                                    ├──► [ MODELLER-COMPLETE VARIANT ] ───────────┤
+                                    │                                              │
+                                    └── n_gaps >= 8 ───► [ ALPHAFOLD-COMPLETE VARIANT ] ─┘
+                                                                                   │
+                                                                                   ▼
+                                                                    [ SHARED CHEMISTRY PREPARATION ]
+                                                                    (protonation → AMBER renaming
+                                                                     → AMBER termini
+                                                                     → internal ACE/NME capping)
+                                                                                   │
+                                                                                   ▼
+                                                                         [ PREPARED STRUCTURE(S) ]
+                                                                                   │
+                                                                                   ▼
+                                                                          [ METAL PREPARATION(S) ]
 ```
+
+### Gap-handling policy
+
+FRUTON distinguishes between small-gap and large-gap cases.
+
+- If `n_gaps <= 5`, the pipeline follows one best-available protein path.
+- If `n_gaps > 5`, the pipeline preserves a conservative **gaps** variant and also attempts a **MODELLER-complete** variant.
+- If `n_gaps >= 8`, the pipeline may additionally generate an **AlphaFold-complete** variant.
+
+All resulting protein variants then enter the same downstream chemistry workflow:
+
+- protonation
+- AMBER renaming
+- AMBER termini preparation
+- internal ACE/NME capping
+
+This produces one prepared structure per retained variant, and each prepared variant can then be used for downstream metal-site preparation.
 
 ---
 
@@ -134,7 +151,7 @@ Rather than burying everything in a monolithic script, FRUTON treats preparation
 | **Insertion cleanup** | remove insertion-code ambiguity | cleaned PDB |
 | **Component split** | separate structural classes | protein / water / ligand / metal files |
 | **Gap detection** | quantify missing internal regions | `n_gaps`, `gap_sizes`, `has_gaps` |
-| **Filler** | rebuild missing regions when possible | MODELLER or AlphaFold-derived model |
+| **Filler** | generate reconstruction candidates when justified | MODELLER and, for larger-gap cases, optional AlphaFold-derived models |
 | **Protonation** | add hydrogens / assign protonation | protonated protein PDB |
 | **AMBER renaming** | assign AMBER-compatible residue naming | AMBER-style protein PDB |
 | **AMBER termini** | convert true chain ends to AMBER terminal residues | `*_protein_amber_termini.pdb` |
@@ -146,7 +163,7 @@ Rather than burying everything in a monolithic script, FRUTON treats preparation
 
 ## Important chemical distinction
 
-FRUTON now treats two related but different situations explicitly.
+FRUTON treats two related but different situations explicitly.
 
 ### 1. True chain termini
 
@@ -183,6 +200,31 @@ So the rule is:
 - **true chain ends** -> AMBER terminal residues
 - **internal breaks** -> ACE/NME capping
 
+### How AMBER treats ACE/NME-capped fragments
+
+AMBER does **not** treat ACE/NME-capped fragments as `NXXX` or `CXXX` terminal residue names.
+
+Instead, it treats them as separate cap residues flanking otherwise normal amino-acid residues.
+
+Example:
+
+```text
+ACE ALA GLY SER NME
+```
+
+not:
+
+```text
+NALA GLY SER CSER
+```
+
+for an internally capped fragment.
+
+That distinction is important:
+
+- **free true chain ends** -> `NXXX` / `CXXX`
+- **neutral capped internal fragments** -> `ACE ... NME`
+
 ---
 
 ## Project architecture
@@ -193,7 +235,7 @@ FRUTON is easiest to understand as a stack of cooperating layers:
 |---|---|
 | **Sequence layer** | FASTA generation, UniProt matching, alignment TSVs |
 | **Structure layer** | insertion cleanup, component split, gap detection |
-| **Reconstruction layer** | MODELLER / AlphaFold-based filling |
+| **Reconstruction layer** | MODELLER / AlphaFold-based reconstruction candidates |
 | **Chemistry layer** | protonation, AMBER renaming, terminal normalization, internal capping |
 | **Prepared-assembly layer** | final merge of prepared protein with waters / ligands / metals |
 | **Metal branch** | preparation for later MCPB / Gaussian-style workflows |
@@ -281,7 +323,7 @@ data/proteins/<PDB_ID>/
     └── chimera_run.log
 ```
 
-Not every protein will contain every file. The `prepared/` layout depends on whether the system has gaps and whether a completed model variant is available.
+Not every protein will contain every file. The `prepared/` layout depends on gap count and on which variants were retained.
 
 ---
 
@@ -302,7 +344,7 @@ Not every protein will contain every file. The `prepared/` layout depends on whe
 | `<PDB_ID>_protein_internal_capped.pdb` | internally ACE/NME-capped prepared protein |
 | `prepared/<PDB_ID>.pdb` | final prepared structure without gap subdirectory |
 | `prepared/gaps/<PDB_ID>.pdb` | final prepared structure for the gapped variant |
-| `prepared/complete/<PDB_ID>.pdb` | final prepared structure for the completed variant |
+| `prepared/complete/<PDB_ID>.pdb` | final prepared structure for a reconstructed complete variant |
 | `<PDB_ID>_metal.pdb` | isolated metal component |
 | `metall_params/tmp_param.pdb` | merged structural input for metal analysis |
 | `metall_params/contacts.data` | Chimera contact/clash report |
@@ -326,7 +368,7 @@ Insertion-code cleanup and component splitting simplify later reasoning. Once th
 
 ### Reconstruction
 
-The filler stage is where the pipeline stops being pure cleanup and becomes reconstruction-aware. Missing internal regions are classified and then handled explicitly with MODELLER or AlphaFold fallback.
+The filler stage is where the pipeline stops being pure cleanup and becomes reconstruction-aware. Missing internal regions are classified and then handled explicitly through reconstruction candidates such as MODELLER and, in larger-gap cases, optional AlphaFold paths.
 
 ### Chemistry-aware normalization
 
@@ -335,7 +377,7 @@ Protonation and AMBER renaming remain separate steps because they solve related,
 - protonation adds chemically meaningful hydrogens
 - AMBER renaming encodes residue state in a force-field-compatible way
 
-FRUTON now extends this chemistry layer with two additional explicit transformations:
+FRUTON extends this chemistry layer with two additional explicit transformations:
 
 - **AMBER termini** for true chain ends
 - **internal ACE/NME capping** for disconnected internal fragments
@@ -346,7 +388,7 @@ The final prepared output is not just “the latest available protein PDB”. It
 
 ### Metal branch
 
-The metal branch prepares later parametrization work by creating a combined system, isolating the metal component, and running first-pass local contact analysis in Chimera.
+The metal branch prepares later parametrization work by creating a combined system, isolating the metal component, and running first-pass local contact analysis in Chimera. Each retained prepared variant can feed its own downstream metal-preparation branch.
 
 ---
 
@@ -358,21 +400,21 @@ For each protein directory:
 data/proteins/<PDB_ID>/
 ```
 
-FRUTON writes the final prepared structure as follows.
+FRUTON writes final prepared structures according to the retained variant logic.
 
-### Case 1: no gaps
+### Case 1: one best-available path
 
 ```text
 prepared/<PDB_ID>.pdb
 ```
 
-### Case 2: gaps remain
+### Case 2: retained gaps variant
 
 ```text
 prepared/gaps/<PDB_ID>.pdb
 ```
 
-### Case 3: completed variant available
+### Case 3: retained reconstructed complete variant
 
 ```text
 prepared/complete/<PDB_ID>.pdb
@@ -504,8 +546,8 @@ FRUTON is still actively evolving, especially in the later stages.
 
 ### Areas still being refined
 
+- cleaner variant-specific downstream handling when multiple gap-related variants are retained
 - more robust multi-chain filler handling
-- cleaner dual-variant support for `gaps` and `complete` all the way through chemistry steps
 - Chimera metal-selection logic
 - atom serial renumbering in metal-preparation merged PDBs
 - parsing of metal-contact output into structured data
@@ -518,7 +560,7 @@ Merged files such as `metall_params/tmp_param.pdb` may still contain duplicate a
 
 ## Recommended next steps
 
-1. **Make late-stage outputs fully variant-specific for `gaps` and `complete`**
+1. **Make late-stage outputs fully variant-specific for retained gap-related variants**
 2. **Improve Chimera metal-selection logic**
 3. **Renumber merged atom serials in metal-preparation files**
 4. **Parse `contacts.data` into structured output**
