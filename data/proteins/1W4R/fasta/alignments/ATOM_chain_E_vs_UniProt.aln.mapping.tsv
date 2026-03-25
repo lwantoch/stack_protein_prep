@@ -1,0 +1,281 @@
+# alignment_fasta=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_E_vs_UniProt.aln.fasta
+# pdb_sequence_header=PDB|1W4R|ATOM|chain_E
+# uniprot_sequence_header=sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+# columns=alignment_column	pdb_residue_number	uniprot_residue_number	pdb_residue	uniprot_residue	relation
+1		1	-	M	deletion_in_pdb
+2		2	-	S	deletion_in_pdb
+3		3	-	C	deletion_in_pdb
+4		4	-	I	deletion_in_pdb
+5		5	-	N	deletion_in_pdb
+6		6	-	L	deletion_in_pdb
+7		7	-	P	deletion_in_pdb
+8		8	-	T	deletion_in_pdb
+9		9	-	V	deletion_in_pdb
+10		10	-	L	deletion_in_pdb
+11		11	-	P	deletion_in_pdb
+12		12	-	G	deletion_in_pdb
+13		13	-	S	deletion_in_pdb
+14		14	-	P	deletion_in_pdb
+15		15	-	S	deletion_in_pdb
+16		16	-	K	deletion_in_pdb
+17		17	-	T	deletion_in_pdb
+18	1	18	R	R	match
+19	2	19	G	G	match
+20	3	20	Q	Q	match
+21	4	21	I	I	match
+22	5	22	Q	Q	match
+23	6	23	V	V	match
+24	7	24	I	I	match
+25	8	25	L	L	match
+26	9	26	G	G	match
+27	10	27	P	P	match
+28	11	28	M	M	match
+29	12	29	F	F	match
+30	13	30	S	S	match
+31	14	31	G	G	match
+32	15	32	K	K	match
+33	16	33	S	S	match
+34	17	34	T	T	match
+35	18	35	E	E	match
+36	19	36	L	L	match
+37	20	37	M	M	match
+38	21	38	R	R	match
+39	22	39	R	R	match
+40	23	40	V	V	match
+41	24	41	R	R	match
+42	25	42	R	R	match
+43	26	43	F	F	match
+44	27	44	Q	Q	match
+45	28	45	I	I	match
+46	29	46	A	A	match
+47	30	47	Q	Q	match
+48	31	48	Y	Y	match
+49	32	49	K	K	match
+50	33	50	C	C	match
+51	34	51	L	L	match
+52	35	52	V	V	match
+53	36	53	I	I	match
+54	37	54	K	K	match
+55	38	55	Y	Y	match
+56	39	56	A	A	match
+57	40	57	K	K	match
+58	41	58	D	D	match
+59	42	59	T	T	match
+60	43	60	R	R	match
+61		61	-	Y	deletion_in_pdb
+62		62	-	S	deletion_in_pdb
+63		63	-	S	deletion_in_pdb
+64		64	-	S	deletion_in_pdb
+65		65	-	F	deletion_in_pdb
+66		66	-	C	deletion_in_pdb
+67		67	-	T	deletion_in_pdb
+68		68	-	H	deletion_in_pdb
+69		69	-	D	deletion_in_pdb
+70		70	-	R	deletion_in_pdb
+71		71	-	N	deletion_in_pdb
+72		72	-	T	deletion_in_pdb
+73		73	-	M	deletion_in_pdb
+74		74	-	E	deletion_in_pdb
+75	44	75	A	A	match
+76	45	76	L	L	match
+77	46	77	P	P	match
+78	47	78	A	A	match
+79	48	79	C	C	match
+80	49	80	L	L	match
+81	50	81	L	L	match
+82	51	82	R	R	match
+83	52	83	D	D	match
+84	53	84	V	V	match
+85	54	85	A	A	match
+86	55	86	Q	Q	match
+87	56	87	E	E	match
+88	57	88	A	A	match
+89	58	89	L	L	match
+90	59	90	G	G	match
+91	60	91	V	V	match
+92	61	92	A	A	match
+93	62	93	V	V	match
+94	63	94	I	I	match
+95	64	95	G	G	match
+96	65	96	I	I	match
+97	66	97	D	D	match
+98	67	98	E	E	match
+99	68	99	G	G	match
+100	69	100	Q	Q	match
+101	70	101	F	F	match
+102	71	102	F	F	match
+103	72	103	P	P	match
+104	73	104	D	D	match
+105	74	105	I	I	match
+106	75	106	V	V	match
+107	76	107	E	E	match
+108	77	108	F	F	match
+109	78	109	C	C	match
+110	79	110	E	E	match
+111	80	111	A	A	match
+112	81	112	M	M	match
+113	82	113	A	A	match
+114	83	114	N	N	match
+115	84	115	A	A	match
+116	85	116	G	G	match
+117	86	117	K	K	match
+118	87	118	T	T	match
+119	88	119	V	V	match
+120	89	120	I	I	match
+121	90	121	V	V	match
+122	91	122	A	A	match
+123	92	123	A	A	match
+124	93	124	L	L	match
+125	94	125	D	D	match
+126	95	126	G	G	match
+127	96	127	T	T	match
+128	97	128	F	F	match
+129	98	129	Q	Q	match
+130	99	130	R	R	match
+131	100	131	K	K	match
+132	101	132	P	P	match
+133	102	133	F	F	match
+134	103	134	G	G	match
+135	104	135	A	A	match
+136	105	136	I	I	match
+137	106	137	L	L	match
+138	107	138	N	N	match
+139	108	139	L	L	match
+140	109	140	V	V	match
+141	110	141	P	P	match
+142	111	142	L	L	match
+143	112	143	A	A	match
+144	113	144	E	E	match
+145	114	145	S	S	match
+146	115	146	V	V	match
+147	116	147	V	V	match
+148	117	148	K	K	match
+149	118	149	L	L	match
+150	119	150	T	T	match
+151	120	151	A	A	match
+152	121	152	V	V	match
+153	122	153	C	C	match
+154	123	154	M	M	match
+155	124	155	E	E	match
+156	125	156	C	C	match
+157	126	157	F	F	match
+158	127	158	R	R	match
+159	128	159	E	E	match
+160	129	160	A	A	match
+161	130	161	A	A	match
+162	131	162	Y	Y	match
+163	132	163	T	T	match
+164	133	164	K	K	match
+165	134	165	R	R	match
+166	135	166	L	L	match
+167	136	167	G	G	match
+168	137	168	T	T	match
+169	138	169	E	E	match
+170	139	170	K	K	match
+171	140	171	E	E	match
+172	141	172	V	V	match
+173	142	173	E	E	match
+174	143	174	V	V	match
+175	144	175	I	I	match
+176	145	176	G	G	match
+177	146	177	G	G	match
+178	147	178	A	A	match
+179	148	179	D	D	match
+180	149	180	K	K	match
+181	150	181	Y	Y	match
+182	151	182	H	H	match
+183	152	183	S	S	match
+184	153	184	V	V	match
+185	154	185	C	C	match
+186	155	186	R	R	match
+187	156	187	L	L	match
+188	157	188	C	C	match
+189	158	189	Y	Y	match
+190	159	190	F	F	match
+191	160	191	K	K	match
+192	161	192	X	K	mismatch
+193	162	193	X	A	mismatch
+194	163	194	X	S	mismatch
+195	164	195	X	G	mismatch
+196	165	196	X	Q	mismatch
+197	166	197	X	P	mismatch
+198	167	198	X	A	mismatch
+199	168	199	X	G	mismatch
+200	169	200	X	P	mismatch
+201	170	201	X	D	mismatch
+202	171	202	X	N	mismatch
+203	172	203	X	K	mismatch
+204	173	204	X	E	mismatch
+205	174	205	X	N	mismatch
+206	175	206	X	C	mismatch
+207	176	207	X	P	mismatch
+208	177	208	X	V	mismatch
+209	178	209	X	P	mismatch
+210	179	210	X	G	mismatch
+211	180	211	X	K	mismatch
+212	181	212	X	P	mismatch
+213	182	213	X	G	mismatch
+214	183	214	X	E	mismatch
+215	184	215	X	A	mismatch
+216	185	216	X	V	mismatch
+217	186	217	X	A	mismatch
+218	187	218	X	A	mismatch
+219	188	219	X	R	mismatch
+220	189	220	X	K	mismatch
+221	190	221	X	L	mismatch
+222	191	222	X	F	mismatch
+223	192	223	X	A	mismatch
+224	193	224	X	P	mismatch
+225	194	225	X	Q	mismatch
+226	195	226	X	Q	mismatch
+227	196	227	X	I	mismatch
+228	197	228	X	L	mismatch
+229	198	229	X	Q	mismatch
+230	199	230	X	C	mismatch
+231	200	231	X	S	mismatch
+232	201	232	X	P	mismatch
+233	202	233	X	A	mismatch
+234	203	234	X	N	mismatch
+235	204		X	-	insertion_in_pdb
+236	205		X	-	insertion_in_pdb
+237	206		X	-	insertion_in_pdb
+238	207		X	-	insertion_in_pdb
+239	208		X	-	insertion_in_pdb
+240	209		X	-	insertion_in_pdb
+241	210		X	-	insertion_in_pdb
+242	211		X	-	insertion_in_pdb
+243	212		X	-	insertion_in_pdb
+244	213		X	-	insertion_in_pdb
+245	214		X	-	insertion_in_pdb
+246	215		X	-	insertion_in_pdb
+247	216		X	-	insertion_in_pdb
+248	217		X	-	insertion_in_pdb
+249	218		X	-	insertion_in_pdb
+250	219		X	-	insertion_in_pdb
+251	220		X	-	insertion_in_pdb
+252	221		X	-	insertion_in_pdb
+253	222		X	-	insertion_in_pdb
+254	223		X	-	insertion_in_pdb
+255	224		X	-	insertion_in_pdb
+256	225		X	-	insertion_in_pdb
+257	226		X	-	insertion_in_pdb
+258	227		X	-	insertion_in_pdb
+259	228		X	-	insertion_in_pdb
+260	229		X	-	insertion_in_pdb
+261	230		X	-	insertion_in_pdb
+262	231		X	-	insertion_in_pdb
+263	232		X	-	insertion_in_pdb
+264	233		X	-	insertion_in_pdb
+265	234		X	-	insertion_in_pdb
+266	235		X	-	insertion_in_pdb
+267	236		X	-	insertion_in_pdb
+268	237		X	-	insertion_in_pdb
+269	238		X	-	insertion_in_pdb
+270	239		X	-	insertion_in_pdb
+271	240		X	-	insertion_in_pdb
+272	241		X	-	insertion_in_pdb
+273	242		X	-	insertion_in_pdb
+274	243		X	-	insertion_in_pdb
+275	244		X	-	insertion_in_pdb
+276	245		X	-	insertion_in_pdb
+277	246		X	-	insertion_in_pdb

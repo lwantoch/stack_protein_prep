@@ -1,0 +1,70 @@
+0 atoms in HETATM/BLK residues constrained
+to protein atoms within 2.30 angstroms
+and protein CA atoms within 10.00 angstroms
+0 atoms in residues without defined topology
+constrained to be rigid bodies
+>> Model assessment by DOPE potential
+DOPE score               : -52864.082031
+>> Model assessment by DOPE potential
+DOPE score               : -53152.031250
+>> Model assessment by DOPE potential
+DOPE score               : -53278.945312
+>> Model assessment by DOPE potential
+DOPE score               : -53306.027344
+>> Model assessment by DOPE potential
+DOPE score               : -53165.386719
+>> Model assessment by DOPE potential
+DOPE score               : -53113.121094
+>> Model assessment by DOPE potential
+DOPE score               : -53368.023438
+>> Model assessment by DOPE potential
+DOPE score               : -53356.335938
+>> Model assessment by DOPE potential
+DOPE score               : -53060.621094
+>> Model assessment by DOPE potential
+DOPE score               : -53355.488281
+>> Model assessment by DOPE potential
+DOPE score               : -53046.238281
+>> Model assessment by DOPE potential
+DOPE score               : -53169.281250
+>> Model assessment by DOPE potential
+DOPE score               : -53202.324219
+>> Model assessment by DOPE potential
+DOPE score               : -53359.628906
+>> Model assessment by DOPE potential
+DOPE score               : -53052.316406
+>> Model assessment by DOPE potential
+DOPE score               : -53349.878906
+>> Model assessment by DOPE potential
+DOPE score               : -53125.378906
+>> Model assessment by DOPE potential
+DOPE score               : -53090.824219
+>> Model assessment by DOPE potential
+DOPE score               : -52851.546875
+>> Model assessment by DOPE potential
+DOPE score               : -53141.468750
+
+>> Summary of successfully produced models:
+Filename                          molpdf     DOPE score    GA341 score
+----------------------------------------------------------------------
+1UOU_A.B99990001.pdb          2202.97461   -52864.08203        1.00000
+1UOU_A.B99990002.pdb          2076.59570   -53152.03125        1.00000
+1UOU_A.B99990003.pdb          2038.14526   -53278.94531        1.00000
+1UOU_A.B99990004.pdb          2162.66479   -53306.02734        1.00000
+1UOU_A.B99990005.pdb          2106.90088   -53165.38672        1.00000
+1UOU_A.B99990006.pdb          2105.75781   -53113.12109        1.00000
+1UOU_A.B99990007.pdb          2184.31348   -53368.02344        1.00000
+1UOU_A.B99990008.pdb          2011.19983   -53356.33594        1.00000
+1UOU_A.B99990009.pdb          2071.19287   -53060.62109        1.00000
+1UOU_A.B99990010.pdb          2100.02051   -53355.48828        1.00000
+1UOU_A.B99990011.pdb          2086.09644   -53046.23828        1.00000
+1UOU_A.B99990012.pdb          2108.59180   -53169.28125        1.00000
+1UOU_A.B99990013.pdb          2048.59839   -53202.32422        1.00000
+1UOU_A.B99990014.pdb          1945.97827   -53359.62891        1.00000
+1UOU_A.B99990015.pdb          2117.35327   -53052.31641        1.00000
+1UOU_A.B99990016.pdb          2170.37891   -53349.87891        1.00000
+1UOU_A.B99990017.pdb          2118.17651   -53125.37891        1.00000
+1UOU_A.B99990018.pdb          2174.40234   -53090.82422        1.00000
+1UOU_A.B99990019.pdb          2068.46167   -52851.54688        1.00000
+1UOU_A.B99990020.pdb          2140.77539   -53141.46875        1.00000
+

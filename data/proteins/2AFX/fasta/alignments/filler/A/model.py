@@ -16,7 +16,7 @@ a = automodel(
 )
 
 a.starting_model = 1
-a.ending_model = 2
+a.ending_model = 20
 
 a.make()
 

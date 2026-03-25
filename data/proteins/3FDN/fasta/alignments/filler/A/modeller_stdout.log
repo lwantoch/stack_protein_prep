@@ -1,0 +1,16 @@
+0 atoms in HETATM/BLK residues constrained
+to protein atoms within 2.30 angstroms
+and protein CA atoms within 10.00 angstroms
+0 atoms in residues without defined topology
+constrained to be rigid bodies
+>> Model assessment by DOPE potential
+DOPE score               : -37404.968750
+>> Model assessment by DOPE potential
+DOPE score               : -36623.386719
+
+>> Summary of successfully produced models:
+Filename                          molpdf     DOPE score    GA341 score
+----------------------------------------------------------------------
+3FDN_A.B99990001.pdb          1968.34155   -37404.96875        1.00000
+3FDN_A.B99990002.pdb          2041.50708   -36623.38672        1.00000
+

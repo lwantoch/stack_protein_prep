@@ -1,5 +1,7 @@
 # FRUTON
 
+<p align="center">
+
 ```text
 ███████╗██████╗ ██╗   ██╗████████╗ ██████╗ ███╗   ██╗
 ██╔════╝██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗████╗  ██║
@@ -9,69 +11,77 @@
 ╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═══╝
 ```
 
-> **Framework for Reconstruction, UniProt alignment, and Topology-Oriented protein Normalization**
+</p>
 
-A modular protein-preparation pipeline for **alignment-aware cleanup**, **gap handling**, **protonation**, **AMBER renaming**, **final numbering**, and **metal-site preparation**.
+<p align="center">
+  <b>Framework for Reconstruction, UniProt alignment, and Topology-Oriented protein Normalization</b>
+</p>
+
+<p align="center">
+  A modular protein-preparation pipeline for alignment-aware cleanup, gap handling, protonation, AMBER normalization, termini preparation, internal fragment capping, final prepared-structure assembly, and metal-site preparation.
+</p>
+
+<p align="center">
+  <img alt="status" src="https://img.shields.io/badge/status-active%20development-2563eb">
+  <img alt="python" src="https://img.shields.io/badge/python-3.12-0ea5e9">
+  <img alt="environment" src="https://img.shields.io/badge/environment-pixi-7c3aed">
+  <img alt="domain" src="https://img.shields.io/badge/domain-protein%20preparation-059669">
+</p>
+
+---
+
+## Overview
+
+**FRUTON** is a stepwise, state-driven protein-preparation framework for turning cropped or otherwise non-trivial structural inputs into reproducible, downstream-ready outputs.
+
+It is designed for protein systems where preparation is not just “clean the PDB and continue”, but a sequence of structural, sequence-based, and chemistry-aware transformations. In practice, this includes cases with:
+
+- insertion codes
+- missing internal residues
+- UniProt mismatches
+- ligands, water, and metals
+- protonation ambiguities
+- AMBER naming requirements
+- cropped residue ranges that create artificial termini
+- disconnected internal fragments that need explicit chemical treatment
+
+The project is built around a simple principle:
+
+> **Every important transformation should leave visible evidence on disk.**
+
+That means:
+
+- intermediate files are intentionally written
+- alignments and mapping files are preserved
+- state is stored explicitly in JSON and XLSX
+- downstream steps consume well-defined upstream outputs
+- failures are meant to be inspectable, not mysterious
 
 ---
 
 ## Why FRUTON exists
 
-Preparing a protein structure for downstream work is rarely a single cleanup step.  
-Real systems are messy. They contain:
-
-- insertion codes
-- missing internal residues
-- UniProt mismatches
-- ligands
-- waters
-- metals
-- protonation ambiguities
-- force-field naming issues
-- numbering inconsistencies after modelling
-
-FRUTON exists to turn that mess into a **traceable**, **reproducible**, and **inspectable** workflow.
-
-Instead of hiding everything inside one opaque script, FRUTON treats protein preparation as a chain of explicit transformations:
+Protein preparation for modelling or MD is rarely a single command. It is usually a chain of assumptions:
 
 ```text
-raw PDB
-→ FASTA generation
-→ UniProt alignment
-→ insertion cleanup
-→ component split
-→ gap detection
-→ MODELLER / AlphaFold filler
-→ protonation
-→ AMBER renaming
-→ final numbering
-→ metal preparation
+structure → sequence interpretation → cleanup → reconstruction → chemistry → final prepared assembly
 ```
 
-Each important step produces files, updates state, and leaves enough evidence on disk to debug what happened.
+If those assumptions stay implicit, debugging becomes guesswork.
 
----
+FRUTON exists to make that chain:
 
-## What makes FRUTON different
+- **modular**
+- **traceable**
+- **reproducible**
+- **easy to inspect**
+- **safe to extend**
 
-FRUTON is built around a few strong design ideas:
-
-| Principle | Meaning in practice |
-|---|---|
-| **Filesystem-first** | Intermediate files are intentionally written and kept. |
-| **State-driven** | Every protein has an explicit record in `pipeline.json` and `pipeline.xlsx`. |
-| **Alignment-aware** | Sequence logic is not an afterthought; UniProt alignment is central. |
-| **Modular** | Each preparation stage lives in its own module. |
-| **Debuggable** | Paths, outputs, statuses, and logs are visible and inspectable. |
-| **Extensible** | Metal parametrization and downstream MD preparation can grow naturally from the current architecture. |
-
-This makes FRUTON useful not only as a pipeline, but as a **scientific working framework**.
+Rather than burying everything in a monolithic script, FRUTON treats preparation as a sequence of explicit modules with explicit files and explicit state updates.
 
 ---
 
 ## Pipeline at a glance
-
-### Structural flow
 
 ```text
 [ RAW PDB ]
@@ -91,54 +101,104 @@ This makes FRUTON useful not only as a pipeline, but as a **scientific working f
      ▼
 [ GAP DETECTION ]
      │
-     ├─────────────── no internal gaps ───────────────┐
-     │                                                │
-     ▼                                                │
-[ FILLER: MODELLER / ALPHAFOLD ]                      │
-     │                                                │
-     ▼                                                │
-[ PROTONATION ]                                       │
-     │                                                │
-     ▼                                                │
-[ AMBER RENAMING ]                                    │
-     │                                                │
-     ▼                                                │
-[ FINAL NUMBERING ]                                   │
-     │                                                │
-     ▼                                                ▼
-[ FINAL PROTEIN ] ----------------------------> [ METAL PREPARATION ]
+     ▼
+[ FILLER: MODELLER / ALPHAFOLD ]
+     │
+     ▼
+[ PROTONATION ]
+     │
+     ▼
+[ AMBER RENAMING ]
+     │
+     ▼
+[ AMBER TERMINI ]
+     │
+     ▼
+[ INTERNAL ACE/NME CAPPING ]
+     │
+     ▼
+[ PREPARED STRUCTURE ]
+     │
+     └──────────────────────────────► [ METAL PREPARATION ]
 ```
-
-### Conceptual layers
-
-| Layer | Purpose |
-|---|---|
-| **Sequence layer** | FASTA generation, UniProt matching, mapping TSVs |
-| **Structure layer** | insertion cleanup, component split, gap detection |
-| **Reconstruction layer** | MODELLER / AlphaFold-based filling |
-| **Chemistry layer** | protonation, AMBER-compatible residue naming |
-| **Finalization layer** | final output numbering and normalization |
-| **Metal branch** | preparation for later MCPB / Gaussian workflows |
 
 ---
 
-## What FRUTON currently does
+## Current capabilities
 
-### Implemented steps
-
-| Step | Module / Logic | Current role |
+| Stage | Purpose | Current output |
 |---|---|---|
-| 1 | `pdb_sync` | synchronize protein set from CSV |
-| 2 | `fasta_files` | generate PDB- and UniProt-derived FASTA files |
-| 3 | `sequence_alignment` | align chain-specific PDB sequences to UniProt |
-| 4 | `insertion_codes` | remove insertion-code complications |
-| 5 | `pdb_components` | split protein / water / ligand / metal |
-| 6 | `gaps` | detect and summarize structural gaps |
-| 7 | `filler` | use MODELLER or AlphaFold fallback |
-| 8 | `protonation` | protonate structural protein |
-| 9 | `amber_renaming` | assign AMBER-compatible residue names |
-| 10 | `finalize_protein` | create final numbered output |
-| 11 | `metall_params` | prepare metal-containing systems for later parametrization |
+| **PDB sync** | synchronize dataset scope from CSV | protein directory tree |
+| **FASTA generation** | generate structure- and reference-derived sequences | `SEQRES`, `ATOM`, `UniProt` FASTA files |
+| **Sequence alignment** | compare PDB chains against UniProt | aligned FASTA, TSV mappings, PNGs |
+| **Insertion cleanup** | remove insertion-code ambiguity | cleaned PDB |
+| **Component split** | separate structural classes | protein / water / ligand / metal files |
+| **Gap detection** | quantify missing internal regions | `n_gaps`, `gap_sizes`, `has_gaps` |
+| **Filler** | rebuild missing regions when possible | MODELLER or AlphaFold-derived model |
+| **Protonation** | add hydrogens / assign protonation | protonated protein PDB |
+| **AMBER renaming** | assign AMBER-compatible residue naming | AMBER-style protein PDB |
+| **AMBER termini** | convert true chain ends to AMBER terminal residues | `*_protein_amber_termini.pdb` |
+| **Internal capping** | cap internal disconnected fragments with ACE/NME | `*_protein_internal_capped.pdb` |
+| **Prepared structure** | assemble final system for downstream use | `prepared/.../<PDB_ID>.pdb` |
+| **Metal preparation** | prepare metal systems for later parametrization | combined PDB, Chimera script, contacts output |
+
+---
+
+## Important chemical distinction
+
+FRUTON now treats two related but different situations explicitly.
+
+### 1. True chain termini
+
+Real chain starts and chain ends are converted into **AMBER terminal residues**.
+
+Examples:
+
+- `ALA -> NALA`
+- `GLY -> CGLY`
+
+This is handled by:
+
+```text
+src/stack_protein_preparation/terminus.py
+```
+
+### 2. Internal missing segments / disconnected internal fragments
+
+When a cropped or incomplete structure produces disconnected internal fragments inside one chain, these are **not** treated as true free chain termini.
+
+Instead, the internal break boundaries are capped with:
+
+- `NME` on the **left fragment end**
+- `ACE` on the **right fragment start**
+
+This is handled by:
+
+```text
+src/stack_protein_preparation/cap.py
+```
+
+So the rule is:
+
+- **true chain ends** -> AMBER terminal residues
+- **internal breaks** -> ACE/NME capping
+
+---
+
+## Project architecture
+
+FRUTON is easiest to understand as a stack of cooperating layers:
+
+| Layer | Role |
+|---|---|
+| **Sequence layer** | FASTA generation, UniProt matching, alignment TSVs |
+| **Structure layer** | insertion cleanup, component split, gap detection |
+| **Reconstruction layer** | MODELLER / AlphaFold-based filling |
+| **Chemistry layer** | protonation, AMBER renaming, terminal normalization, internal capping |
+| **Prepared-assembly layer** | final merge of prepared protein with waters / ligands / metals |
+| **Metal branch** | preparation for later MCPB / Gaussian-style workflows |
+
+This separation is intentional. It prevents alignment logic, structural cleanup, chemistry logic, prepared-assembly logic, and downstream parametrization logic from collapsing into one opaque block.
 
 ---
 
@@ -147,8 +207,9 @@ This makes FRUTON useful not only as a pipeline, but as a **scientific working f
 ```text
 stack_protein_prep/
 ├── pixi.toml
+├── README.md
 ├── scripts/
-│   └── run_pipeline.py
+│   └── fruton.py
 ├── src/
 │   └── stack_protein_preparation/
 │       ├── fasta_files.py
@@ -159,7 +220,9 @@ stack_protein_prep/
 │       ├── filler.py
 │       ├── protonation.py
 │       ├── amber_renaming.py
-│       ├── finalize_protein.py
+│       ├── terminus.py
+│       ├── cap.py
+│       ├── prepared_structure.py
 │       ├── metall_params.py
 │       ├── pipeline_state.py
 │       ├── pipeline_table.py
@@ -174,7 +237,7 @@ stack_protein_prep/
 
 ---
 
-## Per-protein data layout
+## Per-protein layout
 
 A typical protein directory currently looks like this:
 
@@ -194,8 +257,7 @@ data/proteins/<PDB_ID>/
 │       ├── ATOM_chain_A_vs_UniProt.input.fasta
 │       ├── ATOM_chain_A_vs_UniProt.aln.fasta
 │       ├── ATOM_chain_A_vs_UniProt.mapping.tsv
-│       ├── ATOM_chain_A_vs_UniProt.png
-│       └── <PDB_ID>_finalize_numbering.tsv
+│       └── ATOM_chain_A_vs_UniProt.png
 ├── components/
 │   ├── <PDB_ID>_protein.pdb
 │   ├── <PDB_ID>_water.pdb
@@ -203,7 +265,14 @@ data/proteins/<PDB_ID>/
 │   ├── <PDB_ID>_metal.pdb
 │   ├── <PDB_ID>_proteinH.pdb
 │   ├── <PDB_ID>_protein_as_Amber.pdb
-│   └── <PDB_ID>_protein_final.pdb
+│   ├── <PDB_ID>_protein_amber_termini.pdb
+│   └── <PDB_ID>_protein_internal_capped.pdb
+├── prepared/
+│   ├── <PDB_ID>.pdb
+│   ├── gaps/
+│   │   └── <PDB_ID>.pdb
+│   └── complete/
+│       └── <PDB_ID>.pdb
 └── metall_params/
     ├── tmp_param.pdb
     ├── metal_only.pdb
@@ -212,165 +281,140 @@ data/proteins/<PDB_ID>/
     └── chimera_run.log
 ```
 
+Not every protein will contain every file. The `prepared/` layout depends on whether the system has gaps and whether a completed model variant is available.
+
 ---
 
-## Key outputs and their meaning
+## Core outputs and what they mean
 
-| File | Meaning |
+| File | Interpretation |
 |---|---|
-| `<PDB_ID>_delins.pdb` | insertion-cleaned PDB |
-| `PDB-<PDB_ID>-SEQRES.fasta` | sequence extracted from SEQRES |
-| `PDB-<PDB_ID>-ATOM.fasta` | sequence extracted from observed ATOM records |
-| `UniProt_<UNIPROT_ID>.fasta` | UniProt reference sequence |
-| `*_vs_UniProt.aln.fasta` | aligned chain-specific comparison |
+| `<PDB_ID>_delins.pdb` | insertion-cleaned working PDB |
+| `PDB-<PDB_ID>-SEQRES.fasta` | sequence derived from SEQRES records |
+| `PDB-<PDB_ID>-ATOM.fasta` | sequence derived from observed ATOM records |
+| `UniProt_<UNIPROT_ID>.fasta` | external UniProt reference |
+| `*_vs_UniProt.aln.fasta` | chain-specific alignment output |
 | `*_vs_UniProt.mapping.tsv` | alignment mapping table |
-| `<PDB_ID>_protein.pdb` | protein component only |
+| `<PDB_ID>_protein.pdb` | structural protein component |
 | `<PDB_ID>_proteinH.pdb` | protonated protein |
 | `<PDB_ID>_protein_as_Amber.pdb` | AMBER-renamed protein |
-| `<PDB_ID>_protein_final.pdb` | final normalized protein |
-| `<PDB_ID>_metal.pdb` | metal component |
-| `<PDB_ID>_finalize_numbering.tsv` | explicit final numbering table |
-| `metall_params/tmp_param.pdb` | combined metal-analysis input |
-| `metall_params/contacts.data` | Chimera clash/contact output |
+| `<PDB_ID>_protein_amber_termini.pdb` | AMBER-compatible true terminal residues |
+| `<PDB_ID>_protein_internal_capped.pdb` | internally ACE/NME-capped prepared protein |
+| `prepared/<PDB_ID>.pdb` | final prepared structure without gap subdirectory |
+| `prepared/gaps/<PDB_ID>.pdb` | final prepared structure for the gapped variant |
+| `prepared/complete/<PDB_ID>.pdb` | final prepared structure for the completed variant |
+| `<PDB_ID>_metal.pdb` | isolated metal component |
+| `metall_params/tmp_param.pdb` | merged structural input for metal analysis |
+| `metall_params/contacts.data` | Chimera contact/clash report |
 
 ---
 
-## Why each stage matters
+## Why the individual stages matter
 
-### FASTA generation and UniProt alignment
+### Sequence-aware preparation
 
-FRUTON does not treat sequence logic as optional decoration.  
-Sequence alignment is one of the structural backbone layers of the whole project.
+FRUTON treats sequence logic as core infrastructure, not as optional annotation. UniProt alignment is used to:
 
-It is used to:
+- compare observed structure against reference biology
+- support chain-specific reasoning
+- identify truncation and missing segments
+- provide a stable reference layer for reconstruction
 
-- compare observed structure to reference biology
-- map chains against UniProt
-- detect terminal truncation or missing regions
-- support gap classification
-- support later numbering logic
+### Structural cleanup
 
-Without that layer, later “fixes” would be much less reliable.
+Insertion-code cleanup and component splitting simplify later reasoning. Once the structure is decomposed into explicit classes, downstream modules no longer need to guess whether a record belongs to protein, solvent, ligand, or metal.
 
----
+### Reconstruction
 
-### Insertion cleanup
+The filler stage is where the pipeline stops being pure cleanup and becomes reconstruction-aware. Missing internal regions are classified and then handled explicitly with MODELLER or AlphaFold fallback.
 
-Insertion codes are one of those structural annoyances that seem small until they break everything:
+### Chemistry-aware normalization
 
-- residue mapping
-- indexing
-- chain sequence extraction
-- modelling assumptions
-- alignment interpretation
+Protonation and AMBER renaming remain separate steps because they solve related, but distinct, problems:
 
-Cleaning them early reduces downstream ambiguity.
+- protonation adds chemically meaningful hydrogens
+- AMBER renaming encodes residue state in a force-field-compatible way
 
----
+FRUTON now extends this chemistry layer with two additional explicit transformations:
 
-### Component split
+- **AMBER termini** for true chain ends
+- **internal ACE/NME capping** for disconnected internal fragments
 
-Once a structure is split into:
+### Prepared structure assembly
 
-- protein
-- water
-- ligand
-- metal
+The final prepared output is not just “the latest available protein PDB”. It is a deliberate system handoff file that combines the chemically prepared protein with crystal waters, ligands, and metals in a predictable directory structure.
 
-the rest of the pipeline becomes far more manageable.
+### Metal branch
 
-This step makes later logic cleaner because downstream modules no longer need to guess whether a residue is protein, solvent, ligand, or ion.
+The metal branch prepares later parametrization work by creating a combined system, isolating the metal component, and running first-pass local contact analysis in Chimera.
 
 ---
 
-### Gap detection and filler
+## Prepared-structure output logic
 
-This is where FRUTON stops being a simple cleanup tool and becomes a reconstruction workflow.
+For each protein directory:
 
-Internal gaps are detected, classified, and used to decide whether to:
+```text
+data/proteins/<PDB_ID>/
+```
 
-- skip filling
-- run MODELLER
-- use AlphaFold fallback
+FRUTON writes the final prepared structure as follows.
 
-This makes the workflow explicit and inspectable instead of manual and ad hoc.
+### Case 1: no gaps
 
----
+```text
+prepared/<PDB_ID>.pdb
+```
 
-### Protonation and AMBER renaming
+### Case 2: gaps remain
 
-FRUTON separates:
+```text
+prepared/gaps/<PDB_ID>.pdb
+```
 
-1. **adding hydrogens / assigning protonation**
-2. **renaming residues for AMBER-style semantics**
+### Case 3: completed variant available
 
-This is important because those are related, but not identical, tasks.
+```text
+prepared/complete/<PDB_ID>.pdb
+```
 
-The result is a chemically more meaningful and downstream-ready structure.
+In all cases, the final prepared structure contains:
 
----
-
-### Finalize protein
-
-The final structural output is not just “the latest PDB”.  
-It is the result of a deliberate normalization step.
-
-This includes:
-
-- selecting the final structural source
-- applying a dedicated numbering policy
-- producing a canonical final protein file
-
-That file is the current preferred handoff to later stages.
-
----
-
-### Metal preparation
-
-The metal branch is where FRUTON begins to connect structural preparation to later **parametrization workflows**.
-
-Current goal:
-
-- combine final protein + optional water + optional ligand + metal
-- analyze local contacts around the metal with Chimera
-- generate starting input for later MCPB / Gaussian preparation
-
-This is still evolving, but the branch architecture is already in place.
+- the protonated, AMBER-normalized, terminally prepared protein
+- crystal waters if present
+- ligands if present
+- metals if present
 
 ---
 
 ## Pipeline state
 
-FRUTON tracks pipeline state in:
+FRUTON writes state to:
 
 ```text
 data/proteins/pipeline.json
 data/proteins/pipeline.xlsx
 ```
 
-### JSON
-Machine-readable, complete, debug-friendly.
+### `pipeline.json`
 
-### XLSX
-Human-readable overview for quick inspection.
+The primary machine-readable state store.
 
-### Why this matters
+### `pipeline.xlsx`
 
-The flat state model makes it easy to answer:
+A human-readable overview for rapid inspection.
 
-- Which proteins still have gaps?
-- Which proteins already have final outputs?
-- Which proteins contain metals?
-- Which ones failed protonation?
-- Which ones are ready for metal preparation?
+The current state model was reduced to keep only fields that are actually useful for:
 
-This is one of the most useful parts of the project.
+- orchestration
+- JSON persistence
+- XLSX export
+- debugging failures
+- tracking final prepared outputs
 
----
+### Representative state fields
 
-## Example state fields
-
-### Identity and directories
+#### Identity and path fields
 
 - `pdb_id`
 - `range`
@@ -378,49 +422,79 @@ This is one of the most useful parts of the project.
 - `fasta_directory`
 - `alignment_directory`
 - `components_directory`
+- `prepared_directory`
 - `uniprot_id`
 
-### Structural summary
+#### Structural summary
 
 - `n_gaps`
 - `gap_sizes`
+- `has_gaps`
 - `has_metals`
 - `has_ligands`
 - `has_nonstandard_residues`
 
-### Chemistry / model outputs
+#### Step outputs
 
-- `filler_directory`
-- `filler_model_path`
+- `filler.model_path`
 - `protonation.output_path`
 - `amber_renaming.output_path`
-- `numbering_restore.output_path`
+- `amber_termini.output_path`
+- `internal_capping.output_path`
+- `prepared_structure.output_path`
 
-### Status fields
+#### Step statuses
 
 - `pdb_sync_done`
 - `fasta_files_done`
 - `sequence_alignment_done`
 - `insertion_codes_done`
-- `filler_status`
+- `filler.status`
 - `protonation.status`
 - `amber_renaming.status`
-- `numbering_restore.status`
-- `metall_params.status`
+- `amber_termini.status`
+- `internal_capping.status`
+- `prepared_structure.status`
+
+---
+
+## XLSX export
+
+The Excel export is handled by:
+
+```text
+src/stack_protein_preparation/pipeline_xlsx.py
+```
+
+Current export behavior:
+
+- exports only non-empty columns
+- keeps `pdb_id` always
+- colors only real status columns
+- uses the current status palette:
+  - `success` -> green
+  - `warning` -> yellow
+  - `required` -> red
+  - `skipped` -> grey
+  - `failed` -> orange-red
+
+This keeps the sheet readable while still preserving the most important pipeline information.
 
 ---
 
 ## Current strengths
 
-FRUTON already has a strong foundation for:
+FRUTON already provides a solid base for:
 
-- alignment-aware structure preparation
-- explicit intermediate files
-- reproducible state tracking
-- modular stepwise orchestration
-- chain-specific sequence logic
-- chemistry-aware structural normalization
-- branching toward metal-site workflows
+- alignment-aware protein preparation
+- reproducible intermediate-file generation
+- explicit step-by-step state tracking
+- modular orchestration
+- chain-specific structural reasoning
+- chemistry-aware normalization
+- explicit handling of true termini versus internal fragment breaks
+- final prepared-structure assembly
+- branching toward metal-site preparation
 
 ---
 
@@ -430,29 +504,27 @@ FRUTON is still actively evolving, especially in the later stages.
 
 ### Areas still being refined
 
-- finalize-numbering logic
-- MODELLER / AlphaFold edge cases
-- metal-site selection logic in Chimera
-- atom serial renumbering in merged PDBs
-- automatic contact parsing for metal workflows
+- more robust multi-chain filler handling
+- cleaner dual-variant support for `gaps` and `complete` all the way through chemistry steps
+- Chimera metal-selection logic
+- atom serial renumbering in metal-preparation merged PDBs
+- parsing of metal-contact output into structured data
 
 ### Known practical issue
 
-Merged files such as `tmp_param.pdb` may contain duplicate atom serial numbers because concatenation is currently used instead of full renumbering.
-
-That is usually survivable, but it should eventually be cleaned up.
+Merged files such as `metall_params/tmp_param.pdb` may still contain duplicate atom serial numbers because concatenation is currently used instead of full renumbering. This usually produces warnings rather than immediate failure, but it should eventually be cleaned up.
 
 ---
 
 ## Recommended next steps
 
-1. **formalize finalize numbering generation**
-2. **improve Chimera metal-selection logic**
-3. **renumber merged atom serials**
-4. **parse `contacts.data` into structured machine-readable output**
-5. **build MCPB input automatically**
-6. **extend the metal branch toward Gaussian preparation**
-7. **improve rerun granularity for later pipeline stages**
+1. **Make late-stage outputs fully variant-specific for `gaps` and `complete`**
+2. **Improve Chimera metal-selection logic**
+3. **Renumber merged atom serials in metal-preparation files**
+4. **Parse `contacts.data` into structured output**
+5. **Build MCPB input automatically**
+6. **Extend the metal branch toward Gaussian preparation**
+7. **Improve rerun granularity for late-stage chemistry steps**
 
 ---
 
@@ -461,7 +533,7 @@ That is usually survivable, but it should eventually be cleaned up.
 Typical full pipeline run:
 
 ```bash
-pixi run python scripts/run_pipeline.py
+pixi run python scripts/fruton.py
 ```
 
 ---
@@ -471,7 +543,7 @@ pixi run python scripts/run_pipeline.py
 ### Orchestration
 
 ```text
-scripts/run_pipeline.py
+scripts/fruton.py
 ```
 
 ### State and export
@@ -498,19 +570,24 @@ src/stack_protein_preparation/gaps.py
 src/stack_protein_preparation/filler.py
 ```
 
-### Chemistry and finalization
+### Chemistry and assembly
 
 ```text
 src/stack_protein_preparation/protonation.py
 src/stack_protein_preparation/amber_renaming.py
-src/stack_protein_preparation/finalize_protein.py
+src/stack_protein_preparation/terminus.py
+src/stack_protein_preparation/cap.py
+src/stack_protein_preparation/prepared_structure.py
+```
+
+### Metal branch
+
+```text
 src/stack_protein_preparation/metall_params.py
 ```
 
 ---
 
-## In one sentence
+## One-line summary
 
-**FRUTON is a filesystem-explicit, state-driven protein-preparation framework that connects sequence-aware cleanup, structure reconstruction, chemistry-aware normalization, and metal-site preparation into one coherent workflow.**
-
----
+**FRUTON is a filesystem-explicit, state-driven protein-preparation framework that connects sequence-aware cleanup, structure reconstruction, chemistry-aware normalization, terminal handling, internal fragment capping, prepared-structure assembly, and metal-site preparation into one coherent workflow.**

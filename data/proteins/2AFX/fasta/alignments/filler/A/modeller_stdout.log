@@ -7,10 +7,64 @@ constrained to be rigid bodies
 DOPE score               : -43372.601562
 >> Model assessment by DOPE potential
 DOPE score               : -43238.328125
+>> Model assessment by DOPE potential
+DOPE score               : -43146.246094
+>> Model assessment by DOPE potential
+DOPE score               : -43168.031250
+>> Model assessment by DOPE potential
+DOPE score               : -43223.640625
+>> Model assessment by DOPE potential
+DOPE score               : -43532.917969
+>> Model assessment by DOPE potential
+DOPE score               : -43249.980469
+>> Model assessment by DOPE potential
+DOPE score               : -42961.355469
+>> Model assessment by DOPE potential
+DOPE score               : -43140.324219
+>> Model assessment by DOPE potential
+DOPE score               : -43104.320312
+>> Model assessment by DOPE potential
+DOPE score               : -43414.285156
+>> Model assessment by DOPE potential
+DOPE score               : -42921.410156
+>> Model assessment by DOPE potential
+DOPE score               : -43099.878906
+>> Model assessment by DOPE potential
+DOPE score               : -43004.238281
+>> Model assessment by DOPE potential
+DOPE score               : -43442.300781
+>> Model assessment by DOPE potential
+DOPE score               : -43253.589844
+>> Model assessment by DOPE potential
+DOPE score               : -43341.265625
+>> Model assessment by DOPE potential
+DOPE score               : -43471.554688
+>> Model assessment by DOPE potential
+DOPE score               : -43127.632812
+>> Model assessment by DOPE potential
+DOPE score               : -42933.425781
 
 >> Summary of successfully produced models:
 Filename                          molpdf     DOPE score    GA341 score
 ----------------------------------------------------------------------
 2AFX_A.B99990001.pdb          1989.20581   -43372.60156        1.00000
 2AFX_A.B99990002.pdb          2010.71790   -43238.32812        1.00000
+2AFX_A.B99990003.pdb          2238.02148   -43146.24609        1.00000
+2AFX_A.B99990004.pdb          2181.13452   -43168.03125        1.00000
+2AFX_A.B99990005.pdb          2106.40283   -43223.64062        1.00000
+2AFX_A.B99990006.pdb          2052.84888   -43532.91797        1.00000
+2AFX_A.B99990007.pdb          2062.06079   -43249.98047        1.00000
+2AFX_A.B99990008.pdb          2083.10767   -42961.35547        1.00000
+2AFX_A.B99990009.pdb          2104.16602   -43140.32422        1.00000
+2AFX_A.B99990010.pdb          2207.27271   -43104.32031        1.00000
+2AFX_A.B99990011.pdb          1966.60168   -43414.28516        1.00000
+2AFX_A.B99990012.pdb          2118.49561   -42921.41016        1.00000
+2AFX_A.B99990013.pdb          2228.34180   -43099.87891        1.00000
+2AFX_A.B99990014.pdb          2262.11963   -43004.23828        1.00000
+2AFX_A.B99990015.pdb          1967.85510   -43442.30078        1.00000
+2AFX_A.B99990016.pdb          1986.96960   -43253.58984        1.00000
+2AFX_A.B99990017.pdb          2049.31641   -43341.26562        1.00000
+2AFX_A.B99990018.pdb          2000.26599   -43471.55469        1.00000
+2AFX_A.B99990019.pdb          2105.90430   -43127.63281        1.00000
+2AFX_A.B99990020.pdb          2226.32324   -42933.42578        1.00000
 

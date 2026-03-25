@@ -1,0 +1,1 @@
+[2026-03-25T12:07:14] input=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_proteinH.pdb output=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein_as_Amber.pdb disulf_min=1.8 disulf_max=2.2 strict_his=False stats=ASP->ASH=1 CYS kept=5 HIS->HID=7 HIS->HIE=4

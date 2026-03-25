@@ -1,0 +1,22 @@
+Allowed overlap: -0.4
+H-bond overlap reduction: 0
+Ignore contacts between atoms separated by 2 bonds or less
+Detect intra-residue contacts: False
+Detect intra-molecule contacts: True
+
+14 contacts
+atom1  atom2  overlap  distance
+#1:504.A@ZN  #0:86.A@HE1   0.475  1.125
+#1:504.A@ZN  #0:122.A@HE2  0.326  1.274
+#1:504.A@ZN  #0:86.A@CE1   0.260  2.040
+#1:504.A@ZN  #0:122.A@NE2  0.039  2.186
+#1:505.A@MG  #0:582.A@O    -0.024  2.054
+#1:504.A@ZN  #0:123.A@OD2  -0.031  2.111
+#1:505.A@MG  #0:123.A@OD1  -0.044  2.094
+#1:505.A@MG  #0:581.A@O    -0.077  2.107
+#1:505.A@MG  #0:585.A@O    -0.087  2.117
+#1:505.A@MG  #0:580.A@O    -0.165  2.195
+#1:504.A@ZN  #0:240.A@OD1  -0.174  2.254
+#1:504.A@ZN  #0:581.A@O    -0.212  2.272
+#1:505.A@MG  #0:579.A@O    -0.216  2.246
+#1:504.A@ZN  #0:668.A@O    -0.287  2.347

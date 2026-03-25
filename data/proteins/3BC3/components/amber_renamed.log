@@ -1,0 +1,1 @@
+[2026-03-25T12:07:13] input=/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/3BC3_proteinH.pdb output=/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/3BC3_protein_as_Amber.pdb disulf_min=1.8 disulf_max=2.2 strict_his=False stats=ASP->ASH=2 CYS->CYX=12 GLU->GLH=4 HIS->HIE=6

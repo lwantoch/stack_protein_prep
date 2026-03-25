@@ -17,7 +17,7 @@ warning:  duplicate atom serial number found: 5265
 warning:  duplicate atom serial number found: 5266
 warning:  duplicate atom serial number found: 5267
 warning:  duplicate atom serial number found: 5268
-Suppressed 484 warnings about duplicate atom serial numbers
+Suppressed 482 warnings about duplicate atom serial numbers
 
 Model 0 (tmp_param.pdb) appears to be a protein without secondary structure assignments.
 Automatically computing assignments using 'ksdssp' and parameter values:
@@ -29,13 +29,14 @@ Use command 'help ksdssp' for more information.
 Computing secondary structure assignments...
 Computed secondary structure assignments (see reply log)
 tmp_param.pdb opened
+Opening metal_only.pdb...
+metal_only.pdb opened
+3 contacts
+3 contacts
 
 
 
 === STDERR ===
-Error while processing chimera_contacts.py:
-All atoms are in test set: no others available to test against
-
 
 
 === RETURN CODE ===

@@ -1,0 +1,43 @@
+=== COMMAND ===
+/home/grheco/.local/bin/chimera --nogui chimera_contacts.py
+
+=== STDOUT ===
+Compiling chimera_contacts.py...
+Compiling chimera_contacts.py succeeded
+Executing chimera_contacts.py...
+Opening tmp_param.pdb...
+The following problems occurred while reading PDB file for tmp_param.pdb
+warning:  duplicate atom serial number found: 4070
+warning:  duplicate atom serial number found: 4071
+warning:  duplicate atom serial number found: 4072
+warning:  duplicate atom serial number found: 4073
+warning:  duplicate atom serial number found: 4074
+warning:  duplicate atom serial number found: 4075
+warning:  duplicate atom serial number found: 4076
+warning:  duplicate atom serial number found: 4077
+warning:  duplicate atom serial number found: 4078
+warning:  duplicate atom serial number found: 4079
+Suppressed 484 warnings about duplicate atom serial numbers
+
+Model 0 (tmp_param.pdb) appears to be a protein without secondary structure assignments.
+Automatically computing assignments using 'ksdssp' and parameter values:
+  energy cutoff -0.5
+  minimum helix length 3
+  minimum strand length 3
+Use command 'help ksdssp' for more information.
+
+Computing secondary structure assignments...
+Computed secondary structure assignments (see reply log)
+tmp_param.pdb opened
+Opening metal_only.pdb...
+metal_only.pdb opened
+10 contacts
+10 contacts
+
+
+
+=== STDERR ===
+
+
+=== RETURN CODE ===
+0

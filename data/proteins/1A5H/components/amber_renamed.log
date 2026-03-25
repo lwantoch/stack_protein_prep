@@ -1,0 +1,1 @@
+[2026-03-25T12:07:04] input=/home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/1A5H_proteinH.pdb output=/home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/1A5H_protein_as_Amber.pdb disulf_min=1.8 disulf_max=2.2 strict_his=False stats=CYS kept=2 CYS->CYX=20 HIS->HID=14 HIS->HIE=6

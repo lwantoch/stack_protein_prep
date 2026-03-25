@@ -1,0 +1,492 @@
+# alignment_fasta=/home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+# pdb_sequence_header=PDB|1F0R|ATOM|chain_A
+# uniprot_sequence_header=sp|P00742|FA10_HUMAN Coagulation factor X OS=Homo sapiens OX=9606 GN=F10 PE=1 SV=2
+# columns=alignment_column	pdb_residue_number	uniprot_residue_number	pdb_residue	uniprot_residue	relation
+1		1	-	M	deletion_in_pdb
+2		2	-	G	deletion_in_pdb
+3		3	-	R	deletion_in_pdb
+4		4	-	P	deletion_in_pdb
+5		5	-	L	deletion_in_pdb
+6		6	-	H	deletion_in_pdb
+7		7	-	L	deletion_in_pdb
+8		8	-	V	deletion_in_pdb
+9		9	-	L	deletion_in_pdb
+10		10	-	L	deletion_in_pdb
+11		11	-	S	deletion_in_pdb
+12		12	-	A	deletion_in_pdb
+13		13	-	S	deletion_in_pdb
+14		14	-	L	deletion_in_pdb
+15		15	-	A	deletion_in_pdb
+16		16	-	G	deletion_in_pdb
+17		17	-	L	deletion_in_pdb
+18		18	-	L	deletion_in_pdb
+19		19	-	L	deletion_in_pdb
+20		20	-	L	deletion_in_pdb
+21		21	-	G	deletion_in_pdb
+22		22	-	E	deletion_in_pdb
+23		23	-	S	deletion_in_pdb
+24		24	-	L	deletion_in_pdb
+25		25	-	F	deletion_in_pdb
+26		26	-	I	deletion_in_pdb
+27		27	-	R	deletion_in_pdb
+28		28	-	R	deletion_in_pdb
+29		29	-	E	deletion_in_pdb
+30		30	-	Q	deletion_in_pdb
+31		31	-	A	deletion_in_pdb
+32		32	-	N	deletion_in_pdb
+33		33	-	N	deletion_in_pdb
+34		34	-	I	deletion_in_pdb
+35		35	-	L	deletion_in_pdb
+36		36	-	A	deletion_in_pdb
+37		37	-	R	deletion_in_pdb
+38		38	-	V	deletion_in_pdb
+39		39	-	T	deletion_in_pdb
+40		40	-	R	deletion_in_pdb
+41		41	-	A	deletion_in_pdb
+42		42	-	N	deletion_in_pdb
+43		43	-	S	deletion_in_pdb
+44		44	-	F	deletion_in_pdb
+45		45	-	L	deletion_in_pdb
+46		46	-	E	deletion_in_pdb
+47		47	-	E	deletion_in_pdb
+48		48	-	M	deletion_in_pdb
+49		49	-	K	deletion_in_pdb
+50		50	-	K	deletion_in_pdb
+51		51	-	G	deletion_in_pdb
+52		52	-	H	deletion_in_pdb
+53		53	-	L	deletion_in_pdb
+54		54	-	E	deletion_in_pdb
+55		55	-	R	deletion_in_pdb
+56		56	-	E	deletion_in_pdb
+57		57	-	C	deletion_in_pdb
+58		58	-	M	deletion_in_pdb
+59		59	-	E	deletion_in_pdb
+60		60	-	E	deletion_in_pdb
+61		61	-	T	deletion_in_pdb
+62		62	-	C	deletion_in_pdb
+63		63	-	S	deletion_in_pdb
+64		64	-	Y	deletion_in_pdb
+65		65	-	E	deletion_in_pdb
+66		66	-	E	deletion_in_pdb
+67		67	-	A	deletion_in_pdb
+68		68	-	R	deletion_in_pdb
+69		69	-	E	deletion_in_pdb
+70		70	-	V	deletion_in_pdb
+71		71	-	F	deletion_in_pdb
+72		72	-	E	deletion_in_pdb
+73		73	-	D	deletion_in_pdb
+74		74	-	S	deletion_in_pdb
+75		75	-	D	deletion_in_pdb
+76		76	-	K	deletion_in_pdb
+77		77	-	T	deletion_in_pdb
+78		78	-	N	deletion_in_pdb
+79		79	-	E	deletion_in_pdb
+80		80	-	F	deletion_in_pdb
+81		81	-	W	deletion_in_pdb
+82		82	-	N	deletion_in_pdb
+83		83	-	K	deletion_in_pdb
+84		84	-	Y	deletion_in_pdb
+85		85	-	K	deletion_in_pdb
+86		86	-	D	deletion_in_pdb
+87		87	-	G	deletion_in_pdb
+88		88	-	D	deletion_in_pdb
+89		89	-	Q	deletion_in_pdb
+90		90	-	C	deletion_in_pdb
+91		91	-	E	deletion_in_pdb
+92		92	-	T	deletion_in_pdb
+93		93	-	S	deletion_in_pdb
+94		94	-	P	deletion_in_pdb
+95		95	-	C	deletion_in_pdb
+96		96	-	Q	deletion_in_pdb
+97		97	-	N	deletion_in_pdb
+98		98	-	Q	deletion_in_pdb
+99		99	-	G	deletion_in_pdb
+100		100	-	K	deletion_in_pdb
+101		101	-	C	deletion_in_pdb
+102		102	-	K	deletion_in_pdb
+103		103	-	D	deletion_in_pdb
+104		104	-	G	deletion_in_pdb
+105		105	-	L	deletion_in_pdb
+106		106	-	G	deletion_in_pdb
+107		107	-	E	deletion_in_pdb
+108		108	-	Y	deletion_in_pdb
+109		109	-	T	deletion_in_pdb
+110		110	-	C	deletion_in_pdb
+111		111	-	T	deletion_in_pdb
+112		112	-	C	deletion_in_pdb
+113		113	-	L	deletion_in_pdb
+114		114	-	E	deletion_in_pdb
+115		115	-	G	deletion_in_pdb
+116		116	-	F	deletion_in_pdb
+117		117	-	E	deletion_in_pdb
+118		118	-	G	deletion_in_pdb
+119		119	-	K	deletion_in_pdb
+120		120	-	N	deletion_in_pdb
+121		121	-	C	deletion_in_pdb
+122		122	-	E	deletion_in_pdb
+123		123	-	L	deletion_in_pdb
+124		124	-	F	deletion_in_pdb
+125		125	-	T	deletion_in_pdb
+126		126	-	R	deletion_in_pdb
+127		127	-	K	deletion_in_pdb
+128		128	-	L	deletion_in_pdb
+129		129	-	C	deletion_in_pdb
+130		130	-	S	deletion_in_pdb
+131		131	-	L	deletion_in_pdb
+132		132	-	D	deletion_in_pdb
+133		133	-	N	deletion_in_pdb
+134		134	-	G	deletion_in_pdb
+135		135	-	D	deletion_in_pdb
+136		136	-	C	deletion_in_pdb
+137		137	-	D	deletion_in_pdb
+138		138	-	Q	deletion_in_pdb
+139		139	-	F	deletion_in_pdb
+140		140	-	C	deletion_in_pdb
+141		141	-	H	deletion_in_pdb
+142		142	-	E	deletion_in_pdb
+143		143	-	E	deletion_in_pdb
+144		144	-	Q	deletion_in_pdb
+145		145	-	N	deletion_in_pdb
+146		146	-	S	deletion_in_pdb
+147		147	-	V	deletion_in_pdb
+148		148	-	V	deletion_in_pdb
+149		149	-	C	deletion_in_pdb
+150		150	-	S	deletion_in_pdb
+151		151	-	C	deletion_in_pdb
+152		152	-	A	deletion_in_pdb
+153		153	-	R	deletion_in_pdb
+154		154	-	G	deletion_in_pdb
+155		155	-	Y	deletion_in_pdb
+156		156	-	T	deletion_in_pdb
+157		157	-	L	deletion_in_pdb
+158		158	-	A	deletion_in_pdb
+159		159	-	D	deletion_in_pdb
+160		160	-	N	deletion_in_pdb
+161		161	-	G	deletion_in_pdb
+162		162	-	K	deletion_in_pdb
+163		163	-	A	deletion_in_pdb
+164		164	-	C	deletion_in_pdb
+165		165	-	I	deletion_in_pdb
+166		166	-	P	deletion_in_pdb
+167		167	-	T	deletion_in_pdb
+168		168	-	G	deletion_in_pdb
+169		169	-	P	deletion_in_pdb
+170		170	-	Y	deletion_in_pdb
+171		171	-	P	deletion_in_pdb
+172		172	-	C	deletion_in_pdb
+173		173	-	G	deletion_in_pdb
+174		174	-	K	deletion_in_pdb
+175		175	-	Q	deletion_in_pdb
+176		176	-	T	deletion_in_pdb
+177		177	-	L	deletion_in_pdb
+178		178	-	E	deletion_in_pdb
+179		179	-	R	deletion_in_pdb
+180		180	-	R	deletion_in_pdb
+181		181	-	K	deletion_in_pdb
+182		182	-	R	deletion_in_pdb
+183		183	-	S	deletion_in_pdb
+184		184	-	V	deletion_in_pdb
+185		185	-	A	deletion_in_pdb
+186		186	-	Q	deletion_in_pdb
+187		187	-	A	deletion_in_pdb
+188		188	-	T	deletion_in_pdb
+189		189	-	S	deletion_in_pdb
+190		190	-	S	deletion_in_pdb
+191		191	-	S	deletion_in_pdb
+192		192	-	G	deletion_in_pdb
+193		193	-	E	deletion_in_pdb
+194		194	-	A	deletion_in_pdb
+195		195	-	P	deletion_in_pdb
+196		196	-	D	deletion_in_pdb
+197		197	-	S	deletion_in_pdb
+198		198	-	I	deletion_in_pdb
+199		199	-	T	deletion_in_pdb
+200		200	-	W	deletion_in_pdb
+201		201	-	K	deletion_in_pdb
+202		202	-	P	deletion_in_pdb
+203		203	-	Y	deletion_in_pdb
+204		204	-	D	deletion_in_pdb
+205		205	-	A	deletion_in_pdb
+206		206	-	A	deletion_in_pdb
+207		207	-	D	deletion_in_pdb
+208		208	-	L	deletion_in_pdb
+209		209	-	D	deletion_in_pdb
+210		210	-	P	deletion_in_pdb
+211		211	-	T	deletion_in_pdb
+212		212	-	E	deletion_in_pdb
+213		213	-	N	deletion_in_pdb
+214		214	-	P	deletion_in_pdb
+215		215	-	F	deletion_in_pdb
+216		216	-	D	deletion_in_pdb
+217		217	-	L	deletion_in_pdb
+218		218	-	L	deletion_in_pdb
+219		219	-	D	deletion_in_pdb
+220		220	-	F	deletion_in_pdb
+221		221	-	N	deletion_in_pdb
+222		222	-	Q	deletion_in_pdb
+223		223	-	T	deletion_in_pdb
+224		224	-	Q	deletion_in_pdb
+225		225	-	P	deletion_in_pdb
+226		226	-	E	deletion_in_pdb
+227		227	-	R	deletion_in_pdb
+228		228	-	G	deletion_in_pdb
+229		229	-	D	deletion_in_pdb
+230		230	-	N	deletion_in_pdb
+231		231	-	N	deletion_in_pdb
+232		232	-	L	deletion_in_pdb
+233		233	-	T	deletion_in_pdb
+234		234	-	R	deletion_in_pdb
+235	1	235	I	I	match
+236	2	236	V	V	match
+237	3	237	G	G	match
+238	4	238	G	G	match
+239	5	239	Q	Q	match
+240	6	240	E	E	match
+241	7	241	C	C	match
+242	8	242	K	K	match
+243	9	243	D	D	match
+244	10	244	G	G	match
+245	11	245	E	E	match
+246	12	246	C	C	match
+247	13	247	P	P	match
+248	14	248	W	W	match
+249	15	249	Q	Q	match
+250	16	250	A	A	match
+251	17	251	L	L	match
+252	18	252	L	L	match
+253	19	253	I	I	match
+254	20	254	N	N	match
+255	21	255	E	E	match
+256	22	256	E	E	match
+257	23	257	N	N	match
+258	24	258	E	E	match
+259	25	259	G	G	match
+260	26	260	F	F	match
+261	27	261	C	C	match
+262	28	262	G	G	match
+263	29	263	G	G	match
+264	30	264	T	T	match
+265	31	265	I	I	match
+266	32	266	L	L	match
+267	33	267	S	S	match
+268	34	268	E	E	match
+269	35	269	F	F	match
+270	36	270	X	Y	mismatch
+271	37	271	X	I	mismatch
+272	38	272	X	L	mismatch
+273	39	273	X	T	mismatch
+274	40	274	X	A	mismatch
+275	41	275	X	A	mismatch
+276	42	276	X	H	mismatch
+277	43	277	X	C	mismatch
+278	44	278	X	L	mismatch
+279	45	279	X	Y	mismatch
+280	46	280	X	Q	mismatch
+281	47	281	X	A	mismatch
+282	48	282	X	K	mismatch
+283	49	283	X	R	mismatch
+284	50	284	X	F	mismatch
+285	51	285	X	K	mismatch
+286	52	286	X	V	mismatch
+287	53	287	X	R	mismatch
+288	54	288	X	V	mismatch
+289	55	289	X	G	mismatch
+290	56	290	X	D	mismatch
+291	57	291	X	R	mismatch
+292	58	292	X	N	mismatch
+293	59	293	X	T	mismatch
+294	60	294	X	E	mismatch
+295	61	295	X	Q	mismatch
+296	62	296	X	E	mismatch
+297	63	297	X	E	mismatch
+298	64	298	X	G	mismatch
+299	65	299	X	G	mismatch
+300	66	300	X	E	mismatch
+301	67	301	X	A	mismatch
+302	68	302	X	V	mismatch
+303	69	303	X	H	mismatch
+304	70	304	X	E	mismatch
+305	71	305	X	V	mismatch
+306	72	306	X	E	mismatch
+307	73	307	X	V	mismatch
+308	74	308	X	V	mismatch
+309	75	309	X	I	mismatch
+310	76	310	X	K	mismatch
+311	77	311	X	H	mismatch
+312	78	312	X	N	mismatch
+313	79	313	X	R	mismatch
+314	80	314	X	F	mismatch
+315	81	315	X	T	mismatch
+316	82	316	X	K	mismatch
+317	83	317	X	E	mismatch
+318	84	318	X	T	mismatch
+319	85	319	X	Y	mismatch
+320	86	320	X	D	mismatch
+321	87	321	X	F	mismatch
+322	88	322	X	D	mismatch
+323	89	323	X	I	mismatch
+324	90	324	X	A	mismatch
+325	91	325	X	V	mismatch
+326	92	326	X	L	mismatch
+327	93	327	X	R	mismatch
+328	94	328	X	L	mismatch
+329	95	329	X	K	mismatch
+330	96	330	X	T	mismatch
+331	97	331	X	P	mismatch
+332	98	332	X	I	mismatch
+333	99	333	X	T	mismatch
+334	100	334	X	F	mismatch
+335	101	335	X	R	mismatch
+336	102	336	X	M	mismatch
+337	103	337	X	N	mismatch
+338	104	338	X	V	mismatch
+339	105	339	X	A	mismatch
+340	106	340	X	P	mismatch
+341	107	341	X	A	mismatch
+342	108	342	X	C	mismatch
+343	109	343	X	L	mismatch
+344	110	344	X	P	mismatch
+345	111	345	X	E	mismatch
+346	112	346	X	R	mismatch
+347	113	347	X	D	mismatch
+348	114	348	X	W	mismatch
+349	115	349	X	A	mismatch
+350	116	350	X	E	mismatch
+351	117	351	X	S	mismatch
+352	118	352	X	T	mismatch
+353	119	353	X	L	mismatch
+354	120	354	X	M	mismatch
+355	121	355	X	T	mismatch
+356	122	356	X	Q	mismatch
+357	123	357	X	K	mismatch
+358	124	358	X	T	mismatch
+359	125	359	X	G	mismatch
+360	126	360	X	I	mismatch
+361	127	361	X	V	mismatch
+362	128	362	X	S	mismatch
+363	129	363	X	G	mismatch
+364	130	364	X	F	mismatch
+365	131	365	X	G	mismatch
+366	132	366	X	R	mismatch
+367	133	367	X	T	mismatch
+368	134	368	X	H	mismatch
+369	135	369	X	E	mismatch
+370	136	370	X	K	mismatch
+371	137	371	X	G	mismatch
+372	138	372	X	R	mismatch
+373	139	373	X	Q	mismatch
+374	140	374	X	S	mismatch
+375	141	375	X	T	mismatch
+376	142	376	X	R	mismatch
+377	143	377	X	L	mismatch
+378	144	378	X	K	mismatch
+379	145	379	X	M	mismatch
+380	146	380	X	L	mismatch
+381	147	381	X	E	mismatch
+382	148	382	X	V	mismatch
+383	149	383	X	P	mismatch
+384	150	384	X	Y	mismatch
+385	151	385	X	V	mismatch
+386	152	386	X	D	mismatch
+387	153	387	X	R	mismatch
+388	154	388	X	N	mismatch
+389	155	389	X	S	mismatch
+390	156	390	X	C	mismatch
+391	157	391	X	K	mismatch
+392	158	392	X	L	mismatch
+393	159	393	X	S	mismatch
+394	160	394	X	S	mismatch
+395	161	395	X	S	mismatch
+396	162	396	X	F	mismatch
+397	163	397	X	I	mismatch
+398	164	398	X	I	mismatch
+399	165	399	X	T	mismatch
+400	166	400	X	Q	mismatch
+401		401	-	N	deletion_in_pdb
+402		402	-	M	deletion_in_pdb
+403		403	-	F	deletion_in_pdb
+404		404	-	C	deletion_in_pdb
+405		405	-	A	deletion_in_pdb
+406		406	-	G	deletion_in_pdb
+407		407	-	Y	deletion_in_pdb
+408		408	-	D	deletion_in_pdb
+409		409	-	T	deletion_in_pdb
+410		410	-	K	deletion_in_pdb
+411		411	-	Q	deletion_in_pdb
+412		412	-	E	deletion_in_pdb
+413		413	-	D	deletion_in_pdb
+414		414	-	A	deletion_in_pdb
+415		415	-	C	deletion_in_pdb
+416		416	-	Q	deletion_in_pdb
+417		417	-	G	deletion_in_pdb
+418		418	-	D	deletion_in_pdb
+419		419	-	S	deletion_in_pdb
+420		420	-	G	deletion_in_pdb
+421		421	-	G	deletion_in_pdb
+422		422	-	P	deletion_in_pdb
+423		423	-	H	deletion_in_pdb
+424		424	-	V	deletion_in_pdb
+425		425	-	T	deletion_in_pdb
+426		426	-	R	deletion_in_pdb
+427		427	-	F	deletion_in_pdb
+428		428	-	K	deletion_in_pdb
+429		429	-	D	deletion_in_pdb
+430		430	-	T	deletion_in_pdb
+431		431	-	Y	deletion_in_pdb
+432		432	-	F	deletion_in_pdb
+433		433	-	V	deletion_in_pdb
+434		434	-	T	deletion_in_pdb
+435		435	-	G	deletion_in_pdb
+436		436	-	I	deletion_in_pdb
+437		437	-	V	deletion_in_pdb
+438		438	-	S	deletion_in_pdb
+439		439	-	W	deletion_in_pdb
+440		440	-	G	deletion_in_pdb
+441		441	-	E	deletion_in_pdb
+442		442	-	G	deletion_in_pdb
+443		443	-	C	deletion_in_pdb
+444		444	-	A	deletion_in_pdb
+445		445	-	R	deletion_in_pdb
+446		446	-	K	deletion_in_pdb
+447		447	-	G	deletion_in_pdb
+448		448	-	K	deletion_in_pdb
+449		449	-	Y	deletion_in_pdb
+450		450	-	G	deletion_in_pdb
+451		451	-	I	deletion_in_pdb
+452		452	-	Y	deletion_in_pdb
+453		453	-	T	deletion_in_pdb
+454		454	-	K	deletion_in_pdb
+455		455	-	V	deletion_in_pdb
+456		456	-	T	deletion_in_pdb
+457		457	-	A	deletion_in_pdb
+458		458	-	F	deletion_in_pdb
+459		459	-	L	deletion_in_pdb
+460		460	-	K	deletion_in_pdb
+461		461	-	W	deletion_in_pdb
+462		462	-	I	deletion_in_pdb
+463		463	-	D	deletion_in_pdb
+464		464	-	R	deletion_in_pdb
+465		465	-	S	deletion_in_pdb
+466		466	-	M	deletion_in_pdb
+467		467	-	K	deletion_in_pdb
+468		468	-	T	deletion_in_pdb
+469		469	-	R	deletion_in_pdb
+470		470	-	G	deletion_in_pdb
+471		471	-	L	deletion_in_pdb
+472		472	-	P	deletion_in_pdb
+473		473	-	K	deletion_in_pdb
+474		474	-	A	deletion_in_pdb
+475		475	-	K	deletion_in_pdb
+476		476	-	S	deletion_in_pdb
+477		477	-	H	deletion_in_pdb
+478		478	-	A	deletion_in_pdb
+479		479	-	P	deletion_in_pdb
+480		480	-	E	deletion_in_pdb
+481		481	-	V	deletion_in_pdb
+482		482	-	I	deletion_in_pdb
+483		483	-	T	deletion_in_pdb
+484		484	-	S	deletion_in_pdb
+485		485	-	S	deletion_in_pdb
+486		486	-	P	deletion_in_pdb
+487		487	-	L	deletion_in_pdb
+488		488	-	K	deletion_in_pdb
