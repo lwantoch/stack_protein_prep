@@ -26,6 +26,8 @@
   <img alt="python" src="https://img.shields.io/badge/python-3.12-0ea5e9">
   <img alt="environment" src="https://img.shields.io/badge/environment-pixi-7c3aed">
   <img alt="domain" src="https://img.shields.io/badge/domain-protein%20preparation-059669">
+  &nbsp;&nbsp;
+  <img src="logo.png" alt="FRUTON logo" height="36">
 </p>
 
 ---
