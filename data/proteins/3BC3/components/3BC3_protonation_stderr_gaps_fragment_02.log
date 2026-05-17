@@ -1,0 +1,52 @@
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_sanitized_protonation/3BC3_gaps_fragment_02_sanitized.pdb -o 3BC3_proteinH_gaps_fragment_02.pdb -p 3BC3_proteinH_gaps_fragment_02.top -i 3BC3_proteinH_gaps_fragment_02_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 206 donors and 236 acceptors were found.
+There are 298 hydrogen bonds
+Will use HISE for residue 140
+Will use HISE for residue 163
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                   MET38   CYS56   CYS65   MET70   CYS98  MET123  HIS140
+                    SD94   SG239   SG296   SD327   SG553   SD752  NE2865
+   CYS56   SG239   1.757
+   CYS65   SG296   2.445   1.309
+   MET70   SD327   1.743   1.751   1.472
+   CYS98   SG553   1.869   0.203   1.458   1.939
+  MET123   SD752   2.610   3.682   3.471   2.105   3.863
+  HIS140  NE2865   3.549   3.366   2.378   1.892   3.547   2.506
+  CYS156  SG1005   3.174   3.238   2.395   1.612   3.428   1.973   0.536
+  MET161  SD1041   2.717   2.732   2.176   1.091   2.905   1.925   1.175
+  HIS163 NE21060   2.374   2.248   1.388   0.968   2.446   2.285   1.359
+                  CYS156  MET161
+                  SG1005  SD1041
+  MET161  SD1041   0.912
+  HIS163 NE21060   1.174   1.290
+Linking CYS-56 SG-239 and CYS-98 SG-553...
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 5786 pairs
+Before cleaning: 6064 dihedrals
+
+GROMACS reminds you: "Apologies to the astrophysics student I met at a party years ago. When you told me how many hours a day you used 4chan and how much you love it, I gave you a funny look and walked away. Now, a decade later, I realize you were talking about Fortran." (Anonymous)
+

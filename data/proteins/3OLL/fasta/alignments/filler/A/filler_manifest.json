@@ -1,0 +1,79 @@
+{
+  "chain_id": "A",
+  "output_dir": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/filler/A",
+  "alignment_file": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/filler/A/chain_alignment.ali",
+  "template_pdb": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/filler/A/3OLL_protein_monomer.pdb",
+  "script_file": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/filler/A/run_modeller.py",
+  "modeller_model_path": null,
+  "alphafold_model_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/filler/A/final_filled_model.pdb",
+  "final_model_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/filler/A/final_filled_model.pdb",
+  "raw_model_paths": [],
+  "stdout_log": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/filler/A/modeller_stdout.log",
+  "stderr_log": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/filler/A/modeller_stderr.log",
+  "skipped": false,
+  "skip_reason": null,
+  "fill_decision": {
+    "should_run_modeller": false,
+    "overall_classification": "alphafold_candidate",
+    "gap_regions": [
+      {
+        "alignment_start": 374,
+        "alignment_end": 446,
+        "gap_length": 73,
+        "is_terminal": false,
+        "classification": "alphafold_candidate"
+      },
+      {
+        "alignment_start": 450,
+        "alignment_end": 700,
+        "gap_length": 251,
+        "is_terminal": false,
+        "classification": "alphafold_candidate"
+      },
+      {
+        "alignment_start": 709,
+        "alignment_end": 743,
+        "gap_length": 35,
+        "is_terminal": false,
+        "classification": "alphafold_candidate"
+      },
+      {
+        "alignment_start": 748,
+        "alignment_end": 789,
+        "gap_length": 42,
+        "is_terminal": false,
+        "classification": "alphafold_candidate"
+      },
+      {
+        "alignment_start": 813,
+        "alignment_end": 814,
+        "gap_length": 2,
+        "is_terminal": false,
+        "classification": "green"
+      },
+      {
+        "alignment_start": 985,
+        "alignment_end": 1102,
+        "gap_length": 118,
+        "is_terminal": false,
+        "classification": "alphafold_candidate"
+      },
+      {
+        "alignment_start": 1107,
+        "alignment_end": 1382,
+        "gap_length": 276,
+        "is_terminal": false,
+        "classification": "alphafold_candidate"
+      },
+      {
+        "alignment_start": 1392,
+        "alignment_end": 1448,
+        "gap_length": 57,
+        "is_terminal": false,
+        "classification": "alphafold_candidate"
+      }
+    ],
+    "skip_reason": "At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.",
+    "alphafold_candidate": true
+  }
+}

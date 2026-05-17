@@ -1,0 +1,152 @@
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/.tmp_sanitized_protonation/2WCG_gaps_fragment_02_sanitized.pdb -o 2WCG_proteinH_gaps_fragment_02.pdb -p 2WCG_proteinH_gaps_fragment_02.top -i 2WCG_proteinH_gaps_fragment_02_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 706 donors and 658 acceptors were found.
+There are 1056 hydrogen bonds
+Will use HISD for residue 60
+Will use HISE for residue 145
+Will use HISE for residue 162
+Will use HISE for residue 206
+Will use HISE for residue 223
+Will use HISE for residue 255
+Will use HISE for residue 273
+Will use HISE for residue 274
+Will use HISE for residue 290
+Will use HISE for residue 306
+Will use HISH for residue 311
+Will use HISE for residue 328
+Will use HISD for residue 365
+Will use HISE for residue 374
+Will use HISD for residue 419
+Will use HISH for residue 422
+Will use HISE for residue 451
+Will use HISH for residue 490
+Will use HISE for residue 495
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                   MET49   MET53   HIS60   MET85  MET123  CYS126  HIS145
+                   SD133   SD164  NE2213   SD397   SD682   SG700  NE2863
+   MET53   SD164   1.567
+   HIS60  NE2213   2.803   2.251
+   MET85   SD397   2.108   3.496   4.705
+  MET123   SD682   3.163   4.465   5.190   1.557
+  CYS126   SG700   2.737   4.244   4.980   1.146   1.167
+  HIS145  NE2863   5.121   6.333   7.254   3.180   2.123   2.897
+  HIS162 NE21000   2.832   3.877   5.308   1.217   1.717   2.043   2.684
+  HIS206 NE21329   4.432   5.718   5.959   3.048   1.562   2.225   2.226
+  HIS223 NE21482   3.458   4.623   5.918   1.513   1.498   1.928   1.954
+  CYS248  SG1676   3.674   5.152   5.461   2.333   1.531   1.209   2.882
+  HIS255 NE21732   4.322   5.617   5.781   3.032   1.601   2.163   2.477
+  HIS273 NE21873   3.637   4.678   5.627   2.099   1.145   2.208   1.791
+  HIS274 NE21883   3.828   4.616   5.404   2.767   1.838   2.931   2.494
+  MET280  SD1932   3.353   4.434   4.422   2.749   1.670   2.238   3.352
+  HIS290 NE22018   4.032   5.177   4.783   3.507   2.447   2.700   3.923
+  HIS306 NE22146   2.743   3.608   4.013   2.343   1.687   2.381   3.419
+  HIS311 NE22180   2.497   3.875   4.203   1.720   1.279   1.117   3.349
+  HIS328 NE22317   2.874   3.506   3.145   3.241   2.751   3.126   4.594
+  MET335  SD2376   2.515   3.491   3.767   2.236   1.672   2.159   3.589
+  CYS342  SG2427   2.111   3.643   4.106   1.563   1.960   1.077   3.926
+  MET361  SD2582   1.518   2.577   2.553   2.834   3.537   2.873   5.626
+  HIS365 NE22620   1.988   3.034   2.623   2.866   3.096   2.660   5.205
+  HIS374 NE22695   2.684   3.346   2.812   3.255   2.916   3.108   4.862
+  MET416  SD3032   1.394   2.925   3.526   1.693   2.531   1.737   4.537
+  HIS419 NE23066   0.948   2.206   2.679   2.384   3.254   2.626   5.315
+  HIS422 NE23088   0.446   1.562   2.442   2.426   3.366   2.909   5.391
+  MET450  SD3298   2.247   2.076   2.201   3.460   3.653   3.879   5.502
+  HIS451 NE23309   1.359   1.519   2.595   2.608   3.176   3.244   5.039
+  HIS490 NE23592   1.186   1.450   1.808   3.208   4.075   3.612   6.135
+  HIS495 NE23643   1.811   1.044   2.437   3.333   4.013   4.066   5.796
+                  HIS162  HIS206  HIS223  CYS248  HIS255  HIS273  HIS274
+                 NE21000 NE21329 NE21482  SG1676 NE21732 NE21873 NE21883
+  HIS206 NE21329   3.225
+  HIS223 NE21482   0.805   2.827
+  CYS248  SG1676   3.031   1.482   2.728
+  HIS255 NE21732   3.302   0.276   2.949   1.345
+  HIS273 NE21873   1.475   2.142   1.269   2.627   2.285
+  HIS274 NE21883   2.120   2.506   2.163   3.246   2.625   0.978
+  MET280  SD1932   3.071   1.626   3.088   1.988   1.479   2.249   2.198
+  HIS290 NE22018   4.032   1.765   3.945   1.970   1.513   3.218   3.260
+  HIS306 NE22146   2.378   2.433   2.654   2.701   2.386   1.807   1.529
+  HIS311 NE22180   2.479   2.013   2.550   1.364   1.864   2.278   2.650
+  HIS328 NE22317   3.569   3.104   3.893   3.225   2.959   3.104   2.747
+  MET335  SD2376   2.511   2.387   2.780   2.447   2.291   2.069   1.949
+  CYS342  SG2427   2.687   2.840   2.827   1.690   2.689   2.978   3.486
+  MET361  SD2582   3.856   4.399   4.284   3.419   4.210   4.342   4.564
+  HIS365 NE22620   3.791   3.700   4.136   2.930   3.490   3.922   4.038
+  HIS374 NE22695   3.735   3.292   4.077   3.213   3.118   3.402   3.143
+  MET416  SD3032   2.821   3.581   3.161   2.517   3.435   3.387   3.804
+  HIS419 NE23066   3.361   4.295   3.845   3.356   4.136   3.975   4.219
+  HIS422 NE23088   3.211   4.528   3.806   3.742   4.394   3.909   4.060
+  MET450  SD3298   3.652   4.535   4.268   4.439   4.432   3.756   3.356
+  HIS451 NE23309   2.847   4.353   3.537   4.043   4.270   3.315   3.156
+  HIS490 NE23592   3.985   5.127   4.588   4.340   4.971   4.627   4.695
+  HIS495 NE23643   3.475   5.207   4.222   4.904   5.129   4.049   3.818
+                  MET280  HIS290  HIS306  HIS311  HIS328  MET335  CYS342
+                  SD1932 NE22018 NE22146 NE22180 NE22317  SD2376  SG2427
+  HIS290 NE22018   1.140
+  HIS306 NE22146   1.201   2.319
+  HIS311 NE22180   1.298   1.825   1.614
+  HIS328 NE22317   1.482   2.124   1.319   2.064
+  MET335  SD2376   1.009   2.042   0.472   1.254   1.120
+  CYS342  SG2427   2.301   2.607   2.464   1.027   2.767   2.090
+  MET361  SD2582   3.296   3.542   3.202   2.423   2.861   2.799   1.842
+  HIS365 NE22620   2.460   2.619   2.573   1.869   2.024   2.126   1.699
+  HIS374 NE22695   1.683   2.144   1.648   2.030   0.487   1.340   2.589
+  MET416  SD3032   2.791   3.196   2.678   1.620   2.844   2.314   0.829
+  HIS419 NE23066   3.222   3.645   2.949   2.282   2.819   2.594   1.705
+  HIS422 NE23088   3.365   3.953   2.851   2.549   2.778   2.574   2.144
+  MET450  SD3298   3.020   3.813   2.191   3.085   1.760   2.156   3.412
+  HIS451 NE23309   3.042   3.922   2.110   2.707   2.198   2.055   2.834
+  HIS490 NE23592   3.850   4.329   3.394   3.148   3.040   3.100   2.740
+  HIS495 NE23643   3.869   4.735   2.901   3.571   2.871   2.887   3.622
+                  MET361  HIS365  HIS374  MET416  HIS419  HIS422  MET450
+                  SD2582 NE22620 NE22695  SD3032 NE23066 NE23088  SD3298
+  HIS365 NE22620   1.012
+  HIS374 NE22695   2.472   1.604
+  MET416  SD3032   1.210   1.473   2.603
+  HIS419 NE23066   0.594   1.291   2.503   0.934
+  HIS422 NE23088   1.167   1.696   2.522   1.395   0.675
+  MET450  SD3298   2.834   2.528   1.772   3.060   2.615   2.181
+  HIS451 NE23309   2.422   2.393   2.178   2.382   2.011   1.467   1.069
+  HIS490 NE23592   1.216   1.835   2.713   1.989   1.069   0.788   2.269
+  HIS495 NE23643   2.912   3.036   2.838   3.069   2.524   1.881   1.278
+                  HIS451  HIS490
+                 NE23309 NE23592
+  HIS490 NE23592   1.842
+  HIS495 NE23643   0.869   1.993
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+
+-------------------------------------------------------
+Program:     gmx pdb2gmx, version 2026.0-conda_forge
+Source file: src/gromacs/gmxpreprocess/pgutil.cpp (line 156)
+
+Fatal error:
+Residue 2 named LEU of a molecule in the input file was mapped
+to an entry in the topology database, but the atom CG used in
+that entry is not found in the input file. Perhaps your atom
+and/or residue naming needs to be fixed.
+
+For more information and tips for troubleshooting, please check the GROMACS
+website at https://manual.gromacs.org/current/user-guide/run-time-errors.html
+-------------------------------------------------------

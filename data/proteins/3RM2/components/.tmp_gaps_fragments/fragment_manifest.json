@@ -1,0 +1,90 @@
+{
+  "status": "success",
+  "module": "fragment_split",
+  "pdb_id": "3RM2",
+  "variant_label": "gaps",
+  "input_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/3RM2_protein_monomer.pdb",
+  "output_dir": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments",
+  "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments/fragment_manifest.json",
+  "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3RM2/fragment_split.gaps.log",
+  "cn_distance_cutoff": 1.8,
+  "n_input_residues": 261,
+  "n_fragments": 4,
+  "n_boundaries": 2,
+  "fragment_records": [
+    {
+      "fragment_index_global": 1,
+      "fragment_index_in_chain": 1,
+      "chain_id": "H",
+      "chain_label": "H",
+      "start_resseq": 16,
+      "end_resseq": 162,
+      "start_resname": "ILE",
+      "end_resname": "THR",
+      "residue_count": 147,
+      "atom_count": 1245,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments/3RM2_chain_H_fragment_01.pdb"
+    },
+    {
+      "fragment_index_global": 2,
+      "fragment_index_in_chain": 2,
+      "chain_id": "H",
+      "chain_label": "H",
+      "start_resseq": 165,
+      "end_resseq": 269,
+      "start_resname": "GLY",
+      "end_resname": "GLY",
+      "residue_count": 104,
+      "atom_count": 842,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments/3RM2_chain_H_fragment_02.pdb"
+    },
+    {
+      "fragment_index_global": 3,
+      "fragment_index_in_chain": 1,
+      "chain_id": "I",
+      "chain_label": "I",
+      "start_resseq": 55,
+      "end_resseq": 62,
+      "start_resname": "ASP",
+      "end_resname": "GLU",
+      "residue_count": 8,
+      "atom_count": 62,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments/3RM2_chain_I_fragment_01.pdb"
+    },
+    {
+      "fragment_index_global": 4,
+      "fragment_index_in_chain": 2,
+      "chain_id": "I",
+      "chain_label": "I",
+      "start_resseq": 64,
+      "end_resseq": 65,
+      "start_resname": "LEU",
+      "end_resname": "GLN",
+      "residue_count": 2,
+      "atom_count": 14,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments/3RM2_chain_I_fragment_02.pdb"
+    }
+  ],
+  "boundary_records": [
+    {
+      "chain_id": "H",
+      "left_residue_label": "THR H 162",
+      "right_residue_label": "GLY H 165",
+      "left_resseq": 162,
+      "right_resseq": 165,
+      "residue_jump": 3,
+      "cn_distance": 7.301924746256977,
+      "reason": "cn_distance_exceeds_cutoff(7.302 > 1.800)"
+    },
+    {
+      "chain_id": "I",
+      "left_residue_label": "GLU I 62",
+      "right_residue_label": "LEU I 64",
+      "left_resseq": 62,
+      "right_resseq": 64,
+      "residue_jump": 2,
+      "cn_distance": 3.258078267936485,
+      "reason": "cn_distance_exceeds_cutoff(3.258 > 1.800)"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_sanitized_protonation/3RM2_gaps_fragment_02_sanitized.pdb -o 3RM2_proteinH_gaps_fragment_02.pdb -p 3RM2_proteinH_gaps_fragment_02.top -i 3RM2_proteinH_gaps_fragment_02_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 161 donors and 148 acceptors were found.
+There are 220 hydrogen bonds
+Will use HISE for residue 253
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  CYS183  MET195  CYS197  CYS211  MET221  MET232  CYS242
+                   SG154   SD248   SG266   SG364   SD431   SD537   SG602
+  MET195   SD248   0.906
+  CYS197   SG266   0.204   0.928
+  CYS211   SG364   1.810   1.792   1.615
+  MET221   SD431   1.321   1.673   1.320   2.165
+  MET232   SD537   1.563   1.686   1.576   2.325   0.446
+  CYS242   SG602   1.650   1.645   1.456   0.205   2.118   2.290
+  HIS253  NE2698   1.114   1.076   1.215   2.374   0.962   0.863   2.274
+                
+                
+Linking CYS-183 SG-154 and CYS-197 SG-266...
+Linking CYS-211 SG-364 and CYS-242 SG-602...
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+
+-------------------------------------------------------
+Program:     gmx pdb2gmx, version 2026.0-conda_forge
+Source file: src/gromacs/gmxpreprocess/pgutil.cpp (line 156)
+
+Fatal error:
+Residue 20 named LYS of a molecule in the input file was mapped
+to an entry in the topology database, but the atom CG used in
+that entry is not found in the input file. Perhaps your atom
+and/or residue naming needs to be fixed.
+
+For more information and tips for troubleshooting, please check the GROMACS
+website at https://manual.gromacs.org/current/user-guide/run-time-errors.html
+-------------------------------------------------------

@@ -1,0 +1,22 @@
+{
+  "analysis_input_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/metals_check/input_inventory/1A5H_input_inventory_metal_analysis_input.pdb",
+  "chimera_log_path": null,
+  "chimera_script_path": null,
+  "chimera_status": "skipped",
+  "contacts_tsv_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/metals_check/input_inventory/1A5H_input_inventory_metal_contacts.tsv",
+  "found_geometry_text": "none",
+  "geometry_match": "n/a",
+  "input_model_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/1A5H_protein_monomer.pdb",
+  "ion_type_text": "none",
+  "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/1A5H/metalls_check_input_inventory.log",
+  "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/metals_check/input_inventory/1A5H_input_inventory_metal_check.json",
+  "message": "No metal atoms detected in prepared model.",
+  "metal_class": "none",
+  "model_metal_ready": true,
+  "parameter_reference_text": "none",
+  "pdb_id": "1A5H",
+  "probable_geometry_text": "none",
+  "site_summaries": [],
+  "status": "skipped",
+  "variant_label": "input_inventory"
+}

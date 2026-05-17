@@ -1,0 +1,111 @@
+{
+  "analysis_input_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/metals_check/input_inventory/3RM2_input_inventory_metal_analysis_input.pdb",
+  "chimera_log_path": null,
+  "chimera_script_path": null,
+  "chimera_status": "skipped",
+  "contacts_tsv_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/metals_check/input_inventory/3RM2_input_inventory_metal_contacts.tsv",
+  "found_geometry_text": "not_required_for_standard_ion; not_required_for_standard_ion",
+  "geometry_match": "n/a",
+  "input_model_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/3RM2_protein_monomer.pdb",
+  "ion_type_text": "Na+; Na+",
+  "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3RM2/metalls_check_input_inventory.log",
+  "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/metals_check/input_inventory/3RM2_input_inventory_metal_check.json",
+  "message": "Only supported standard non-transition ions detected.",
+  "metal_class": "standard_nontransition",
+  "model_metal_ready": true,
+  "parameter_reference_text": "Joung-Cheatham monovalent ion parameters; verify water-model-specific frcmod, e.g. ionsjc_tip3p for TIP3P.",
+  "pdb_id": "3RM2",
+  "probable_geometry_text": "not_required_for_standard_ion; not_required_for_standard_ion",
+  "site_summaries": [
+    {
+      "contacts": [
+        {
+          "distance_angstrom": 2.301,
+          "donor_atom_name": "O",
+          "donor_chain_id": "H",
+          "donor_element": "O",
+          "donor_label": "THR H 187 O",
+          "donor_residue_name": "THR",
+          "donor_residue_number": 187,
+          "donor_source_role": "analysis",
+          "metal_element": "NA",
+          "metal_label": "NA H 5 NA",
+          "vector_x": -0.6709999999999994,
+          "vector_y": -0.6330000000000009,
+          "vector_z": -2.107999999999997
+        },
+        {
+          "distance_angstrom": 2.358,
+          "donor_atom_name": "O",
+          "donor_chain_id": "H",
+          "donor_element": "O",
+          "donor_label": "LYS H 184 O",
+          "donor_residue_name": "LYS",
+          "donor_residue_number": 184,
+          "donor_source_role": "analysis",
+          "metal_element": "NA",
+          "metal_label": "NA H 5 NA",
+          "vector_x": -1.5309999999999988,
+          "vector_y": 1.763,
+          "vector_z": -0.33099999999999596
+        }
+      ],
+      "coordination_number": 2,
+      "element": "NA",
+      "found_geometry": "not_required_for_standard_ion",
+      "geometry_match": "n/a",
+      "ion_label": "Na+",
+      "metal_class": "standard_nontransition",
+      "metal_label": "NA H 5 NA",
+      "parameter_reference": "Joung-Cheatham monovalent ion parameters; verify water-model-specific frcmod, e.g. ionsjc_tip3p for TIP3P.",
+      "probable_geometry": "not_required_for_standard_ion",
+      "requires_transition_parameters": false
+    },
+    {
+      "contacts": [
+        {
+          "distance_angstrom": 2.337,
+          "donor_atom_name": "O",
+          "donor_chain_id": "H",
+          "donor_element": "O",
+          "donor_label": "ARG H 244 O",
+          "donor_residue_name": "ARG",
+          "donor_residue_number": 244,
+          "donor_source_role": "analysis",
+          "metal_element": "NA",
+          "metal_label": "NA H 6 NA",
+          "vector_x": 0.30100000000000016,
+          "vector_y": -2.308,
+          "vector_z": -0.20599999999999952
+        },
+        {
+          "distance_angstrom": 2.41,
+          "donor_atom_name": "O",
+          "donor_chain_id": "H",
+          "donor_element": "O",
+          "donor_label": "LYS H 247 O",
+          "donor_residue_name": "LYS",
+          "donor_residue_number": 247,
+          "donor_source_role": "analysis",
+          "metal_element": "NA",
+          "metal_label": "NA H 6 NA",
+          "vector_x": 2.1740000000000004,
+          "vector_y": 0.3650000000000002,
+          "vector_z": 0.9750000000000014
+        }
+      ],
+      "coordination_number": 2,
+      "element": "NA",
+      "found_geometry": "not_required_for_standard_ion",
+      "geometry_match": "n/a",
+      "ion_label": "Na+",
+      "metal_class": "standard_nontransition",
+      "metal_label": "NA H 6 NA",
+      "parameter_reference": "Joung-Cheatham monovalent ion parameters; verify water-model-specific frcmod, e.g. ionsjc_tip3p for TIP3P.",
+      "probable_geometry": "not_required_for_standard_ion",
+      "requires_transition_parameters": false
+    }
+  ],
+  "status": "success",
+  "variant_label": "input_inventory"
+}

@@ -1,0 +1,5 @@
+metal_label	metal_element	donor_label	donor_element	donor_residue_name	donor_chain_id	donor_residue_number	donor_atom_name	distance_angstrom	donor_source_role	vector_x	vector_y	vector_z
+ZN A 400 ZN	ZN	CYS A 156 SG	S	CYS	A	156	SG	2.266	analysis	-1.744	0.160	1.438
+ZN A 400 ZN	ZN	CYS A 185 SG	S	CYS	A	185	SG	2.316	analysis	-0.526	1.278	-1.859
+ZN A 400 ZN	ZN	CYS A 188 SG	S	CYS	A	188	SG	2.322	analysis	1.951	0.949	0.827
+ZN A 400 ZN	ZN	CYS A 153 SG	S	CYS	A	153	SG	2.350	analysis	0.651	-2.223	-0.397

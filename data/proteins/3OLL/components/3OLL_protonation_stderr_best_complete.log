@@ -1,0 +1,79 @@
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_protonation/3OLL_best_complete_sanitized.pdb -o 3OLL_proteinH_best_complete.pdb -p 3OLL_proteinH_best_complete.top -i 3OLL_proteinH_best_complete_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 389 donors and 357 acceptors were found.
+There are 542 hydrogen bonds
+Will use HISD for residue 341
+Will use HISE for residue 362
+Will use HISE for residue 368
+Will use HISE for residue 398
+Will use HISE for residue 427
+Will use HISE for residue 431
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  MET263  CYS295  MET318  MET337  HIS341  CYS344  CYS347
+                    SD18   SG263   SD460   SD604  NE2634   SG656   SG679
+  CYS295   SG263   1.308
+  MET318   SD460   1.793   2.077
+  MET337   SD604   2.548   1.331   3.138
+  HIS341  NE2634   1.306   1.044   2.074   1.670
+  CYS344   SG656   1.106   1.140   1.012   2.236   1.115
+  CYS347   SG679   0.952   1.887   1.091   3.108   1.706   0.993
+  MET354   SD735   1.512   2.503   1.619   3.826   2.646   1.838   1.080
+  MET359   SD778   0.481   1.556   1.407   2.800   1.430   0.935   0.472
+  HIS362  NE2801   0.921   0.622   1.524   1.915   1.121   0.651   1.312
+  HIS368  NE2855   2.178   1.686   3.533   1.559   1.594   2.525   2.994
+  MET381   SD943   5.465   4.656   6.581   3.605   4.620   5.593   6.235
+  HIS398 NE21068   6.070   4.797   5.799   3.961   5.407   5.403   6.358
+  MET413  SD1171   5.715   5.273   4.071   5.460   5.303   4.635   5.131
+  HIS427 NE21286   6.755   6.728   5.542   6.839   6.066   5.904   6.103
+  HIS431 NE21314   6.070   6.195   4.765   6.514   5.564   5.256   5.328
+  CYS443  SG1394   3.530   4.066   1.996   5.108   3.972   2.988   2.614
+  MET476  SD1623   5.158   5.930   5.586   6.396   4.948   5.382   4.956
+  MET487  SD1702   6.172   6.351   6.423   6.214   5.327   6.036   6.100
+                  MET354  MET359  HIS362  HIS368  MET381  HIS398  MET413
+                   SD735   SD778  NE2801  NE2855   SD943 NE21068  SD1171
+  MET359   SD778   1.239
+  HIS362  NE2801   1.917   1.035
+  HIS368  NE2855   3.675   2.570   2.145
+  MET381   SD943   6.951   5.838   5.242   3.299
+  HIS398 NE21068   6.807   6.202   5.184   5.420   5.618
+  MET413  SD1171   5.559   5.408   5.060   6.651   8.682   5.492
+  HIS427 NE21286   6.888   6.404   6.512   7.424   9.217   8.321   4.218
+  HIS431 NE21314   6.019   5.677   5.893   7.031   9.182   8.249   3.866
+  CYS443  SG1394   2.559   3.070   3.488   5.474   8.544   7.261   3.895
+  MET476  SD1623   5.636   5.015   5.734   5.560   7.610  10.051   8.203
+  MET487  SD1702   7.081   6.095   6.379   5.750   6.681   9.277   7.974
+                  HIS427  HIS431  CYS443  MET476
+                 NE21286 NE21314  SG1394  SD1623
+  HIS431 NE21314   1.127
+  CYS443  SG1394   5.229   4.213
+  MET476  SD1623   6.085   5.665   6.042
+  MET487  SD1702   5.325   5.467   7.244   2.974
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 9250 pairs
+Before cleaning: 9697 dihedrals
+
+GROMACS reminds you: "The World is a Friendly Place" (Magnapop)
+

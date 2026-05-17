@@ -1,0 +1,73 @@
+Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff
+
+going to rename amber99sb-ildn.ff/aminoacids.r2b
+
+going to rename amber99sb-ildn.ff/dna.r2b
+
+going to rename amber99sb-ildn.ff/rna.r2b
+Reading /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/.tmp_sanitized_protonation/3R04_single_sanitized.pdb...
+Read '', 2225 atoms
+
+Analyzing pdb file
+Splitting chemical chains based on TER records or chain id changing.
+
+There are 1 chains and 0 blocks of water and 271 residues with 2225 atoms
+
+  chain  #res #atoms
+
+  1 'A'   271   2225  
+
+All occupancies are one
+
+Reading residue database... (Amber99sb-ildn)
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Processing chain 1 'A' (2225 atoms, 271 residues)
+
+Identified residue GLU35 as a starting terminus.
+
+Identified residue HIS305 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Now there are 2209 atoms. Deleted 16 duplicates.
+
+Generating any missing hydrogen atoms and/or adding termini.
+
+Now there are 271 residues with 4364 atoms
+
+Making bonds...
+
+Long Bond (1410-1411 = 0.361778 nm)
+
+Long Bond (1410-1412 = 0.277146 nm)
+
+Number of bonds was 4424, now 4423
+
+Generating angles, dihedrals and pairs...
+
+Making cmap torsions...
+
+There are 12172 dihedrals,  919 impropers, 7980 angles
+          11505 pairs,     4423 bonds and     0 virtual sites
+
+Total mass 31255.702 a.m.u.
+
+Total charge -13.000 e
+
+Writing topology
+
+Writing coordinate file...
+
+		--------- PLEASE NOTE ------------
+
+You have successfully generated a topology from: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/.tmp_sanitized_protonation/3R04_single_sanitized.pdb.
+
+The Amber99sb-ildn force field and the tip3p water model are used.
+
+		--------- ETON ESAELP ------------

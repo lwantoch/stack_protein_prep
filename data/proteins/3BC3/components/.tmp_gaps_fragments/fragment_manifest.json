@@ -1,0 +1,77 @@
+{
+  "status": "success",
+  "module": "fragment_split",
+  "pdb_id": "3BC3",
+  "variant_label": "gaps",
+  "input_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/3BC3_protein_monomer.pdb",
+  "output_dir": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_gaps_fragments",
+  "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_gaps_fragments/fragment_manifest.json",
+  "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3BC3/fragment_split.gaps.log",
+  "cn_distance_cutoff": 1.8,
+  "n_input_residues": 214,
+  "n_fragments": 3,
+  "n_boundaries": 2,
+  "fragment_records": [
+    {
+      "fragment_index_global": 1,
+      "fragment_index_in_chain": 1,
+      "chain_id": "A",
+      "chain_label": "A",
+      "start_resseq": 1,
+      "end_resseq": 24,
+      "start_resname": "ALA",
+      "end_resname": "SER",
+      "residue_count": 24,
+      "atom_count": 186,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_gaps_fragments/3BC3_chain_A_fragment_01.pdb"
+    },
+    {
+      "fragment_index_global": 2,
+      "fragment_index_in_chain": 2,
+      "chain_id": "A",
+      "chain_label": "A",
+      "start_resseq": 26,
+      "end_resseq": 174,
+      "start_resname": "TRP",
+      "end_resname": "SER",
+      "residue_count": 149,
+      "atom_count": 1139,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_gaps_fragments/3BC3_chain_A_fragment_02.pdb"
+    },
+    {
+      "fragment_index_global": 3,
+      "fragment_index_in_chain": 3,
+      "chain_id": "A",
+      "chain_label": "A",
+      "start_resseq": 180,
+      "end_resseq": 220,
+      "start_resname": "ASN",
+      "end_resname": "VAL",
+      "residue_count": 41,
+      "atom_count": 328,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_gaps_fragments/3BC3_chain_A_fragment_03.pdb"
+    }
+  ],
+  "boundary_records": [
+    {
+      "chain_id": "A",
+      "left_residue_label": "SER A 24",
+      "right_residue_label": "TRP A 26",
+      "left_resseq": 24,
+      "right_resseq": 26,
+      "residue_jump": 2,
+      "cn_distance": 3.1009561428694874,
+      "reason": "cn_distance_exceeds_cutoff(3.101 > 1.800)"
+    },
+    {
+      "chain_id": "A",
+      "left_residue_label": "SER A 174",
+      "right_residue_label": "ASN A 180",
+      "left_resseq": 174,
+      "right_resseq": 180,
+      "residue_jump": 6,
+      "cn_distance": 8.086697348114372,
+      "reason": "cn_distance_exceeds_cutoff(8.087 > 1.800)"
+    }
+  ]
+}

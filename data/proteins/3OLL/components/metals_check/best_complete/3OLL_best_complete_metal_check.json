@@ -1,0 +1,22 @@
+{
+  "analysis_input_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/metals_check/best_complete/3OLL_best_complete_metal_analysis_input.pdb",
+  "chimera_log_path": null,
+  "chimera_script_path": null,
+  "chimera_status": "skipped",
+  "contacts_tsv_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/metals_check/best_complete/3OLL_best_complete_metal_contacts.tsv",
+  "found_geometry_text": "none",
+  "geometry_match": "n/a",
+  "input_model_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/prepared/best_complete/3OLL.pdb",
+  "ion_type_text": "none",
+  "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3OLL/metalls_check_best_complete.log",
+  "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/metals_check/best_complete/3OLL_best_complete_metal_check.json",
+  "message": "No metal atoms detected in prepared model.",
+  "metal_class": "none",
+  "model_metal_ready": true,
+  "parameter_reference_text": "none",
+  "pdb_id": "3OLL",
+  "probable_geometry_text": "none",
+  "site_summaries": [],
+  "status": "skipped",
+  "variant_label": "best_complete"
+}

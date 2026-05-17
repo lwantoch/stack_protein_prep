@@ -1,0 +1,49 @@
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/components/.tmp_sanitized_protonation/1F0R_single_sanitized.pdb -o 1F0R_proteinH_single.pdb -p 1F0R_proteinH_single.top -i 1F0R_proteinH_single_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                   CYS22   CYS27
+                    SG47    SG83
+   CYS27    SG83   0.203
+   CYS42   SG206   1.695   1.755
+Linking CYS-22 SG-47 and CYS-27 SG-83...
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 1335 pairs
+Before cleaning: 1389 dihedrals
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                   CYS21   CYS23   CYS36
+                    SG43    SG55   SG147
+   CYS23    SG55   0.784
+   CYS36   SG147   0.750   0.203
+   CYS44   SG205   1.639   0.979   0.956
+Linking CYS-23 SG-55 and CYS-36 SG-147...
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 1318 pairs
+Before cleaning: 1373 dihedrals
+
+GROMACS reminds you: "Never measure the height of a mountain until you have reached the top. Then you will see how low it was." (Dag Hammarskjold)
+

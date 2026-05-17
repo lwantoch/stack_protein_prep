@@ -1,0 +1,2 @@
+metal_label	metal_element	donor_label	donor_element	donor_residue_name	donor_chain_id	donor_residue_number	donor_atom_name	distance_angstrom	donor_source_role	vector_x	vector_y	vector_z
+MG A 604 MG	MG	THR A 112 OG1	O	THR	A	112	OG1	2.160	analysis	1.938	0.321	-0.897

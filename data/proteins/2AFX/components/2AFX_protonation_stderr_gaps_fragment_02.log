@@ -1,0 +1,68 @@
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_sanitized_protonation/2AFX_gaps_fragment_02_sanitized.pdb -o 2AFX_proteinH_gaps_fragment_02.pdb -p 2AFX_proteinH_gaps_fragment_02.top -i 2AFX_proteinH_gaps_fragment_02_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 258 donors and 257 acceptors were found.
+There are 350 hydrogen bonds
+Will use HISE for residue 206
+Will use HISE for residue 218
+Will use HISE for residue 228
+Will use HISE for residue 239
+Will use HISE for residue 276
+Will use HISE for residue 279
+Will use HISE for residue 287
+Will use HISE for residue 307
+Will use HISE for residue 319
+Will use HISE for residue 330
+Will use HISE for residue 360
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  HIS206  HIS218  MET223  HIS228  HIS239  MET241  HIS276
+                  NE2148  NE2249   SD283  NE2319  NE2397   SD408  NE2697
+  HIS218  NE2249   2.676
+  MET223   SD283   2.955   1.036
+  HIS228  NE2319   3.904   1.799   0.967
+  HIS239  NE2397   3.604   1.819   1.148   1.148
+  MET241   SD408   2.972   1.401   0.422   0.999   0.990
+  HIS276  NE2697   4.156   4.420   3.561   3.669   3.774   3.223
+  HIS279  NE2724   3.842   4.426   3.689   3.938   4.121   3.412   0.833
+  HIS287  NE2788   3.314   3.862   3.162   3.492   3.649   2.897   1.036
+  HIS307  NE2954   2.013   1.977   1.526   2.282   1.862   1.292   2.860
+  HIS319 NE21053   1.897   2.086   1.632   2.387   2.186   1.434   2.630
+  HIS330 NE21147   0.897   2.292   2.346   3.244   3.126   2.339   3.438
+  MET332  SD1161   1.348   2.970   3.185   4.043   4.120   3.258   4.046
+  HIS360 NE21396   4.498   3.328   2.301   1.840   2.297   2.015   2.269
+                  HIS279  HIS287  HIS307  HIS319  HIS330  MET332
+                  NE2724  NE2788  NE2954 NE21053 NE21147  SD1161
+  HIS287  NE2788   0.583
+  HIS307  NE2954   2.927   2.378
+  HIS319 NE21053   2.587   2.016   0.486
+  HIS330 NE21147   3.122   2.568   1.487   1.204
+  MET332  SD1161   3.530   3.047   2.590   2.244   1.127
+  HIS360 NE21396   2.767   2.542   2.659   2.621   3.703   4.486
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 7328 pairs
+Before cleaning: 7790 dihedrals
+
+GROMACS reminds you: "Harvard makes mistakes too, you know. Kissinger taught there." (Woody Allen)
+

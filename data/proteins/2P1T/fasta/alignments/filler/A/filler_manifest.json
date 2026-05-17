@@ -1,0 +1,30 @@
+{
+  "chain_id": "A",
+  "output_dir": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A",
+  "alignment_file": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/chain_alignment.ali",
+  "template_pdb": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/2P1T_protein_monomer.pdb",
+  "script_file": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/run_modeller.py",
+  "modeller_model_path": null,
+  "alphafold_model_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/final_filled_model.pdb",
+  "final_model_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/final_filled_model.pdb",
+  "raw_model_paths": [],
+  "stdout_log": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stdout.log",
+  "stderr_log": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stderr.log",
+  "skipped": false,
+  "skip_reason": null,
+  "fill_decision": {
+    "should_run_modeller": false,
+    "overall_classification": "alphafold_candidate",
+    "gap_regions": [
+      {
+        "alignment_start": 243,
+        "alignment_end": 261,
+        "gap_length": 19,
+        "is_terminal": false,
+        "classification": "alphafold_candidate"
+      }
+    ],
+    "skip_reason": "At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.",
+    "alphafold_candidate": true
+  }
+}

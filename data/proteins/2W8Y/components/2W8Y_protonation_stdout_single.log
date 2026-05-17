@@ -1,0 +1,40 @@
+Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff
+
+going to rename amber99sb-ildn.ff/aminoacids.r2b
+
+going to rename amber99sb-ildn.ff/dna.r2b
+
+going to rename amber99sb-ildn.ff/rna.r2b
+Reading /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/components/.tmp_sanitized_protonation/2W8Y_single_sanitized.pdb...
+Read '', 2069 atoms
+
+Analyzing pdb file
+Splitting chemical chains based on TER records or chain id changing.
+
+There are 1 chains and 0 blocks of water and 251 residues with 2069 atoms
+
+  chain  #res #atoms
+
+  1 'A'   251   2069  
+
+All occupancies are one
+
+Reading residue database... (Amber99sb-ildn)
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Processing chain 1 'A' (2069 atoms, 251 residues)
+
+Identified residue LEU683 as a starting terminus.
+
+Identified residue LYS933 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Now there are 2023 atoms. Deleted 46 duplicates.
+
+Generating any missing hydrogen atoms and/or adding termini.

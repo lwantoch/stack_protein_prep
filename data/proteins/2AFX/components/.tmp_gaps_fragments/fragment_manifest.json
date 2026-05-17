@@ -1,0 +1,54 @@
+{
+  "status": "success",
+  "module": "fragment_split",
+  "pdb_id": "2AFX",
+  "variant_label": "gaps",
+  "input_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_protein_monomer.pdb",
+  "output_dir": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_gaps_fragments",
+  "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_gaps_fragments/fragment_manifest.json",
+  "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/2AFX/fragment_split.gaps.log",
+  "cn_distance_cutoff": 1.8,
+  "n_input_residues": 323,
+  "n_fragments": 2,
+  "n_boundaries": 1,
+  "fragment_records": [
+    {
+      "fragment_index_global": 1,
+      "fragment_index_in_chain": 1,
+      "chain_id": "A",
+      "chain_label": "A",
+      "start_resseq": 33,
+      "end_resseq": 182,
+      "start_resname": "ALA",
+      "end_resname": "LYS",
+      "residue_count": 150,
+      "atom_count": 1205,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_gaps_fragments/2AFX_chain_A_fragment_01.pdb"
+    },
+    {
+      "fragment_index_global": 2,
+      "fragment_index_in_chain": 2,
+      "chain_id": "A",
+      "chain_label": "A",
+      "start_resseq": 189,
+      "end_resseq": 361,
+      "start_resname": "PRO",
+      "end_resname": "LEU",
+      "residue_count": 173,
+      "atom_count": 1405,
+      "output_pdb_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_gaps_fragments/2AFX_chain_A_fragment_02.pdb"
+    }
+  ],
+  "boundary_records": [
+    {
+      "chain_id": "A",
+      "left_residue_label": "LYS A 182",
+      "right_residue_label": "PRO A 189",
+      "left_resseq": 182,
+      "right_resseq": 189,
+      "residue_jump": 7,
+      "cn_distance": 13.171378857203981,
+      "reason": "cn_distance_exceeds_cutoff(13.171 > 1.800)"
+    }
+  ]
+}

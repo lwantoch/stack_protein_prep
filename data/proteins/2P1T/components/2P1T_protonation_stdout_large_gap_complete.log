@@ -1,0 +1,67 @@
+Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff
+
+going to rename amber99sb-ildn.ff/aminoacids.r2b
+
+going to rename amber99sb-ildn.ff/dna.r2b
+
+going to rename amber99sb-ildn.ff/rna.r2b
+Reading /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/.tmp_sanitized_protonation/2P1T_large_gap_complete_sanitized.pdb...
+Read '', 1807 atoms
+
+Analyzing pdb file
+Splitting chemical chains based on TER records or chain id changing.
+
+There are 1 chains and 0 blocks of water and 230 residues with 1807 atoms
+
+  chain  #res #atoms
+
+  1 'A'   230   1807  
+
+All occupancies are one
+
+Reading residue database... (Amber99sb-ildn)
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Processing chain 1 'A' (1807 atoms, 230 residues)
+
+Identified residue ASP229 as a starting terminus.
+
+Identified residue PRO458 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Generating any missing hydrogen atoms and/or adding termini.
+
+Now there are 230 residues with 3649 atoms
+
+Making bonds...
+
+Number of bonds was 3688, now 3687
+
+Generating angles, dihedrals and pairs...
+
+Making cmap torsions...
+
+There are 10165 dihedrals,  691 impropers, 6712 angles
+          9664 pairs,     3687 bonds and     0 virtual sites
+
+Total mass 25731.038 a.m.u.
+
+Total charge -5.000 e
+
+Writing topology
+
+Writing coordinate file...
+
+		--------- PLEASE NOTE ------------
+
+You have successfully generated a topology from: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/.tmp_sanitized_protonation/2P1T_large_gap_complete_sanitized.pdb.
+
+The Amber99sb-ildn force field and the tip3p water model are used.
+
+		--------- ETON ESAELP ------------

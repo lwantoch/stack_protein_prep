@@ -1,0 +1,47 @@
+;
+;	File '1F0R_proteinH_single.top' was generated
+;	By user: grheco (1000)
+;	On host: grheco
+;	At date: Fri May 15 11:03:16 2026
+;
+;	This is a standalone topology file
+;
+;	Created by:
+;	              :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+;	
+;	Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+;	Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+;	Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/components
+;	Command line:
+;	  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/components/.tmp_sanitized_protonation/1F0R_single_sanitized.pdb -o 1F0R_proteinH_single.pdb -p 1F0R_proteinH_single.top -i 1F0R_proteinH_single_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+;	Force field was read from the standard GROMACS share directory.
+;
+
+; Include forcefield parameters
+#include "amber99sb-ildn.ff/forcefield.itp"
+
+; Include chain topologies
+#include "1F0R_proteinH_single_Protein_chain_A.itp"
+#include "1F0R_proteinH_single_Protein_chain_B.itp"
+
+; Include water topology
+#include "amber99sb-ildn.ff/tip3p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "amber99sb-ildn.ff/ions.itp"
+
+[ system ]
+; Name
+Protein
+
+[ molecules ]
+; Compound        #mols
+Protein_chain_A     1
+Protein_chain_B     1

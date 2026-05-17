@@ -1,0 +1,36 @@
+{
+  "analysis_input_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/components/metals_check/single/1B8O_single_metal_analysis_input.pdb",
+  "chimera_log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/components/metals_check/single/1B8O_single_chimera_contacts.log",
+  "chimera_script_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/components/metals_check/single/1B8O_single_chimera_contacts.cxc",
+  "chimera_status": "missing_executable",
+  "contacts_tsv_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/components/metals_check/single/1B8O_single_metal_contacts.tsv",
+  "found_geometry_text": "not_required_for_standard_ion",
+  "geometry_match": "n/a",
+  "input_model_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/prepared/single/1B8O.pdb",
+  "ion_type_text": "Mg2+",
+  "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/1B8O/metalls_check_single.log",
+  "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/components/metals_check/single/1B8O_single_metal_check.json",
+  "message": "Only supported standard non-transition ions detected.",
+  "metal_class": "standard_nontransition",
+  "model_metal_ready": true,
+  "parameter_reference_text": "Standard AMBER divalent-ion route; not a Joung-Cheatham monovalent ion. Verify selected Mg2+ parameters against the water model.",
+  "pdb_id": "1B8O",
+  "probable_geometry_text": "not_required_for_standard_ion",
+  "site_summaries": [
+    {
+      "contacts": [],
+      "coordination_number": 0,
+      "element": "MG",
+      "found_geometry": "not_required_for_standard_ion",
+      "geometry_match": "n/a",
+      "ion_label": "Mg2+",
+      "metal_class": "standard_nontransition",
+      "metal_label": "MG A 598 MG",
+      "parameter_reference": "Standard AMBER divalent-ion route; not a Joung-Cheatham monovalent ion. Verify selected Mg2+ parameters against the water model.",
+      "probable_geometry": "not_required_for_standard_ion",
+      "requires_transition_parameters": false
+    }
+  ],
+  "status": "success",
+  "variant_label": "single"
+}

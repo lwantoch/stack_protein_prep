@@ -1,0 +1,5 @@
+open /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/components/metals_check/single/1B8O_single_metal_analysis_input.pdb
+delete solvent false
+contacts @MN,FE,CO,NI,CU,ZN,CD,HG,CR,V,MO,W restrict @N*,O*,S*,SE* distance 3.50 reveal true name metal_contacts color gold
+save /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/components/metals_check/single/1B8O_single_chimera_session.cxs
+exit
