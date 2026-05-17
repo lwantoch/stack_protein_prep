@@ -87,16 +87,25 @@ DEFAULT_CHIMERA_EXECUTABLE_CANDIDATES = [
 def _choose_best_protein_input(components_dir: Path, pdb_id: str) -> Path | None:
     """Return the best available protonated protein structure for this site.
 
-    Priority follows FRUTON output naming conventions, newest names first with
-    legacy fallbacks at the end.
+    Prefers the fully assembled prepared variant (prepared/<variant>/<PDBID>.pdb)
+    over per-fragment component files because it contains all chain segments with
+    unique chain IDs and continuous serial numbers — required for correct MCPB
+    parametrization of gap-containing proteins.  Falls back to per-fragment
+    component files when no prepared variant is present.
     """
+    protein_dir = components_dir.parent
+    prepared_variants = ["single", "best_complete", "gaps", "large_gap_complete", "complete"]
+    for variant in prepared_variants:
+        prepared_path = protein_dir / "prepared" / variant / f"{pdb_id}.pdb"
+        if prepared_path.is_file() and prepared_path.stat().st_size > 0:
+            return prepared_path
+
     candidates = [
         components_dir / f"{pdb_id}_proteinH_single.pdb",
         components_dir / f"{pdb_id}_proteinH_best_complete.pdb",
         components_dir / f"{pdb_id}_proteinH_gaps.pdb",
         components_dir / f"{pdb_id}_protein_monomer.pdb",
         components_dir / f"{pdb_id}_protein.pdb",
-        # legacy fallbacks
         components_dir / f"{pdb_id}_protein_final.pdb",
         components_dir / f"{pdb_id}_protein_as_Amber.pdb",
         components_dir / f"{pdb_id}_proteinH.pdb",
@@ -113,7 +122,7 @@ def _get_optional_component_paths(
     """Return optional environment component paths if the files are present."""
     water_path = components_dir / f"{pdb_id}_water.pdb"
     ligand_path = components_dir / f"{pdb_id}_ligand.pdb"
-    metal_path = components_dir / f"{pdb_id}_metal.pdb"
+    metal_path = components_dir / f"{pdb_id}_metals.pdb"
     return {
         "water": water_path if water_path.is_file() else None,
         "ligand": ligand_path if ligand_path.is_file() else None,
@@ -122,7 +131,7 @@ def _get_optional_component_paths(
 
 
 def _has_metal_file(components_dir: Path, pdb_id: str) -> bool:
-    metal_path = components_dir / f"{pdb_id}_metal.pdb"
+    metal_path = components_dir / f"{pdb_id}_metals.pdb"
     return metal_path.is_file() and metal_path.stat().st_size > 0
 
 
@@ -141,6 +150,17 @@ def _read_pdb_payload_lines(pdb_path: Path) -> list[str]:
     return payload
 
 
+_METAL_RESNAMES: frozenset[str] = frozenset(METAL_RESIDUE_IDENTITY.keys())
+
+
+def _is_metal_hetatm_line(line: str) -> bool:
+    """Return True if *line* is a HETATM record for a bare metal ion."""
+    if not line.startswith("HETATM"):
+        return False
+    resname = line[17:20].strip().upper()
+    return resname in _METAL_RESNAMES
+
+
 def _write_combined_tmp_param_pdb(
     output_path: Path,
     protein_path: Path,
@@ -149,8 +169,10 @@ def _write_combined_tmp_param_pdb(
 ) -> dict[str, Any]:
     """Concatenate protein + optional water + optional ligand into one PDB.
 
-    The metal component is intentionally excluded so that the environment PDB
-    can be used as a clean donor context for hydrogen cleanup and MCPB input.
+    Metal HETATM records are stripped so the environment is a clean donor
+    context for hydrogen cleanup and MCPB input.  This is important when
+    *protein_path* is the fully assembled prepared variant (which already
+    embeds the metal) rather than a component-only file.
     """
     source_paths: list[Path] = [protein_path]
     if water_path is not None:
@@ -161,7 +183,10 @@ def _write_combined_tmp_param_pdb(
     line_count = 0
     with output_path.open("w", encoding="utf-8") as out:
         for src in source_paths:
-            lines = _read_pdb_payload_lines(src)
+            lines = [
+                ln for ln in _read_pdb_payload_lines(src)
+                if not _is_metal_hetatm_line(ln)
+            ]
             for line in lines:
                 out.write(line)
                 line_count += 1

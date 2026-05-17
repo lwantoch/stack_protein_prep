@@ -309,7 +309,7 @@ def test_metall_params_creates_expected_site_structure(tmp_path: Path) -> None:
     )
 
     # Metal: single ZN
-    metal_pdb = components_dir / f"{pdb_id}_metal.pdb"
+    metal_pdb = components_dir / f"{pdb_id}_metals.pdb"
     metal_pdb.write_text(
         _pdb_atom_line(100, "ZN", "ZN", "A", 301, 0.0, 0.0, 0.0, "ZN", record="HETATM")
         + "END\n",
@@ -393,7 +393,7 @@ def test_metall_params_skips_mcpb_for_non_standard_geometry(tmp_path: Path) -> N
         _pdb_atom_line(1, "SG", "CYS", "A", 1, 2.0, 0.0, 0.0, "S") + "END\n",
         encoding="utf-8",
     )
-    metal_pdb = components_dir / f"{pdb_id}_metal.pdb"
+    metal_pdb = components_dir / f"{pdb_id}_metals.pdb"
     metal_pdb.write_text(
         _pdb_atom_line(100, "ZN", "ZN", "A", 301, 0.0, 0.0, 0.0, "ZN", record="HETATM")
         + "END\n",
