@@ -1,77 +1,65 @@
-"""
-/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/metall_params.py
+from __future__ import annotations
 
-Metal-center parametrization preparation module.
+"""Metal-center parametrization preparation module.
 
 Purpose
 -------
-Prepare a reduced structural input around metal-containing protein systems for
-later MCPB.py / Gaussian / metal-center parametrization workflows.
+Prepare per-site MCPB scaffold folders for every transition-metal atom found
+in a FRUTON protein directory.  For each site the module:
 
-Responsibilities
-----------------
-1. Detect whether a protein directory contains a metal component
-2. Create:
-       data/proteins/<PDB_ID>/metall_params/
-   only when a metal file is present
-3. Build:
-       metall_params/tmp_param.pdb
-   by concatenating the best available protein structure with optional
-   water / ligand component files
-4. Copy the metal component separately to:
-       metall_params/metal_only.pdb
-5. Write a headless UCSF Chimera script that:
-   - opens the full environment system as model #0
-   - opens the metal-only file as model #1
-   - runs a contact / clash search from metal to environment
-   - saves the result to:
-         metall_params/contacts.data
-6. Execute Chimera in terminal mode
-7. Return a structured result dict for pipeline-state integration
+1. Detects transition-metal atoms using the same deterministic logic as
+   :mod:`stack_protein_preparation.metalls_check`.
+2. Creates a numbered site folder under ``metall_params/`` with four
+   sub-directories: ``00_input/``, ``01_hydrogen_cleanup/``, ``02_contacts/``,
+   and ``03_mcpb/``.
+3. Runs :func:`~stack_protein_preparation.metal_hydrogen_cleanup.remove_metal_coordinating_hydrogens`
+   to strip spurious hydrogens from the environment before parametrization.
+4. Writes a deterministic ``deterministic_metal_contacts.tsv`` (Python only,
+   no Chimera dependency).
+5. Writes an MCPB.py input scaffold with ``TODO`` placeholders for the user to
+   fill in before running Gaussian.
+6. Optionally writes and runs a ChimeraX inspection script (never used for
+   decisions; for visual inspection only).
+7. Writes a top-level ``manifest.json`` and ``all_sites_summary.tsv``.
 
-Important filename convention
------------------------------
-This module assumes the metal component file is named:
-
-    <PDB_ID>_metal.pdb
-
-Example:
-    2AFX_metal.pdb
-
-Important model separation
---------------------------
-tmp_param.pdb intentionally does NOT contain the metal atoms.
-
-Model usage in Chimera:
-- #0 -> tmp_param.pdb = protein + optional water + optional ligand
-- #1 -> metal_only.pdb = metal-only component
-
-This avoids false self-contacts such as:
-- ZN in #1 against the same ZN already present in #0
-
-Notes
------
-- This module targets classic UCSF Chimera, not ChimeraX.
-- The merged tmp_param.pdb may still contain duplicate atom serial numbers if
-  the component files were previously generated independently.
+Public API
+----------
+:func:`run_metal_parametrization_for_protein_dir`
 """
 
-from __future__ import annotations
-
+import json
 import os
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
 
-CHIMERA_FINDCLASH_COMMAND = (
-    "findclash #1 test #0 overlap -0.4 hbond 0.0 bondSeparation 2 "
-    "saveFile contacts.data"
+from stack_protein_preparation.metal_hydrogen_cleanup import (
+    remove_metal_coordinating_hydrogens,
+)
+from stack_protein_preparation.metalls_check import (
+    DONOR_ELEMENTS,
+    TRANSITION_METAL_ELEMENTS,
+    distance_between_atoms,
+    find_metal_contacts,
+    is_true_metal_atom,
+    read_pdb_atom_records,
 )
 
-CHIMERA_PRE_COMMANDS: list[str] = []
-CHIMERA_POST_COMMANDS: list[str] = []
+# ---------------------------------------------------------------------------
+# ChimeraX executable candidates (inspection only)
+# ---------------------------------------------------------------------------
 
+DEFAULT_CHIMERAX_EXECUTABLE_CANDIDATES = [
+    "chimerax",
+    "ChimeraX",
+    "/usr/bin/chimerax",
+    "/usr/local/bin/chimerax",
+    "/opt/UCSF/ChimeraX/bin/ChimeraX",
+    "/Applications/ChimeraX.app/Contents/MacOS/ChimeraX",
+]
+
+# Legacy UCSF Chimera fallbacks (no longer used for decisions, kept for discovery)
 DEFAULT_CHIMERA_EXECUTABLE_CANDIDATES = [
     "chimera",
     "/usr/bin/chimera",
@@ -81,45 +69,40 @@ DEFAULT_CHIMERA_EXECUTABLE_CANDIDATES = [
 ]
 
 
-def _choose_best_protein_input(components_dir: Path, pdb_id: str) -> Path | None:
-    """
-    Return the preferred protein structure for metal parametrization.
+# ---------------------------------------------------------------------------
+# Input selection
+# ---------------------------------------------------------------------------
 
-    Priority:
-    1. <PDB_ID>_protein_final.pdb
-    2. <PDB_ID>_protein_internal_capped.pdb
-    3. <PDB_ID>_protein_amber_termini.pdb
-    4. <PDB_ID>_protein_as_Amber.pdb
-    5. <PDB_ID>_proteinH.pdb
-    6. <PDB_ID>_protein.pdb
+def _choose_best_protein_input(components_dir: Path, pdb_id: str) -> Path | None:
+    """Return the best available protonated protein structure for this site.
+
+    Priority follows FRUTON output naming conventions, newest names first with
+    legacy fallbacks at the end.
     """
     candidates = [
+        components_dir / f"{pdb_id}_proteinH_single.pdb",
+        components_dir / f"{pdb_id}_proteinH_best_complete.pdb",
+        components_dir / f"{pdb_id}_proteinH_gaps.pdb",
+        components_dir / f"{pdb_id}_protein_monomer.pdb",
+        components_dir / f"{pdb_id}_protein.pdb",
+        # legacy fallbacks
         components_dir / f"{pdb_id}_protein_final.pdb",
-        components_dir / f"{pdb_id}_protein_internal_capped.pdb",
-        components_dir / f"{pdb_id}_protein_amber_termini.pdb",
         components_dir / f"{pdb_id}_protein_as_Amber.pdb",
         components_dir / f"{pdb_id}_proteinH.pdb",
-        components_dir / f"{pdb_id}_protein.pdb",
     ]
-
     for path in candidates:
         if path.is_file():
             return path
-
     return None
 
 
 def _get_optional_component_paths(
-    components_dir: Path,
-    pdb_id: str,
+    components_dir: Path, pdb_id: str
 ) -> dict[str, Path | None]:
-    """
-    Return optional component files if present.
-    """
+    """Return optional environment component paths if the files are present."""
     water_path = components_dir / f"{pdb_id}_water.pdb"
     ligand_path = components_dir / f"{pdb_id}_ligand.pdb"
     metal_path = components_dir / f"{pdb_id}_metal.pdb"
-
     return {
         "water": water_path if water_path.is_file() else None,
         "ligand": ligand_path if ligand_path.is_file() else None,
@@ -128,37 +111,23 @@ def _get_optional_component_paths(
 
 
 def _has_metal_file(components_dir: Path, pdb_id: str) -> bool:
-    """
-    Decide whether the current protein directory contains a metal file.
-
-    Current rule:
-    - metal file exists and is non-empty
-    """
     metal_path = components_dir / f"{pdb_id}_metal.pdb"
     return metal_path.is_file() and metal_path.stat().st_size > 0
 
 
+# ---------------------------------------------------------------------------
+# PDB file helpers
+# ---------------------------------------------------------------------------
+
 def _read_pdb_payload_lines(pdb_path: Path) -> list[str]:
-    """
-    Read only payload lines that should be kept in a merged PDB.
-
-    Dropped:
-    - END
-    - ENDMDL
-
-    Kept:
-    - everything else, including ATOM / HETATM / TER / REMARK, etc.
-    """
-    payload_lines: list[str] = []
-
-    with pdb_path.open("r", encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            stripped = line.strip()
-            if stripped in {"END", "ENDMDL"}:
+    """Read all lines except END / ENDMDL terminators."""
+    payload: list[str] = []
+    with pdb_path.open("r", encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            if line.strip() in {"END", "ENDMDL"}:
                 continue
-            payload_lines.append(line)
-
-    return payload_lines
+            payload.append(line)
+    return payload
 
 
 def _write_combined_tmp_param_pdb(
@@ -167,21 +136,10 @@ def _write_combined_tmp_param_pdb(
     water_path: Path | None,
     ligand_path: Path | None,
 ) -> dict[str, Any]:
-    """
-    Concatenate the selected component PDB files into tmp_param.pdb.
+    """Concatenate protein + optional water + optional ligand into one PDB.
 
-    Order:
-    1. protein
-    2. water (optional)
-    3. ligand (optional)
-
-    Important
-    ---------
-    The metal component is intentionally NOT included here.
-    It is written separately to metal_only.pdb so that Chimera can compare:
-
-    - #1 = metal-only
-    - #0 = environment without metal
+    The metal component is intentionally excluded so that the environment PDB
+    can be used as a clean donor context for hydrogen cleanup and MCPB input.
     """
     source_paths: list[Path] = [protein_path]
     if water_path is not None:
@@ -190,166 +148,553 @@ def _write_combined_tmp_param_pdb(
         source_paths.append(ligand_path)
 
     line_count = 0
-
-    with output_path.open("w", encoding="utf-8") as out_handle:
-        for source_path in source_paths:
-            lines = _read_pdb_payload_lines(source_path)
-
+    with output_path.open("w", encoding="utf-8") as out:
+        for src in source_paths:
+            lines = _read_pdb_payload_lines(src)
             for line in lines:
-                out_handle.write(line)
+                out.write(line)
                 line_count += 1
-
             if lines and not lines[-1].startswith("TER"):
-                out_handle.write("TER\n")
+                out.write("TER\n")
                 line_count += 1
-
-        out_handle.write("END\n")
+        out.write("END\n")
         line_count += 1
 
     return {
-        "source_paths": [str(path) for path in source_paths],
+        "source_paths": [str(p) for p in source_paths],
         "line_count_written": line_count,
     }
 
 
-def _copy_metal_only_pdb(
-    metal_input_path: Path,
-    metal_only_output_path: Path,
-) -> None:
-    """
-    Copy the metal component to a dedicated local file for separate opening
-    in Chimera as model #1.
-    """
+def _copy_metal_only_pdb(metal_input_path: Path, metal_only_output_path: Path) -> None:
+    """Copy the metal component to a local file for this site."""
     text = metal_input_path.read_text(encoding="utf-8", errors="replace")
     metal_only_output_path.write_text(text, encoding="utf-8")
 
 
+def _write_single_metal_pdb(
+    metal_atom_raw_line: str,
+    output_path: Path,
+) -> None:
+    """Write a minimal PDB containing only one metal atom."""
+    with output_path.open("w", encoding="utf-8") as fh:
+        fh.write(metal_atom_raw_line.rstrip("\n") + "\n")
+        fh.write("END\n")
+
+
+def _combined_mcpb_pdb(
+    environment_pdb: Path,
+    metal_only_pdb: Path,
+    output_path: Path,
+) -> None:
+    """Concatenate the cleaned environment and the metal-only PDB for MCPB."""
+    env_lines = _read_pdb_payload_lines(environment_pdb)
+    metal_lines = _read_pdb_payload_lines(metal_only_pdb)
+    with output_path.open("w", encoding="utf-8") as fh:
+        for line in env_lines:
+            fh.write(line)
+        if env_lines and not env_lines[-1].startswith("TER"):
+            fh.write("TER\n")
+        for line in metal_lines:
+            fh.write(line)
+        fh.write("END\n")
+
+
+# ---------------------------------------------------------------------------
+# Chimera executable resolution
+# ---------------------------------------------------------------------------
+
 def _resolve_chimera_executable(chimera_executable: str | None = None) -> str | None:
-    """
-    Resolve Chimera executable.
+    """Resolve a ChimeraX (or legacy Chimera) executable.
 
     Priority:
-    1. explicit function argument
-    2. CHIMERA_EXECUTABLE environment variable
-    3. fallback candidate list
+    1. Explicit argument
+    2. CHIMERAX_EXECUTABLE / CHIMERA_EXECUTABLE environment variables
+    3. Candidate lists (ChimeraX preferred)
     """
-    if chimera_executable:
-        explicit_resolved = shutil.which(chimera_executable)
-        if explicit_resolved:
-            return explicit_resolved
-
-        explicit_path = Path(chimera_executable)
-        if explicit_path.is_file():
-            return str(explicit_path)
-
-    env_path = os.environ.get("CHIMERA_EXECUTABLE")
-    if env_path:
-        env_resolved = shutil.which(env_path)
-        if env_resolved:
-            return env_resolved
-
-        env_file = Path(env_path)
-        if env_file.is_file():
-            return str(env_file)
-
-    for candidate in DEFAULT_CHIMERA_EXECUTABLE_CANDIDATES:
-        resolved = shutil.which(candidate)
+    def _find(name: str) -> str | None:
+        resolved = shutil.which(name)
         if resolved:
             return resolved
+        path = Path(name)
+        if path.is_file():
+            return str(path)
+        return None
 
-        candidate_path = Path(candidate)
-        if candidate_path.is_file():
-            return str(candidate_path)
+    if chimera_executable:
+        found = _find(chimera_executable)
+        if found:
+            return found
+
+    for env_var in ("CHIMERAX_EXECUTABLE", "CHIMERA_EXECUTABLE"):
+        env_val = os.environ.get(env_var)
+        if env_val:
+            found = _find(env_val)
+            if found:
+                return found
+
+    for candidate in DEFAULT_CHIMERAX_EXECUTABLE_CANDIDATES:
+        found = _find(candidate)
+        if found:
+            return found
+
+    for candidate in DEFAULT_CHIMERA_EXECUTABLE_CANDIDATES:
+        found = _find(candidate)
+        if found:
+            return found
 
     return None
 
 
-def _write_chimera_python_script(
+# ---------------------------------------------------------------------------
+# ChimeraX inspection script (02_contacts)
+# ---------------------------------------------------------------------------
+
+def _write_chimerax_cxc_script(
     script_path: Path,
-    tmp_param_pdb_name: str = "tmp_param.pdb",
-    metal_only_pdb_name: str = "metal_only.pdb",
-    contacts_file_name: str = "contacts.data",
+    analysis_pdb_path: Path,
+    contact_cutoff_angstrom: float,
+    pdb_id: str,
+    site_folder_name: str,
 ) -> None:
-    """
-    Write a headless Chimera Python script.
-
-    Model layout
-    ------------
-    #0 -> full environment system (tmp_param.pdb)
-    #1 -> metal-only PDB
-    """
-    pre_commands_block = "\n".join(f'rc("{cmd}")' for cmd in CHIMERA_PRE_COMMANDS)
-    post_commands_block = "\n".join(f'rc("{cmd}")' for cmd in CHIMERA_POST_COMMANDS)
-
-    script_text = f"""# Auto-generated by metall_params.py
-from chimera import runCommand as rc
-
-rc("open {tmp_param_pdb_name}")
-rc("open {metal_only_pdb_name}")
-{pre_commands_block}
-rc("{CHIMERA_FINDCLASH_COMMAND}")
-{post_commands_block}
-rc("stop now")
-"""
-
-    script_path.write_text(script_text, encoding="utf-8")
+    """Write a ChimeraX ``.cxc`` inspection script for one metal site."""
+    atom_spec_metals = "@" + ",".join(sorted(TRANSITION_METAL_ELEMENTS))
+    script_lines = [
+        f"open {analysis_pdb_path}",
+        "delete solvent false",
+        (
+            f"contacts {atom_spec_metals} restrict @N*,O*,S*,SE* "
+            f"distance {contact_cutoff_angstrom:.2f} reveal true "
+            f"name metal_contacts color gold"
+        ),
+        f"# site: {site_folder_name}  pdb_id: {pdb_id}",
+        "exit",
+        "",
+    ]
+    script_path.write_text("\n".join(script_lines), encoding="utf-8")
 
 
-def _run_chimera_headless(
-    metall_params_dir: Path,
-    chimera_executable: str,
+def _run_chimerax_script(
     script_path: Path,
     log_path: Path,
-) -> subprocess.CompletedProcess[str]:
-    """
-    Run UCSF Chimera in headless mode inside the metall_params directory.
-    """
-    command = [chimera_executable, "--nogui", str(script_path.name)]
+    chimera_executable: str,
+) -> str:
+    """Run the ChimeraX script and return a status string."""
+    try:
+        completed = subprocess.run(
+            [chimera_executable, "--nogui", str(script_path)],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+    except Exception as exc:
+        log_path.write_text(f"ChimeraX execution failed: {exc!r}\n", encoding="utf-8")
+        return "failed"
 
-    result = subprocess.run(
-        command,
-        cwd=metall_params_dir,
-        capture_output=True,
-        text=True,
-        check=False,
+    log_path.write_text(completed.stdout + "\n" + completed.stderr, encoding="utf-8")
+    return "success" if completed.returncode == 0 else f"returncode_{completed.returncode}"
+
+
+# ---------------------------------------------------------------------------
+# Deterministic contacts TSV (02_contacts)
+# ---------------------------------------------------------------------------
+
+def _write_deterministic_contacts_tsv(
+    output_path: Path,
+    metal_atom: Any,
+    all_records: list[Any],
+    contact_cutoff_angstrom: float,
+) -> None:
+    """Write metal donor contacts computed purely in Python."""
+    contacts = find_metal_contacts(
+        metal_atom=metal_atom,
+        atom_records=all_records,
+        contact_cutoff_angstrom=contact_cutoff_angstrom,
+    )
+    contacts_sorted = sorted(contacts, key=lambda c: c.distance_angstrom)
+
+    header = "\t".join([
+        "metal_element", "metal_chain", "metal_resseq",
+        "donor_element", "donor_residue_name", "donor_chain",
+        "donor_resseq", "donor_atom_name", "distance_angstrom",
+    ])
+    rows = []
+    for c in contacts_sorted:
+        rows.append("\t".join([
+            c.metal_element,
+            metal_atom.chain_id,
+            str(metal_atom.residue_number),
+            c.donor_element,
+            c.donor_residue_name,
+            c.donor_chain_id,
+            str(c.donor_residue_number),
+            c.donor_atom_name.strip(),
+            f"{c.distance_angstrom:.3f}",
+        ]))
+
+    output_path.write_text(header + "\n" + "\n".join(rows) + "\n", encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# MCPB scaffold writers (03_mcpb)
+# ---------------------------------------------------------------------------
+
+def _write_mcpb_in(
+    output_path: Path,
+    pdb_id: str,
+    element: str,
+    chain: str,
+    resseq: int,
+    max_contact_dist: float,
+) -> None:
+    """Write a first-pass MCPB.py ``.in`` scaffold with TODO placeholders."""
+    group_name = f"{pdb_id}_{element}_{chain}_{resseq}"
+    cut_off = max_contact_dist + 0.5
+    content = f"""\
+# MCPB.py input file — first-pass scaffold generated by FRUTON
+# Review carefully before running. Placeholders marked with TODO.
+
+original_pdb = {pdb_id}_mcpb.pdb
+group_name = {group_name}
+
+# TODO: Verify cut_off. Value derived from max donor-metal distance + 0.5 Å buffer.
+cut_off = {cut_off:.1f}
+
+# TODO: Verify ion_ids. These are the serial numbers of the metal atom in {pdb_id}_mcpb.pdb.
+# ion_ids must be the PDB serial number, not residue number.
+ion_ids = TODO_metal_serial_in_mcpb_pdb
+
+# TODO: Provide mol2 file for the metal ion and any non-standard ligands.
+# Example: ion_mol2files = ZN.mol2
+ion_mol2files = TODO.mol2
+
+# large_opt = 1 means optimize only H positions in the large model (recommended).
+# Use large_opt = 0 for full geometry optimization (expensive).
+large_opt = 1
+
+force_field = amber99sb-ildn
+
+# TODO: Verify Gaussian version on your system.
+software_version = g16
+
+water_model = tip3p
+
+# TODO: Set total charge and spin multiplicity for the QM region.
+# Spin: 1 = singlet (closed shell), 2 = doublet (one unpaired e-), 3 = triplet, etc.
+# charge_m_sm = <small_model_charge> <small_model_spin_multiplicity>
+# charge_m_lm = <large_model_charge> <large_model_spin_multiplicity>
+charge_m_sm = TODO TODO
+charge_m_lm = TODO TODO
+"""
+    output_path.write_text(content, encoding="utf-8")
+
+
+def _write_commands_sh(output_path: Path, pdb_id: str) -> None:
+    """Write the MCPB.py step-by-step commands shell script."""
+    content = f"""\
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Step 1: Generate Gaussian input files and model PDBs.
+MCPB.py -i {pdb_id}.in -s 1
+
+# --- Run Gaussian jobs after reviewing the generated .com files ---
+# g16 < {pdb_id}_small_opt.com  > {pdb_id}_small_opt.log
+# g16 < {pdb_id}_small_fc.com   > {pdb_id}_small_fc.log
+# formchk {pdb_id}_small_opt.chk {pdb_id}_small_opt.fchk
+# g16 < {pdb_id}_large_mk.com   > {pdb_id}_large_mk.log
+
+# Step 2: Fit force constants from Gaussian Hessian (Seminario method).
+# MCPB.py -i {pdb_id}.in -s 2
+
+# Step 3: Fit RESP charges.
+# MCPB.py -i {pdb_id}.in -s 3
+
+# Step 4: Generate LEaP input.
+# MCPB.py -i {pdb_id}.in -s 4
+# tleap -s -f {pdb_id}_tleap.in > {pdb_id}_tleap.out
+"""
+    output_path.write_text(content, encoding="utf-8")
+    output_path.chmod(0o755)
+
+
+def _write_mcpb_readme(output_path: Path, pdb_id: str) -> None:
+    """Write a short README.md explaining MCPB workflow and review requirements."""
+    content = f"""\
+# MCPB Parametrization — {pdb_id}
+
+## What MCPB.py does
+
+MCPB.py (Metal Center Parameter Builder) automates the bonded-model
+parametrization of transition-metal centers for AMBER force fields. It:
+
+1. Builds a "small model" (metal + first-shell donors) and a "large model"
+   (small model + second-shell) from the input PDB.
+2. Generates Gaussian input files for geometry optimization (small model),
+   force-constant calculation (Hessian, small model), and RESP charge fitting
+   (large model).
+3. Uses the Seminario method to derive bond/angle force constants from the
+   Gaussian Hessian.
+4. Produces AMBER ``frcmod`` and ``mol2`` files for LEaP.
+
+Reference: doi:10.1021/acs.jcim.5b00674
+
+## Before running
+
+Review and complete **all** ``TODO`` placeholders in ``{pdb_id}.in``:
+
+- ``ion_ids``         — PDB serial number of the metal atom in ``{pdb_id}_mcpb.pdb``
+- ``ion_mol2files``   — mol2 file(s) for the metal ion and non-standard ligands
+- ``charge_m_sm``     — total charge and spin multiplicity for the small model
+- ``charge_m_lm``     — total charge and spin multiplicity for the large model
+- ``software_version``— Gaussian version available on your system (g09 or g16)
+- ``cut_off``         — verify the coordination-shell cutoff is appropriate
+
+## Gaussian
+
+Gaussian is an external quantum-chemistry program and must be licensed and
+installed separately. FRUTON does not run Gaussian automatically. After
+completing step 1 (``MCPB.py -i {pdb_id}.in -s 1``), review the generated
+``.com`` files before submitting them to Gaussian.
+
+## Running
+
+```bash
+bash commands.sh
+```
+"""
+    output_path.write_text(content, encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Per-site orchestration
+# ---------------------------------------------------------------------------
+
+def _process_one_site(
+    *,
+    site_index: int,
+    metal_atom: Any,
+    all_records: list[Any],
+    protein_dir: Path,
+    pdb_id: str,
+    protein_input: Path,
+    water_input: Path | None,
+    ligand_input: Path | None,
+    metal_input: Path,
+    metall_params_dir: Path,
+    chimera_executable: str | None,
+    contact_cutoff_angstrom: float,
+) -> dict[str, Any]:
+    """Build and populate one site folder; return a per-site result dict."""
+
+    element = metal_atom.element
+    chain = metal_atom.chain_id or "X"
+    resseq = metal_atom.residue_number
+
+    site_folder_name = f"site_{site_index:03d}_{element}_{chain}_{resseq}"
+    site_dir = metall_params_dir / site_folder_name
+
+    input_dir = site_dir / "00_input"
+    cleanup_dir = site_dir / "01_hydrogen_cleanup"
+    contacts_dir = site_dir / "02_contacts"
+    mcpb_dir = site_dir / "03_mcpb"
+    logs_dir = site_dir / "logs"
+
+    for d in (input_dir, cleanup_dir, contacts_dir, mcpb_dir, logs_dir):
+        d.mkdir(parents=True, exist_ok=True)
+
+    site_result: dict[str, Any] = {
+        "site_index": site_index,
+        "site_folder": site_folder_name,
+        "element": element,
+        "chain_id": chain,
+        "residue_number": resseq,
+        "status": "failed",
+        "hydrogen_cleanup_status": "failed",
+        "removed_h_count": 0,
+        "kept_h_count": 0,
+        "manual_review_count": 0,
+        "coordination_number": 0,
+        "mcpb_folder": str(mcpb_dir.relative_to(metall_params_dir)),
+        "message": "",
+    }
+
+    # ------------------------------------------------------------------
+    # 00_input — environment PDB (no metal) + metal_only.pdb
+    # ------------------------------------------------------------------
+    env_before_cleanup = input_dir / "environment_before_cleanup.pdb"
+    metal_only_pdb = input_dir / "metal_only.pdb"
+    prepared_variant_pdb = input_dir / "prepared_variant.pdb"
+
+    _write_combined_tmp_param_pdb(
+        output_path=env_before_cleanup,
+        protein_path=protein_input,
+        water_path=water_input,
+        ligand_path=ligand_input,
     )
 
-    log_text = [
-        "=== COMMAND ===",
-        " ".join(command),
-        "",
-        "=== STDOUT ===",
-        result.stdout or "",
-        "",
-        "=== STDERR ===",
-        result.stderr or "",
-        "",
-        f"=== RETURN CODE ===\n{result.returncode}\n",
+    # metal_only.pdb: write the raw line for this specific metal atom
+    if metal_atom.raw_line:
+        _write_single_metal_pdb(metal_atom.raw_line, metal_only_pdb)
+    else:
+        _copy_metal_only_pdb(metal_input, metal_only_pdb)
+
+    # prepared_variant = env + metal together
+    _combined_mcpb_pdb(env_before_cleanup, metal_only_pdb, prepared_variant_pdb)
+
+    # ------------------------------------------------------------------
+    # 01_hydrogen_cleanup
+    # ------------------------------------------------------------------
+    cleanup_result = remove_metal_coordinating_hydrogens(
+        input_pdb_path=env_before_cleanup,
+        output_dir=cleanup_dir,
+        pdb_id=pdb_id,
+        variant_label=site_folder_name,
+        contact_cutoff_angstrom=contact_cutoff_angstrom,
+    )
+
+    site_result["hydrogen_cleanup_status"] = cleanup_result.status
+    site_result["removed_h_count"] = cleanup_result.removed_count
+    site_result["kept_h_count"] = cleanup_result.kept_count
+    site_result["manual_review_count"] = cleanup_result.manual_review_count
+
+    env_after_cleanup = cleanup_result.cleaned_pdb_path
+
+    # ------------------------------------------------------------------
+    # 02_contacts — deterministic TSV + optional ChimeraX script
+    # ------------------------------------------------------------------
+    contacts_tsv = contacts_dir / "deterministic_metal_contacts.tsv"
+    analysis_records = read_pdb_atom_records(env_before_cleanup, source_role="contacts")
+    # Include the metal record for distance calculations
+    metal_records_extra = read_pdb_atom_records(metal_only_pdb, source_role="contacts")
+    all_analysis_records = analysis_records + metal_records_extra
+
+    # Find the metal atom in analysis records (matched by position/element)
+    metal_in_analysis = next(
+        (
+            a for a in metal_records_extra
+            if is_true_metal_atom(a) and a.element == element
+        ),
+        metal_atom,
+    )
+
+    _write_deterministic_contacts_tsv(
+        output_path=contacts_tsv,
+        metal_atom=metal_in_analysis,
+        all_records=all_analysis_records,
+        contact_cutoff_angstrom=contact_cutoff_angstrom,
+    )
+
+    # Coordination number from contacts
+    contacts_list = find_metal_contacts(
+        metal_atom=metal_in_analysis,
+        atom_records=all_analysis_records,
+        contact_cutoff_angstrom=contact_cutoff_angstrom,
+    )
+    site_result["coordination_number"] = len(contacts_list)
+    max_contact_dist = max((c.distance_angstrom for c in contacts_list), default=2.5)
+
+    # Optional ChimeraX script
+    chimerax_script = contacts_dir / "chimera_contacts.cxc"
+    _write_chimerax_cxc_script(
+        script_path=chimerax_script,
+        analysis_pdb_path=prepared_variant_pdb.resolve(),
+        contact_cutoff_angstrom=contact_cutoff_angstrom,
+        pdb_id=pdb_id,
+        site_folder_name=site_folder_name,
+    )
+
+    resolved_chimera = _resolve_chimera_executable(chimera_executable)
+    if resolved_chimera:
+        chimera_log = logs_dir / f"chimerax_{site_folder_name}.log"
+        _run_chimerax_script(chimerax_script, chimera_log, resolved_chimera)
+
+    # ------------------------------------------------------------------
+    # 03_mcpb — scaffold files
+    # ------------------------------------------------------------------
+    mcpb_pdb = mcpb_dir / f"{pdb_id}_mcpb.pdb"
+    mcpb_in = mcpb_dir / f"{pdb_id}.in"
+    commands_sh = mcpb_dir / "commands.sh"
+    readme_md = mcpb_dir / "README.md"
+
+    _combined_mcpb_pdb(env_after_cleanup, metal_only_pdb, mcpb_pdb)
+    _write_mcpb_in(
+        output_path=mcpb_in,
+        pdb_id=pdb_id,
+        element=element,
+        chain=chain,
+        resseq=resseq,
+        max_contact_dist=max_contact_dist,
+    )
+    _write_commands_sh(commands_sh, pdb_id)
+    _write_mcpb_readme(readme_md, pdb_id)
+
+    # ------------------------------------------------------------------
+    # logs — pipeline log for this site
+    # ------------------------------------------------------------------
+    log_path = logs_dir / f"metall_params_{pdb_id}.log"
+    log_lines = [
+        f"site              : {site_folder_name}",
+        f"pdb_id            : {pdb_id}",
+        f"element           : {element}",
+        f"chain             : {chain}",
+        f"residue_number    : {resseq}",
+        f"coordination      : {site_result['coordination_number']}",
+        f"h_removed         : {cleanup_result.removed_count}",
+        f"h_kept            : {cleanup_result.kept_count}",
+        f"h_manual_review   : {cleanup_result.manual_review_count}",
+        f"cleanup_status    : {cleanup_result.status}",
+        f"cleanup_message   : {cleanup_result.message}",
     ]
-    log_path.write_text("\n".join(log_text), encoding="utf-8")
+    log_path.write_text("\n".join(log_lines) + "\n", encoding="utf-8")
 
-    return result
+    site_result["status"] = "success"
+    site_result["message"] = (
+        f"Site {site_folder_name} prepared; H removed={cleanup_result.removed_count}."
+    )
+    return site_result
 
+
+# ---------------------------------------------------------------------------
+# Public entry point
+# ---------------------------------------------------------------------------
 
 def run_metal_parametrization_for_protein_dir(
     protein_dir: str | Path,
     chimera_executable: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Run the metal-preparation step for one protein directory.
+    """Run the metal parametrization preparation step for one protein directory.
+
+    For every transition-metal atom found in ``<protein_dir>/components/``
+    this function creates a numbered site folder under
+    ``<protein_dir>/metall_params/`` containing:
+
+    - ``00_input/``         environment PDB and metal-only PDB
+    - ``01_hydrogen_cleanup/`` environment with bad H removed
+    - ``02_contacts/``      deterministic contacts TSV and optional ChimeraX script
+    - ``03_mcpb/``          MCPB.py scaffold (input file, commands, README)
+    - ``logs/``             per-site log
+
+    A top-level ``manifest.json`` and ``all_sites_summary.tsv`` are written to
+    ``<protein_dir>/metall_params/``.
 
     Parameters
     ----------
     protein_dir:
-        Path like:
-            data/proteins/<PDB_ID>
+        Path to the FRUTON protein directory, e.g. ``data/proteins/2AFX``.
     chimera_executable:
-        Optional explicit Chimera executable path or name.
+        Optional explicit ChimeraX/Chimera executable for optional visual
+        inspection scripts.  If ``None``, the function auto-discovers ChimeraX
+        from well-known locations.  Chimera output is never used for decisions.
 
     Returns
     -------
     dict
-        Structured result suitable for pipeline state logging.
+        Structured result for pipeline-state integration with keys:
+        ``status``, ``pdb_id``, ``metall_params_dir``,
+        ``transition_metal_site_count``, ``manifest_path``,
+        ``site_results``, ``message``.
     """
     protein_dir = Path(protein_dir).resolve()
     pdb_id = protein_dir.name
@@ -357,28 +702,16 @@ def run_metal_parametrization_for_protein_dir(
     metall_params_dir = protein_dir / "metall_params"
 
     result: dict[str, Any] = {
-        "status": "required",
+        "status": "failed",
         "pdb_id": pdb_id,
-        "protein_dir": str(protein_dir),
-        "components_dir": str(components_dir),
         "metall_params_dir": str(metall_params_dir),
-        "used_protein_input": None,
-        "used_water_input": None,
-        "used_ligand_input": None,
-        "used_metal_input": None,
-        "tmp_param_pdb": None,
-        "metal_only_pdb": None,
-        "chimera_script": None,
-        "contacts_file": None,
-        "chimera_log": None,
-        "chimera_executable": None,
+        "transition_metal_site_count": 0,
+        "manifest_path": None,
+        "site_results": [],
         "message": "",
-        "merge_source_paths": [],
-        "tmp_param_line_count": 0,
     }
 
     if not components_dir.is_dir():
-        result["status"] = "failed"
         result["message"] = f"Missing components directory: {components_dir}"
         return result
 
@@ -388,119 +721,191 @@ def run_metal_parametrization_for_protein_dir(
         return result
 
     protein_input = _choose_best_protein_input(components_dir, pdb_id)
-    optional_components = _get_optional_component_paths(components_dir, pdb_id)
-
-    water_input = optional_components["water"]
-    ligand_input = optional_components["ligand"]
-    metal_input = optional_components["metal"]
+    optional = _get_optional_component_paths(components_dir, pdb_id)
+    water_input = optional["water"]
+    ligand_input = optional["ligand"]
+    metal_input = optional["metal"]
 
     if protein_input is None:
-        result["status"] = "failed"
         result["message"] = (
             "No suitable protein input found. Expected one of: "
-            f"{pdb_id}_protein_final.pdb, "
-            f"{pdb_id}_protein_internal_capped.pdb, "
-            f"{pdb_id}_protein_amber_termini.pdb, "
-            f"{pdb_id}_protein_as_Amber.pdb, "
-            f"{pdb_id}_proteinH.pdb, "
-            f"{pdb_id}_protein.pdb"
+            f"{pdb_id}_proteinH_single.pdb, {pdb_id}_proteinH_best_complete.pdb, "
+            f"{pdb_id}_proteinH_gaps.pdb, {pdb_id}_protein_monomer.pdb, "
+            f"{pdb_id}_protein.pdb, {pdb_id}_protein_final.pdb, "
+            f"{pdb_id}_protein_as_Amber.pdb, {pdb_id}_proteinH.pdb"
         )
         return result
 
     if metal_input is None:
-        result["status"] = "failed"
         result["message"] = "Metal file missing despite positive metal detection."
+        return result
+
+    # Read metal records to enumerate individual transition-metal atoms
+    try:
+        metal_records = read_pdb_atom_records(metal_input, source_role="metal_detection")
+    except Exception as exc:
+        result["message"] = f"Could not read metal PDB: {exc!r}"
+        return result
+
+    transition_metals = [
+        a for a in metal_records
+        if is_true_metal_atom(a) and a.element in TRANSITION_METAL_ELEMENTS
+    ]
+
+    if not transition_metals:
+        result["status"] = "skipped"
+        result["message"] = (
+            "Metal file present but contains no transition-metal atoms. "
+            "metall_params step skipped."
+        )
         return result
 
     metall_params_dir.mkdir(parents=True, exist_ok=True)
 
-    tmp_param_pdb = metall_params_dir / "tmp_param.pdb"
-    metal_only_pdb = metall_params_dir / "metal_only.pdb"
-    chimera_script = metall_params_dir / "chimera_contacts.py"
-    contacts_file = metall_params_dir / "contacts.data"
-    chimera_log = metall_params_dir / "chimera_run.log"
-
-    merge_info = _write_combined_tmp_param_pdb(
-        output_path=tmp_param_pdb,
-        protein_path=protein_input,
-        water_path=water_input,
-        ligand_path=ligand_input,
-    )
-
-    _copy_metal_only_pdb(
-        metal_input_path=metal_input,
-        metal_only_output_path=metal_only_pdb,
-    )
-
-    _write_chimera_python_script(
-        script_path=chimera_script,
-        tmp_param_pdb_name=tmp_param_pdb.name,
-        metal_only_pdb_name=metal_only_pdb.name,
-        contacts_file_name=contacts_file.name,
-    )
-
-    resolved_chimera = _resolve_chimera_executable(
-        chimera_executable=chimera_executable
-    )
-
-    result["used_protein_input"] = str(protein_input)
-    result["used_water_input"] = str(water_input) if water_input else None
-    result["used_ligand_input"] = str(ligand_input) if ligand_input else None
-    result["used_metal_input"] = str(metal_input)
-    result["tmp_param_pdb"] = str(tmp_param_pdb)
-    result["metal_only_pdb"] = str(metal_only_pdb)
-    result["chimera_script"] = str(chimera_script)
-    result["contacts_file"] = str(contacts_file)
-    result["chimera_log"] = str(chimera_log)
-    result["merge_source_paths"] = merge_info["source_paths"]
-    result["tmp_param_line_count"] = merge_info["line_count_written"]
-
-    if resolved_chimera is None:
-        result["status"] = "failed"
-        result["message"] = (
-            "Could not resolve UCSF Chimera executable. "
-            "Pass `chimera_executable=` explicitly or set CHIMERA_EXECUTABLE."
+    # Also read environment for contact analysis
+    env_records_for_analysis: list[Any] = []
+    try:
+        env_records_for_analysis = read_pdb_atom_records(
+            protein_input, source_role="env_analysis"
         )
-        return result
+        if water_input:
+            env_records_for_analysis += read_pdb_atom_records(
+                water_input, source_role="env_analysis"
+            )
+        if ligand_input:
+            env_records_for_analysis += read_pdb_atom_records(
+                ligand_input, source_role="env_analysis"
+            )
+    except Exception:
+        pass  # Non-fatal; contacts step will re-read from file
 
-    result["chimera_executable"] = resolved_chimera
+    site_results: list[dict[str, Any]] = []
+    contact_cutoff = 3.5  # fixed default; could be parameterised later
 
-    run_result = _run_chimera_headless(
-        metall_params_dir=metall_params_dir,
-        chimera_executable=resolved_chimera,
-        script_path=chimera_script,
-        log_path=chimera_log,
+    for idx, metal_atom in enumerate(transition_metals, start=1):
+        try:
+            site_res = _process_one_site(
+                site_index=idx,
+                metal_atom=metal_atom,
+                all_records=env_records_for_analysis + metal_records,
+                protein_dir=protein_dir,
+                pdb_id=pdb_id,
+                protein_input=protein_input,
+                water_input=water_input,
+                ligand_input=ligand_input,
+                metal_input=metal_input,
+                metall_params_dir=metall_params_dir,
+                chimera_executable=chimera_executable,
+                contact_cutoff_angstrom=contact_cutoff,
+            )
+        except Exception as exc:
+            element = getattr(metal_atom, "element", "?")
+            chain = getattr(metal_atom, "chain_id", "?") or "?"
+            resseq = getattr(metal_atom, "residue_number", 0)
+            site_res = {
+                "site_index": idx,
+                "site_folder": f"site_{idx:03d}_{element}_{chain}_{resseq}",
+                "element": element,
+                "chain_id": chain,
+                "residue_number": resseq,
+                "status": "failed",
+                "hydrogen_cleanup_status": "failed",
+                "removed_h_count": 0,
+                "kept_h_count": 0,
+                "manual_review_count": 0,
+                "coordination_number": 0,
+                "mcpb_folder": f"site_{idx:03d}_{element}_{chain}_{resseq}/03_mcpb",
+                "message": f"Exception: {exc!r}",
+            }
+        site_results.append(site_res)
+
+    result["transition_metal_site_count"] = len(transition_metals)
+    result["site_results"] = site_results
+
+    # ------------------------------------------------------------------
+    # manifest.json
+    # ------------------------------------------------------------------
+    manifest_sites = [
+        {
+            "site_index": s["site_index"],
+            "site_folder": s["site_folder"],
+            "element": s["element"],
+            "chain_id": s["chain_id"],
+            "residue_number": s["residue_number"],
+            "hydrogen_cleanup_status": s["hydrogen_cleanup_status"],
+            "removed_h_count": s["removed_h_count"],
+            "mcpb_folder": s["mcpb_folder"],
+        }
+        for s in site_results
+    ]
+
+    all_statuses = {s["status"] for s in site_results}
+    if all_statuses == {"success"}:
+        overall_status = "success"
+    elif "success" in all_statuses:
+        overall_status = "partial"
+    elif all_statuses == {"skipped"}:
+        overall_status = "skipped"
+    else:
+        overall_status = "failed"
+
+    manifest = {
+        "pdb_id": pdb_id,
+        "status": overall_status,
+        "transition_metal_site_count": len(transition_metals),
+        "sites": manifest_sites,
+    }
+    manifest_path = metall_params_dir / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    # ------------------------------------------------------------------
+    # all_sites_summary.tsv
+    # ------------------------------------------------------------------
+    summary_tsv = metall_params_dir / "all_sites_summary.tsv"
+    summary_header = "\t".join([
+        "site_index", "element", "chain_id", "residue_number",
+        "coordination_number", "h_removed", "h_kept", "h_manual_review",
+        "mcpb_folder", "status",
+    ])
+    summary_rows = []
+    for s in site_results:
+        summary_rows.append("\t".join([
+            str(s["site_index"]),
+            s["element"],
+            s["chain_id"],
+            str(s["residue_number"]),
+            str(s["coordination_number"]),
+            str(s["removed_h_count"]),
+            str(s["kept_h_count"]),
+            str(s["manual_review_count"]),
+            s["mcpb_folder"],
+            s["status"],
+        ]))
+    summary_tsv.write_text(
+        summary_header + "\n" + "\n".join(summary_rows) + "\n",
+        encoding="utf-8",
     )
 
-    if run_result.returncode != 0:
-        result["status"] = "failed"
-        result["message"] = (
-            f"Chimera returned non-zero exit code {run_result.returncode}. "
-            f"See log: {chimera_log}"
-        )
-        return result
-
-    if not contacts_file.is_file() or contacts_file.stat().st_size == 0:
-        result["status"] = "warning"
-        result["message"] = (
-            "Chimera finished but contacts.data is missing or empty. "
-            f"See log: {chimera_log}"
-        )
-        return result
-
-    result["status"] = "success"
-    result["message"] = "Metal parametrization preparation finished successfully."
+    result["status"] = overall_status
+    result["manifest_path"] = str(manifest_path)
+    result["message"] = (
+        f"{overall_status.capitalize()}: processed {len(transition_metals)} "
+        f"transition-metal site(s) for {pdb_id}."
+    )
     return result
 
 
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
     import argparse
-    import json
 
     parser = argparse.ArgumentParser(
         description=(
-            "Prepare tmp_param.pdb and contacts.data for metal-containing "
-            "protein systems."
+            "Prepare per-site MCPB scaffold folders for metal-containing "
+            "protein directories."
         )
     )
     parser.add_argument(
@@ -513,13 +918,13 @@ if __name__ == "__main__":
         dest="chimera_executable",
         type=str,
         default=None,
-        help="Optional explicit UCSF Chimera executable path or name.",
+        help="Optional explicit ChimeraX executable path or name.",
     )
 
     args = parser.parse_args()
-
     cli_result = run_metal_parametrization_for_protein_dir(
         protein_dir=args.protein_dir,
         chimera_executable=args.chimera_executable,
     )
-    print(json.dumps(cli_result, indent=2))
+    import json as _json
+    print(_json.dumps(cli_result, indent=2))
