@@ -256,19 +256,44 @@ def test_ligand_h_removed_and_appears_in_manual_review(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 6: metall_params creates expected per-site folder and scaffold files
+# Tetrahedral ZN helper
+# ---------------------------------------------------------------------------
+
+def _tetrahedral_zn_protein_lines() -> list[str]:
+    """Return ATOM lines for 4 CYS SG donors in tetrahedral geometry around ZN at origin.
+
+    All donors are at 2.0 Å from the origin (well within the 3.5 Å contact cutoff).
+    The four vectors form a perfect tetrahedron (inter-donor angle ≈ 109.47°).
+    classify_coordination_geometry returns "tetrahedral" for this arrangement,
+    which is in TRANSITION_ION_GEOMETRY_PREFERENCES["ZN"].
+    """
+    r = 2.0 / 3 ** 0.5  # ≈ 1.155 Å (all donors at 2.0 Å from origin)
+    coords = [
+        ( r,  r,  r),
+        (-r, -r,  r),
+        (-r,  r, -r),
+        ( r, -r, -r),
+    ]
+    lines = []
+    for i, (x, y, z) in enumerate(coords, start=1):
+        lines.append(_pdb_atom_line(i, "SG", "CYS", "A", i, x, y, z, "S"))
+    return lines
+
+
+# ---------------------------------------------------------------------------
+# Test 6: geometry matches → MCPB scaffold, mol2, and ion_ids auto-filled
 # ---------------------------------------------------------------------------
 
 def test_metall_params_creates_expected_site_structure(tmp_path: Path) -> None:
-    """run_metal_parametrization_for_protein_dir creates a complete site folder.
+    """Tetrahedral ZN (geometry matches) → full MCPB scaffold with auto-filled fields.
 
     Checks:
-      - site_001_ZN_A_301/ folder is created
-      - 00_input/, 01_hydrogen_cleanup/, 02_contacts/, 03_mcpb/ sub-folders exist
-      - MCPB scaffold files are present ({pdb_id}.in, commands.sh, README.md, {pdb_id}_mcpb.pdb)
-      - {pdb_id}.in contains TODO placeholders and correct original_pdb line
-      - commands.sh contains the MCPB.py step-1 invocation
-      - manifest.json is written with correct pdb_id and site count
+      - site_001_ZN_A_301/ folder and all sub-folders created
+      - geometry_ok=True in manifest; mcpb_scaffold_generated=True
+      - MCPB scaffold files present: {pdb_id}.in, commands.sh, README.md, {pdb_id}_mcpb.pdb
+      - {pdb_id}.in: ion_ids is a real integer (not TODO), ZN.mol2 referenced
+      - ZN.mol2 generated with charge 2.0
+      - commands.sh contains MCPB.py step-1 invocation
     """
     from stack_protein_preparation.metall_params import run_metal_parametrization_for_protein_dir
 
@@ -277,20 +302,19 @@ def test_metall_params_creates_expected_site_structure(tmp_path: Path) -> None:
     components_dir = protein_dir / "components"
     components_dir.mkdir(parents=True)
 
-    # Protein: CYS SG coordinating Zn, HG pointing away (should be kept)
-    protein_lines = [
-        _pdb_atom_line(1, "SG", "CYS", "A", 1, 2.0, 0.0, 0.0, "S"),
-        _pdb_atom_line(2, "HG", "CYS", "A", 1, 3.0, 0.0, 0.0, "H"),
-    ]
+    # Protein: 4 CYS SG donors in tetrahedral arrangement → ZN geometry = "tetrahedral"
     protein_pdb = components_dir / f"{pdb_id}_protein.pdb"
-    protein_pdb.write_text("".join(protein_lines) + "END\n", encoding="utf-8")
+    protein_pdb.write_text(
+        "".join(_tetrahedral_zn_protein_lines()) + "END\n", encoding="utf-8"
+    )
 
-    # Metal file: single Zn
-    metal_lines = [
-        _pdb_atom_line(100, "ZN", "ZN", "A", 301, 0.0, 0.0, 0.0, "ZN", record="HETATM"),
-    ]
+    # Metal: single ZN
     metal_pdb = components_dir / f"{pdb_id}_metal.pdb"
-    metal_pdb.write_text("".join(metal_lines) + "END\n", encoding="utf-8")
+    metal_pdb.write_text(
+        _pdb_atom_line(100, "ZN", "ZN", "A", 301, 0.0, 0.0, 0.0, "ZN", record="HETATM")
+        + "END\n",
+        encoding="utf-8",
+    )
 
     result = run_metal_parametrization_for_protein_dir(
         protein_dir=protein_dir,
@@ -301,16 +325,20 @@ def test_metall_params_creates_expected_site_structure(tmp_path: Path) -> None:
     assert result["transition_metal_site_count"] == 1
 
     metall_params_dir = protein_dir / "metall_params"
-    assert metall_params_dir.is_dir()
-
-    # Locate site folder
     site_dirs = [d for d in metall_params_dir.iterdir() if d.name.startswith("site_001_ZN")]
-    assert len(site_dirs) == 1, f"Expected one site_001_ZN_* folder, found: {[d.name for d in metall_params_dir.iterdir()]}"
+    assert len(site_dirs) == 1
     site_dir = site_dirs[0]
 
     # Sub-folders
     for sub in ("00_input", "01_hydrogen_cleanup", "02_contacts", "03_mcpb"):
         assert (site_dir / sub).is_dir(), f"Missing sub-folder: {sub}"
+
+    # Geometry and scaffold flags in manifest
+    manifest = json.loads((metall_params_dir / "manifest.json").read_text())
+    site_entry = manifest["sites"][0]
+    assert site_entry["geometry_ok"] is True
+    assert site_entry["found_geometry"] == "tetrahedral"
+    assert site_entry["mcpb_scaffold_generated"] is True
 
     # MCPB scaffold files
     mcpb_dir = site_dir / "03_mcpb"
@@ -319,20 +347,77 @@ def test_metall_params_creates_expected_site_structure(tmp_path: Path) -> None:
     assert (mcpb_dir / "README.md").is_file()
     assert (mcpb_dir / f"{pdb_id}_mcpb.pdb").is_file()
 
-    # .in has TODO placeholders and correct original_pdb declaration
+    # .in: ion_ids is a real integer, not TODO
     mcpb_in_text = (mcpb_dir / f"{pdb_id}.in").read_text()
-    assert "TODO" in mcpb_in_text
     assert f"original_pdb = {pdb_id}_mcpb.pdb" in mcpb_in_text
+    assert "ion_ids = TODO" not in mcpb_in_text  # auto-resolved
+    assert "ion_mol2files = ZN.mol2" in mcpb_in_text  # auto-generated
+
+    # Zn mol2 exists and contains formal charge 2.0
+    mol2_path = mcpb_dir / "ZN.mol2"
+    assert mol2_path.is_file()
+    mol2_text = mol2_path.read_text()
+    assert "2.0000" in mol2_text or "2.000" in mol2_text  # formal charge field
+
+    # Spin auto-filled for ZN (d10 singlet → 1)
+    assert "charge_m_sm = 2 1" in mcpb_in_text
 
     # commands.sh has MCPB.py step-1 invocation
     cmd_text = (mcpb_dir / "commands.sh").read_text()
     assert "MCPB.py" in cmd_text
     assert f"{pdb_id}.in" in cmd_text
 
-    # manifest.json
-    manifest_path = metall_params_dir / "manifest.json"
-    assert manifest_path.is_file()
-    manifest = json.loads(manifest_path.read_text())
-    assert manifest["pdb_id"] == pdb_id
-    assert manifest["transition_metal_site_count"] == 1
-    assert len(manifest["sites"]) == 1
+
+# ---------------------------------------------------------------------------
+# Test 7: geometry mismatch → MCPB scaffold skipped, GEOMETRY_MISMATCH.txt written
+# ---------------------------------------------------------------------------
+
+def test_metall_params_skips_mcpb_for_non_standard_geometry(tmp_path: Path) -> None:
+    """Single-contact ZN (monodentate) does not match expected geometry → no MCPB scaffold.
+
+    With only one donor atom, classify_coordination_geometry returns
+    "monodentate_contact", which is not in TRANSITION_ION_GEOMETRY_PREFERENCES["ZN"].
+    The 03_mcpb/ folder is created but contains GEOMETRY_MISMATCH.txt instead of
+    the scaffold files.
+    """
+    from stack_protein_preparation.metall_params import run_metal_parametrization_for_protein_dir
+
+    pdb_id = "TBAD"
+    protein_dir = tmp_path / pdb_id
+    components_dir = protein_dir / "components"
+    components_dir.mkdir(parents=True)
+
+    # Single SG donor → coordination_number=1 → "monodentate_contact"
+    protein_pdb = components_dir / f"{pdb_id}_protein.pdb"
+    protein_pdb.write_text(
+        _pdb_atom_line(1, "SG", "CYS", "A", 1, 2.0, 0.0, 0.0, "S") + "END\n",
+        encoding="utf-8",
+    )
+    metal_pdb = components_dir / f"{pdb_id}_metal.pdb"
+    metal_pdb.write_text(
+        _pdb_atom_line(100, "ZN", "ZN", "A", 301, 0.0, 0.0, 0.0, "ZN", record="HETATM")
+        + "END\n",
+        encoding="utf-8",
+    )
+
+    result = run_metal_parametrization_for_protein_dir(
+        protein_dir=protein_dir,
+        chimera_executable=None,
+    )
+
+    assert result["status"] == "success"
+
+    metall_params_dir = protein_dir / "metall_params"
+    manifest = json.loads((metall_params_dir / "manifest.json").read_text())
+    site_entry = manifest["sites"][0]
+    assert site_entry["geometry_ok"] is False
+    assert site_entry["mcpb_scaffold_generated"] is False
+
+    site_dir = metall_params_dir / site_entry["site_folder"]
+    mcpb_dir = site_dir / "03_mcpb"
+    assert mcpb_dir.is_dir()
+
+    # GEOMETRY_MISMATCH.txt written, no scaffold files
+    assert (mcpb_dir / "GEOMETRY_MISMATCH.txt").is_file()
+    assert not (mcpb_dir / f"{pdb_id}.in").is_file()
+    assert not (mcpb_dir / "commands.sh").is_file()
