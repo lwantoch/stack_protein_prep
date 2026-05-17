@@ -450,8 +450,9 @@ def _estimate_initial_work_units(record_count: int) -> int:
     of the run even if some records are skipped.
     """
 
-    fixed_units = 4 + 2
-    per_record_units = 10  # +1 for nonstd_residue_params (step 15)
+    fixed_units = 4 + 6  # pdb_sync + save_json + write_xlsx + headroom
+    per_record_units = 14  # fasta/align/insertion/rep_unit/components/monomer/metals/gap/filler
+    # + protonation/prepared/sanitize/parameter_audit + parametrization steps
     return fixed_units + record_count * per_record_units
 
 
@@ -1396,7 +1397,83 @@ def run_pipeline() -> None:
 
         sanitized_variant_results_by_pdb[pdb_id] = sanitized_variant_result_list
 
-    _screen_step(13, "parameter_audit of variants")
+    _screen_step(13, "metall_params")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        has_metals = str(pipeline_record.get(HAS_METALS_COLUMN_NAME, "")).strip().lower()
+        if has_metals != "yes":
+            _screen_item(f"metall_params skipped for {pdb_id}: no metals")
+            continue
+
+        try:
+            metall_params_result = _run_mutating_call(
+                log_title=f"step_13:metall_params:{pdb_id}:captured_output",
+                work_label=f"metall_params:{pdb_id}",
+                screen_pdb_id=pdb_id,
+                func=_run_metall_params_for_protein,
+                pdb_id=pdb_id,
+                pdb_dir=pdb_dir,
+            )
+        except Exception as error:
+            _screen_error(f"metall_params failed for {pdb_id}: {error!r}")
+            _log_fruton_exception(f"step_13:metall_params:{pdb_id}", error)
+            pipeline_record[METALL_PARAMS_STATUS_COLUMN_NAME] = STATUS_FAILED
+            continue
+
+        pipeline_record[METALL_PARAMS_STATUS_COLUMN_NAME] = str(
+            metall_params_result.get("status", "")
+        )
+        pipeline_record[METALL_PARAMS_SITE_COUNT_COLUMN_NAME] = str(
+            metall_params_result.get("transition_metal_site_count", 0)
+        )
+        pipeline_record[METALL_PARAMS_MANIFEST_PATH_COLUMN_NAME] = str(
+            metall_params_result.get("manifest_path", "") or ""
+        )
+        site_count = metall_params_result.get("transition_metal_site_count", 0)
+        status = metall_params_result.get("status", "")
+        _screen_item(f"metall_params -> {pdb_id}: {status} ({site_count} transition-metal site(s))")
+
+    _screen_step(14, "nonstd_residue_params")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        has_nonstd = str(pipeline_record.get(HAS_NONSTANDARD_RESIDUES_COLUMN_NAME, "")).strip().lower()
+        if has_nonstd != "yes":
+            _screen_item(f"nonstd_residue_params skipped for {pdb_id}: no non-standard residues")
+            continue
+
+        try:
+            nonstd_result = _run_mutating_call(
+                log_title=f"step_14:nonstd_residue_params:{pdb_id}:captured_output",
+                work_label=f"nonstd_residue_params:{pdb_id}",
+                screen_pdb_id=pdb_id,
+                func=_run_nonstd_residue_params_for_protein,
+                pdb_id=pdb_id,
+                pdb_dir=pdb_dir,
+            )
+        except Exception as error:
+            _screen_error(f"nonstd_residue_params failed for {pdb_id}: {error!r}")
+            _log_fruton_exception(f"step_14:nonstd_residue_params:{pdb_id}", error)
+            pipeline_record[NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME] = STATUS_FAILED
+            continue
+
+        pipeline_record[NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME] = str(
+            nonstd_result.get("status", "")
+        )
+        pipeline_record[NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME] = str(
+            nonstd_result.get("n_residues", 0)
+        )
+        pipeline_record[NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME] = str(
+            nonstd_result.get("manifest_path", "") or ""
+        )
+        n_residues = nonstd_result.get("n_residues", 0)
+        status = nonstd_result.get("status", "")
+        _screen_item(f"nonstd_residue_params -> {pdb_id}: {status} ({n_residues} non-standard residue(s))")
+
+    _screen_step(15, "parameter_audit of variants")
 
     for pipeline_record in pipeline_record_list:
         pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
@@ -1412,6 +1489,10 @@ def run_pipeline() -> None:
             continue
 
         accepted_variant_result_list: list[dict[str, str]] = []
+        metall_scaffold_ready = (
+            str(pipeline_record.get(METALL_PARAMS_STATUS_COLUMN_NAME, "")).strip().lower()
+            == STATUS_SUCCESS
+        )
 
         for variant_result in sanitized_variant_result_list:
             variant_label = variant_result["variant_label"]
@@ -1419,7 +1500,7 @@ def run_pipeline() -> None:
 
             try:
                 parameter_audit_result = _run_mutating_call(
-                    log_title=f"step_13:parameter_audit_variant:{pdb_id}:{variant_label}:captured_output",
+                    log_title=f"step_15:parameter_audit_variant:{pdb_id}:{variant_label}:captured_output",
                     work_label=f"parameter_audit:{variant_label}",
                     screen_pdb_id=pdb_id,
                     func=_run_parameter_audit_for_variant,
@@ -1433,17 +1514,22 @@ def run_pipeline() -> None:
                     f"parameter_audit variant failed for {pdb_id} [{variant_label}]: {error!r}"
                 )
                 _log_fruton_exception(
-                    f"step_13:parameter_audit_variant:{pdb_id}:{variant_label}",
+                    f"step_15:parameter_audit_variant:{pdb_id}:{variant_label}",
                     error,
                 )
                 continue
 
             accepted = _variant_audit_accepts_end_model(parameter_audit_result)
-            if accepted and not _variant_metal_check_accepts_end_model(variant_result):
-                accepted = False
-                _screen_notice(
-                    f"parameter_audit variants -> {pdb_id} [{variant_label}]: metal parameters required"
-                )
+
+            # Metal gate: if the metals_check vetoed this variant, check whether the
+            # MCPB scaffold was generated in step 13.  If so, accept — Gaussian still
+            # needs to run on HPC, but the preparation side is complete.
+            if not _variant_metal_check_accepts_end_model(variant_result):
+                if metall_scaffold_ready:
+                    accepted = True
+                else:
+                    accepted = False
+
             _append_parameter_audit_variant_summary(
                 pdb_id=pdb_id,
                 variant_label=variant_label,
@@ -1453,7 +1539,18 @@ def run_pipeline() -> None:
 
             if accepted:
                 accepted_variant_result_list.append(variant_result)
-                _screen_item(f"parameter_audit variants -> {pdb_id} [{variant_label}]: accepted")
+                if metall_scaffold_ready and not _variant_metal_check_accepts_end_model(variant_result):
+                    _screen_item(
+                        f"parameter_audit variants -> {pdb_id} [{variant_label}]: accepted"
+                        f" (MCPB scaffold generated — Gaussian pending)"
+                    )
+                else:
+                    _screen_item(f"parameter_audit variants -> {pdb_id} [{variant_label}]: accepted")
+            elif getattr(parameter_audit_result, "requires_metal_parameters", False):
+                _screen_notice(
+                    f"parameter_audit variants -> {pdb_id} [{variant_label}]: metal parameters required"
+                    f" — run metall_params first"
+                )
             elif getattr(parameter_audit_result, "requires_qm_parameters", False):
                 _screen_notice(
                     f"parameter_audit variants -> {pdb_id} [{variant_label}]: unsupported residue parameters required"
@@ -1476,82 +1573,6 @@ def run_pipeline() -> None:
         summary=summary,
         pipeline_record_list=pipeline_record_list,
     )
-
-    _screen_step(14, "metall_params")
-    for pipeline_record in pipeline_record_list:
-        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
-        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
-
-        has_metals = str(pipeline_record.get(HAS_METALS_COLUMN_NAME, "")).strip().lower()
-        if has_metals != "yes":
-            _screen_item(f"metall_params skipped for {pdb_id}: no metals")
-            continue
-
-        try:
-            metall_params_result = _run_mutating_call(
-                log_title=f"step_14:metall_params:{pdb_id}:captured_output",
-                work_label=f"metall_params:{pdb_id}",
-                screen_pdb_id=pdb_id,
-                func=_run_metall_params_for_protein,
-                pdb_id=pdb_id,
-                pdb_dir=pdb_dir,
-            )
-        except Exception as error:
-            _screen_error(f"metall_params failed for {pdb_id}: {error!r}")
-            _log_fruton_exception(f"step_14:metall_params:{pdb_id}", error)
-            pipeline_record[METALL_PARAMS_STATUS_COLUMN_NAME] = STATUS_FAILED
-            continue
-
-        pipeline_record[METALL_PARAMS_STATUS_COLUMN_NAME] = str(
-            metall_params_result.get("status", "")
-        )
-        pipeline_record[METALL_PARAMS_SITE_COUNT_COLUMN_NAME] = str(
-            metall_params_result.get("transition_metal_site_count", 0)
-        )
-        pipeline_record[METALL_PARAMS_MANIFEST_PATH_COLUMN_NAME] = str(
-            metall_params_result.get("manifest_path", "") or ""
-        )
-        site_count = metall_params_result.get("transition_metal_site_count", 0)
-        status = metall_params_result.get("status", "")
-        _screen_item(f"metall_params -> {pdb_id}: {status} ({site_count} transition-metal site(s))")
-
-    _screen_step(15, "nonstd_residue_params")
-    for pipeline_record in pipeline_record_list:
-        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
-        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
-
-        has_nonstd = str(pipeline_record.get(HAS_NONSTANDARD_RESIDUES_COLUMN_NAME, "")).strip().lower()
-        if has_nonstd != "yes":
-            _screen_item(f"nonstd_residue_params skipped for {pdb_id}: no non-standard residues")
-            continue
-
-        try:
-            nonstd_result = _run_mutating_call(
-                log_title=f"step_15:nonstd_residue_params:{pdb_id}:captured_output",
-                work_label=f"nonstd_residue_params:{pdb_id}",
-                screen_pdb_id=pdb_id,
-                func=_run_nonstd_residue_params_for_protein,
-                pdb_id=pdb_id,
-                pdb_dir=pdb_dir,
-            )
-        except Exception as error:
-            _screen_error(f"nonstd_residue_params failed for {pdb_id}: {error!r}")
-            _log_fruton_exception(f"step_15:nonstd_residue_params:{pdb_id}", error)
-            pipeline_record[NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME] = STATUS_FAILED
-            continue
-
-        pipeline_record[NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME] = str(
-            nonstd_result.get("status", "")
-        )
-        pipeline_record[NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME] = str(
-            nonstd_result.get("n_residues", 0)
-        )
-        pipeline_record[NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME] = str(
-            nonstd_result.get("manifest_path", "") or ""
-        )
-        n_residues = nonstd_result.get("n_residues", 0)
-        status = nonstd_result.get("status", "")
-        _screen_item(f"nonstd_residue_params -> {pdb_id}: {status} ({n_residues} non-standard residue(s))")
 
     _screen_step(16, "save_pipeline_json")
     _run_mutating_call(log_title="step_16:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
