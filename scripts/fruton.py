@@ -86,6 +86,9 @@ from stack_protein_preparation.pipeline_state import (
     PROTONATION_STATUS_COLUMN_NAME,
     RANGE_COLUMN_NAME,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
+    METALL_PARAMS_MANIFEST_PATH_COLUMN_NAME,
+    METALL_PARAMS_SITE_COUNT_COLUMN_NAME,
+    METALL_PARAMS_STATUS_COLUMN_NAME,
     STATUS_FAILED,
     STATUS_REQUIRED,
     STATUS_SKIPPED,
@@ -148,6 +151,7 @@ from stack_protein_preparation.pipeline_runner import (
     _apply_accepted_variant_audit_decision,
     _run_protonation_route_for_variant,
     _build_prepared_structure_for_variant,
+    _run_metall_params_for_protein,
 )
 
 FRUTON_LOGO = r"""
@@ -1469,10 +1473,48 @@ def run_pipeline() -> None:
         pipeline_record_list=pipeline_record_list,
     )
 
-    _screen_step(14, "save_pipeline_json")
-    _run_mutating_call(log_title="step_14:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
-    _screen_step(15, "write_pipeline_xlsx")
-    _run_mutating_call(log_title="step_15:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
+    _screen_step(14, "metall_params")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        has_metals = str(pipeline_record.get(HAS_METALS_COLUMN_NAME, "")).strip().lower()
+        if has_metals != "yes":
+            _screen_item(f"metall_params skipped for {pdb_id}: no metals")
+            continue
+
+        try:
+            metall_params_result = _run_mutating_call(
+                log_title=f"step_14:metall_params:{pdb_id}:captured_output",
+                work_label=f"metall_params:{pdb_id}",
+                screen_pdb_id=pdb_id,
+                func=_run_metall_params_for_protein,
+                pdb_id=pdb_id,
+                pdb_dir=pdb_dir,
+            )
+        except Exception as error:
+            _screen_error(f"metall_params failed for {pdb_id}: {error!r}")
+            _log_fruton_exception(f"step_14:metall_params:{pdb_id}", error)
+            pipeline_record[METALL_PARAMS_STATUS_COLUMN_NAME] = STATUS_FAILED
+            continue
+
+        pipeline_record[METALL_PARAMS_STATUS_COLUMN_NAME] = str(
+            metall_params_result.get("status", "")
+        )
+        pipeline_record[METALL_PARAMS_SITE_COUNT_COLUMN_NAME] = str(
+            metall_params_result.get("transition_metal_site_count", 0)
+        )
+        pipeline_record[METALL_PARAMS_MANIFEST_PATH_COLUMN_NAME] = str(
+            metall_params_result.get("manifest_path", "") or ""
+        )
+        site_count = metall_params_result.get("transition_metal_site_count", 0)
+        status = metall_params_result.get("status", "")
+        _screen_item(f"metall_params -> {pdb_id}: {status} ({site_count} transition-metal site(s))")
+
+    _screen_step(15, "save_pipeline_json")
+    _run_mutating_call(log_title="step_15:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
+    _screen_step(16, "write_pipeline_xlsx")
+    _run_mutating_call(log_title="step_16:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
 
     _screen_notice(f"pipeline JSON written: {pipeline_json_path}")
     _screen_notice(f"pipeline XLSX written: {pipeline_xlsx_path}")

@@ -879,6 +879,37 @@ def _run_metals_check_for_prepared_variant(
     return result
 
 
+def _run_metall_params_for_protein(
+    *,
+    pdb_id: str,
+    pdb_dir: Path,
+) -> dict:
+    """Run per-site MCPB scaffold preparation for one protein directory.
+
+    Calls :func:`~stack_protein_preparation.metall_params.run_metal_parametrization_for_protein_dir`
+    which internally:
+    - Enumerates transition-metal atoms in ``components/{pdb_id}_metal.pdb``
+    - Runs deterministic H cleanup on each site (geometry-aware)
+    - Generates the MCPB scaffold only when site geometry matches the standard
+      coordination geometry for that element
+    - Writes ``manifest.json`` and ``all_sites_summary.tsv`` under ``metall_params/``
+    """
+    from stack_protein_preparation.metall_params import run_metal_parametrization_for_protein_dir
+
+    result = run_metal_parametrization_for_protein_dir(protein_dir=pdb_dir)
+    _log(
+        "metall_params",
+        [
+            f"pdb_id                     : {pdb_id}",
+            f"status                     : {result.get('status', '')}",
+            f"transition_metal_site_count: {result.get('transition_metal_site_count', 0)}",
+            f"manifest_path              : {result.get('manifest_path', '')}",
+            f"message                    : {result.get('message', '')}",
+        ],
+    )
+    return result
+
+
 def _apply_accepted_variant_audit_decision(
     *,
     pipeline_record: dict[str, str],
