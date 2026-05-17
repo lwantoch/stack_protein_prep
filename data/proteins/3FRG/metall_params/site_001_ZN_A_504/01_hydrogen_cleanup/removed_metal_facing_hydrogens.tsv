@@ -1,2 +1,0 @@
-metal_element	metal_serial	metal_label	donor_element	donor_residue_name	donor_chain_id	donor_residue_number	donor_atom_name	h_serial	h_atom_name	dist_M_D_ang	dist_M_H_ang	angle_MDH_deg	removal_reason
-ZN	2736	ZN A 504 ZN	N	HIS	A	238	NE2	1388	HE2	2.139	1.155	7.6	angle_MDH=7.6<=angle_max=60.0; dist_M_H=1.155<=h_max=2.1; dist_M_H=1.155<dist_M_D+slack=2.489

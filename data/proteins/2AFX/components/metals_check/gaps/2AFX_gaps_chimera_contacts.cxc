@@ -1,5 +1,0 @@
-open /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/metals_check/gaps/2AFX_gaps_metal_analysis_input.pdb
-delete solvent false
-contacts @MN,FE,CO,NI,CU,ZN,CD,HG,CR,V,MO,W restrict @N*,O*,S*,SE* distance 3.50 reveal true name metal_contacts color gold
-save /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/metals_check/gaps/2AFX_gaps_chimera_session.cxs
-exit

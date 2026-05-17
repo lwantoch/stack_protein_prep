@@ -1,2 +1,0 @@
-site_index	element	chain_id	residue_number	coordination_number	found_geometry	geometry_ok	h_removed	h_kept	h_manual_review	mcpb_scaffold_generated	mcpb_folder	status
-1	ZN	A	400	4	tetrahedral	True	4	0	0	True	site_001_ZN_A_400/03_mcpb	success

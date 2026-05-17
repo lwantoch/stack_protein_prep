@@ -1,6 +1,0 @@
-metal_element	metal_chain	metal_resseq	donor_element	donor_residue_name	donor_chain	donor_resseq	donor_atom_name	distance_angstrom
-ZN	B	2	O	642	B	1	O1	1.883
-ZN	B	2	N	HIS	B	415	NE2	2.064
-ZN	B	2	N	HIS	B	409	NE2	2.078
-ZN	B	2	N	HIS	B	405	NE2	2.085
-ZN	B	2	O	642	B	1	O2	2.545

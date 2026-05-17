@@ -89,6 +89,9 @@ from stack_protein_preparation.pipeline_state import (
     METALL_PARAMS_MANIFEST_PATH_COLUMN_NAME,
     METALL_PARAMS_SITE_COUNT_COLUMN_NAME,
     METALL_PARAMS_STATUS_COLUMN_NAME,
+    NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME,
+    NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME,
+    NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME,
     STATUS_FAILED,
     STATUS_REQUIRED,
     STATUS_SKIPPED,
@@ -152,6 +155,7 @@ from stack_protein_preparation.pipeline_runner import (
     _run_protonation_route_for_variant,
     _build_prepared_structure_for_variant,
     _run_metall_params_for_protein,
+    _run_nonstd_residue_params_for_protein,
 )
 
 FRUTON_LOGO = r"""
@@ -431,7 +435,7 @@ def _verbose_screen_enabled() -> bool:
     return os.environ.get("FRUTON_VERBOSE", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-_PROGRESS = TerminalProgress(total_steps=15)
+_PROGRESS = TerminalProgress(total_steps=17)
 
 
 def _estimate_initial_work_units(record_count: int) -> int:
@@ -1511,10 +1515,48 @@ def run_pipeline() -> None:
         status = metall_params_result.get("status", "")
         _screen_item(f"metall_params -> {pdb_id}: {status} ({site_count} transition-metal site(s))")
 
-    _screen_step(15, "save_pipeline_json")
-    _run_mutating_call(log_title="step_15:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
-    _screen_step(16, "write_pipeline_xlsx")
-    _run_mutating_call(log_title="step_16:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
+    _screen_step(15, "nonstd_residue_params")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        has_nonstd = str(pipeline_record.get(HAS_NONSTANDARD_RESIDUES_COLUMN_NAME, "")).strip().lower()
+        if has_nonstd != "yes":
+            _screen_item(f"nonstd_residue_params skipped for {pdb_id}: no non-standard residues")
+            continue
+
+        try:
+            nonstd_result = _run_mutating_call(
+                log_title=f"step_15:nonstd_residue_params:{pdb_id}:captured_output",
+                work_label=f"nonstd_residue_params:{pdb_id}",
+                screen_pdb_id=pdb_id,
+                func=_run_nonstd_residue_params_for_protein,
+                pdb_id=pdb_id,
+                pdb_dir=pdb_dir,
+            )
+        except Exception as error:
+            _screen_error(f"nonstd_residue_params failed for {pdb_id}: {error!r}")
+            _log_fruton_exception(f"step_15:nonstd_residue_params:{pdb_id}", error)
+            pipeline_record[NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME] = STATUS_FAILED
+            continue
+
+        pipeline_record[NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME] = str(
+            nonstd_result.get("status", "")
+        )
+        pipeline_record[NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME] = str(
+            nonstd_result.get("n_residues", 0)
+        )
+        pipeline_record[NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME] = str(
+            nonstd_result.get("manifest_path", "") or ""
+        )
+        n_residues = nonstd_result.get("n_residues", 0)
+        status = nonstd_result.get("status", "")
+        _screen_item(f"nonstd_residue_params -> {pdb_id}: {status} ({n_residues} non-standard residue(s))")
+
+    _screen_step(16, "save_pipeline_json")
+    _run_mutating_call(log_title="step_16:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
+    _screen_step(17, "write_pipeline_xlsx")
+    _run_mutating_call(log_title="step_17:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
 
     _screen_notice(f"pipeline JSON written: {pipeline_json_path}")
     _screen_notice(f"pipeline XLSX written: {pipeline_xlsx_path}")

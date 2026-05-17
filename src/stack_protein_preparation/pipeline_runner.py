@@ -910,6 +910,33 @@ def _run_metall_params_for_protein(
     return result
 
 
+def _run_nonstd_residue_params_for_protein(
+    *,
+    pdb_id: str,
+    pdb_dir: Path,
+) -> dict:
+    """Run non-standard residue RESP scaffold generation for one protein directory."""
+    from stack_protein_preparation.nonstd_residue_params import run_nonstd_residue_params
+
+    protein_pdb = pdb_dir / "components" / f"{pdb_id}_protein.pdb"
+    result = run_nonstd_residue_params(
+        protein_dir=pdb_dir,
+        pdb_id=pdb_id,
+        protein_pdb=protein_pdb,
+    )
+    _log(
+        "nonstd_residue_params",
+        [
+            f"pdb_id         : {pdb_id}",
+            f"status         : {result.get('status', '')}",
+            f"n_residues     : {result.get('n_residues', 0)}",
+            f"manifest_path  : {result.get('manifest_path', '')}",
+            f"message        : {result.get('message', '')}",
+        ],
+    )
+    return result
+
+
 def _apply_accepted_variant_audit_decision(
     *,
     pipeline_record: dict[str, str],

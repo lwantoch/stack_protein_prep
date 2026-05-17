@@ -1,4 +1,0 @@
-metal_label	metal_element	donor_label	donor_element	donor_residue_name	donor_chain_id	donor_residue_number	donor_atom_name	distance_angstrom	donor_source_role	vector_x	vector_y	vector_z
-ZN B 2 ZN	ZN	HIS B 415 NE2	N	HIS	B	415	NE2	2.064	analysis	1.627	-1.046	-0.720
-ZN B 2 ZN	ZN	HIS B 409 NE2	N	HIS	B	409	NE2	2.078	analysis	0.785	1.904	0.274
-ZN B 2 ZN	ZN	HIS B 405 NE2	N	HIS	B	405	NE2	2.085	analysis	-0.254	-0.659	1.962

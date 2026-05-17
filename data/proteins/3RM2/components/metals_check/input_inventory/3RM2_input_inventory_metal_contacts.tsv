@@ -1,5 +1,0 @@
-metal_label	metal_element	donor_label	donor_element	donor_residue_name	donor_chain_id	donor_residue_number	donor_atom_name	distance_angstrom	donor_source_role	vector_x	vector_y	vector_z
-NA H 5 NA	NA	THR H 187 O	O	THR	H	187	O	2.301	analysis	-0.671	-0.633	-2.108
-NA H 5 NA	NA	LYS H 184 O	O	LYS	H	184	O	2.358	analysis	-1.531	1.763	-0.331
-NA H 6 NA	NA	ARG H 244 O	O	ARG	H	244	O	2.337	analysis	0.301	-2.308	-0.206
-NA H 6 NA	NA	LYS H 247 O	O	LYS	H	247	O	2.410	analysis	2.174	0.365	0.975

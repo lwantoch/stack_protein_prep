@@ -1,5 +1,0 @@
-metal_element	metal_serial	metal_label	donor_element	donor_residue_name	donor_chain_id	donor_residue_number	donor_atom_name	h_serial	h_atom_name	dist_M_D_ang	dist_M_H_ang	angle_MDH_deg	removal_reason
-ZN	10270	ZN A 400 ZN	S	CYS	A	153	SG	2125	HG	2.350	1.356	4.8	angle_MDH=4.8<=angle_max=60.0; dist_M_H=1.356<=h_max=2.1; dist_M_H=1.356<dist_M_D+slack=2.700
-ZN	10270	ZN A 400 ZN	S	CYS	A	156	SG	2168	HG	2.266	2.344	81.8	dist_M_H=2.344<dist_M_D+slack=2.616
-ZN	10270	ZN A 400 ZN	S	CYS	A	185	SG	2620	HG	2.316	2.326	78.1	dist_M_H=2.326<dist_M_D+slack=2.666
-ZN	10270	ZN A 400 ZN	S	CYS	A	188	SG	2674	HG	2.322	2.006	59.3	angle_MDH=59.3<=angle_max=60.0; dist_M_H=2.006<=h_max=2.1; dist_M_H=2.006<dist_M_D+slack=2.672

@@ -1,8 +1,0 @@
-Site site_001_ZN_B_2
-Found geometry   : square_pyramidal
-Expected for ZN  : tetrahedral, trigonal_bipyramidal, octahedral
-
-MCPB scaffold was NOT generated because the coordination geometry
-does not match the standard geometry for this metal ion.  Possible
-causes: incomplete coordination sphere, crystal contacts, or wrong
-protonation state.  Inspect the site manually before proceeding.
