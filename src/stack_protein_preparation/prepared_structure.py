@@ -126,8 +126,16 @@ def _read_atom_lines_from_pdb(pdb_path: str | Path) -> list[str]:
     return atom_lines
 
 
+_CHAIN_ID_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+
 def _renumber_atom_serial(line: str, atom_serial: int) -> str:
     return f"{line[:6]}{atom_serial:>5}{line[11:]}"
+
+
+def _rewrite_chain_id(line: str, chain_id: str) -> str:
+    """Replace the chain ID (column 22, 0-indexed) in an ATOM/HETATM line."""
+    return f"{line[:21]}{chain_id[:1]}{line[22:]}"
 
 
 def _normalize_protein_input_paths(
@@ -178,28 +186,37 @@ def _normalize_protein_input_paths(
 def _write_merged_pdb_sections(
     output_pdb_path: str | Path,
     ordered_sections: list[list[str]],
+    section_chain_ids: list[str | None] | None = None,
 ) -> int:
     """
     Write a merged PDB from already prepared sections.
 
-    Important
-    ---------
     Each non-empty section is written as one block followed by TER.
-    This allows protein fragments to remain explicitly separated.
+    When *section_chain_ids* is provided it must have the same length as
+    *ordered_sections*; each non-None entry rewrites the chain-ID column of
+    every ATOM/HETATM line in the corresponding section.  This is required
+    when multiple protein fragments share the same original chain ID: pdb2gmx
+    (and BioPython) need distinct chain IDs to recognise each segment as an
+    independent chain with its own N- and C-termini.
     """
     output_pdb_path = Path(output_pdb_path)
     output_pdb_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if section_chain_ids is None:
+        section_chain_ids = [None] * len(ordered_sections)
 
     atom_serial = 0
     n_written = 0
 
     with output_pdb_path.open("w", encoding="utf-8") as handle:
-        for section_lines in ordered_sections:
+        for section_lines, chain_id in zip(ordered_sections, section_chain_ids):
             if not section_lines:
                 continue
 
             for line in section_lines:
                 atom_serial += 1
+                if chain_id is not None and _is_atom_or_hetatm_record(line):
+                    line = _rewrite_chain_id(line, chain_id)
                 handle.write(_renumber_atom_serial(line, atom_serial) + "\n")
                 n_written += 1
 
@@ -276,19 +293,36 @@ def build_prepared_structure(
         else None
     )
 
+    # When there are multiple protein fragments, assign each a unique chain ID so
+    # that pdb2gmx (and BioPython) recognise each segment as an independent chain
+    # with its own N- and C-termini.  A single-fragment input keeps its original
+    # chain ID (None → no rewrite).
+    if len(protein_sections) > 1:
+        protein_chain_ids: list[str | None] = [
+            _CHAIN_ID_ALPHABET[i % len(_CHAIN_ID_ALPHABET)]
+            for i in range(len(protein_sections))
+        ]
+    else:
+        protein_chain_ids = [None]
+
     ordered_sections: list[list[str]] = []
     ordered_sections.extend(protein_sections)
+    section_chain_ids: list[str | None] = list(protein_chain_ids)
 
     if water_atom_lines:
         ordered_sections.append(water_atom_lines)
+        section_chain_ids.append(None)
     if ligand_atom_lines:
         ordered_sections.append(ligand_atom_lines)
+        section_chain_ids.append(None)
     if metals_atom_lines:
         ordered_sections.append(metals_atom_lines)
+        section_chain_ids.append(None)
 
     n_atom_records_written = _write_merged_pdb_sections(
         output_pdb_path=output_pdb_path,
         ordered_sections=ordered_sections,
+        section_chain_ids=section_chain_ids,
     )
 
     return PreparedStructureSummary(

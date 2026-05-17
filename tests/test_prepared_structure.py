@@ -9,7 +9,7 @@ from stack_protein_preparation.prepared_structure import (
     _is_atom_or_hetatm_record,
     _read_atom_lines_from_pdb,
     _renumber_atom_serial,
-    _write_merged_pdb,
+    _write_merged_pdb_sections,
     build_prepared_structure,
     build_prepared_structure_for_pdb_directory,
     get_default_ligand_input_path,
@@ -205,7 +205,7 @@ def test_renumber_atom_serial_replaces_serial_field() -> None:
     assert renumbered[12:] == line[12:]
 
 
-def test_write_merged_pdb_writes_sections_in_expected_order(tmp_path: Path) -> None:
+def test_write_merged_pdb_sections_writes_sections_in_expected_order(tmp_path: Path) -> None:
     output_pdb_path = tmp_path / "merged.pdb"
 
     protein_lines = [_make_atom_line(10, "N", "ALA", "A", 1, 0, 0, 0, "N")]
@@ -213,12 +213,9 @@ def test_write_merged_pdb_writes_sections_in_expected_order(tmp_path: Path) -> N
     ligand_lines = [_make_atom_line(30, "C1", "LIG", "L", 3, 2, 2, 2, "C", "HETATM")]
     metals_lines = [_make_atom_line(40, "ZN", "ZN", "M", 4, 3, 3, 3, "ZN", "HETATM")]
 
-    n_written = _write_merged_pdb(
+    n_written = _write_merged_pdb_sections(
         output_pdb_path=output_pdb_path,
-        protein_atom_lines=protein_lines,
-        water_atom_lines=water_lines,
-        ligand_atom_lines=ligand_lines,
-        metals_atom_lines=metals_lines,
+        ordered_sections=[protein_lines, water_lines, ligand_lines, metals_lines],
     )
 
     assert n_written == 4
