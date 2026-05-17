@@ -18,6 +18,10 @@ pdb2pqr = "*"
 propka = "*"
 matplotlib = ">=3.10.8,<4"
 pytest = "*"
+biopython = ">=1.87,<2"
+gromacs = ">=2026.0,<2027"
+pip = ">=26.1.1,<27"
+pdbfixer = ">=1.12,<2"
 
 [pypi-dependencies]
 openpyxl = ">=3.1.5,<4"
