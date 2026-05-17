@@ -1038,4 +1038,4 @@ def protonate_protein_structure(
         chain_separation=DEFAULT_GROMACS_CHAIN_SEPARATION,
         merge=DEFAULT_GROMACS_MERGE_MODE,
         ignore_input_hydrogens=True,
-    )gitr
+    )

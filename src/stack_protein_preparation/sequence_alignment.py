@@ -129,18 +129,35 @@ class AlignmentJob:
 # ---------------------------------------------------------------------------
 
 
+def alignment_to_image(
+    alignment_fasta_path: Path,
+    output_png_path: Path,
+) -> None:
+    """
+    Backward-compatible module-level wrapper for alignment visualization.
+
+    This remains intentionally lazy so importing this module does not require
+    matplotlib unless rendering is actually requested.
+
+    Important
+    ---------
+    Older tests monkeypatch `stack_protein_preparation.sequence_alignment
+    .alignment_to_image`, so this symbol must exist at module scope.
+    """
+    from stack_protein_preparation.alignment_visualization import (
+        alignment_to_image as _alignment_to_image,
+    )
+
+    _alignment_to_image(alignment_fasta_path, output_png_path)
+
+
 def render_alignment_image(
     alignment_fasta_path: Path,
     output_png_path: Path,
 ) -> None:
     """
     Render one alignment PNG using the optional visualization module.
-
-    This import is intentionally local so that importing sequence_alignment.py
-    does not require matplotlib unless image rendering is actually requested.
     """
-    from stack_protein_preparation.alignment_visualization import alignment_to_image
-
     alignment_to_image(alignment_fasta_path, output_png_path)
 
 

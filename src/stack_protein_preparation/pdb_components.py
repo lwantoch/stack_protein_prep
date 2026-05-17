@@ -1,3 +1,5 @@
+# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pdb_components.py
+
 """
 /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pdb_components.py
 
@@ -12,6 +14,8 @@ Responsibilities
 - detect ligand-like residues
 - exclude common crystallization / buffer / salt artifacts from ligand counts
 - split one input PDB into component-specific PDB files
+- optionally restrict the protein output to chain(s) relevant for a requested
+  residue range
 
 Important
 ---------
@@ -26,10 +30,13 @@ Notes
 - this module uses residue-based counting, not atom-based counting
 - residue identity is defined by:
     (resname, chain_id, residue_number, insertion_code)
+- optional range filtering is applied only to the protein output, not to waters,
+  ligands, metals, or artifacts
 """
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -184,7 +191,7 @@ def _resname(line: str) -> str:
 
 
 def _chain_id(line: str) -> str:
-    return line[21:22].strip() or "?"
+    return line[21:22].strip() or "_"
 
 
 def _resseq(line: str) -> str:
@@ -206,6 +213,88 @@ def _residue_identifier(line: str) -> tuple[str, str, str, str]:
         _resseq(line),
         _icode(line),
     )
+
+
+def _parse_residue_range(residue_range: str) -> tuple[int, int]:
+    match = re.fullmatch(r"\s*(-?\d+)\s*-\s*(-?\d+)\s*", str(residue_range).strip())
+    if match is None:
+        raise ValueError(f"Invalid residue range: {residue_range!r}")
+
+    start_residue = int(match.group(1))
+    end_residue = int(match.group(2))
+
+    if start_residue > end_residue:
+        raise ValueError(f"Invalid residue range: start > end in {residue_range!r}")
+
+    return start_residue, end_residue
+
+
+def _collect_protein_residue_numbers_by_chain(
+    pdb_lines: list[str],
+) -> dict[str, set[int]]:
+    residue_numbers_by_chain: dict[str, set[int]] = {}
+    seen_residue_sites: set[tuple[str, str, str]] = set()
+
+    for line in pdb_lines:
+        if not _is_atom_or_hetatm(line):
+            continue
+
+        if _resname(line) not in PROTEIN_COMPONENT_RESIDUES:
+            continue
+
+        chain_id = _chain_id(line)
+        residue_number_text = _resseq(line)
+        insertion_code = _icode(line)
+
+        if not residue_number_text.lstrip("-").isdigit():
+            continue
+
+        residue_site = (chain_id, residue_number_text, insertion_code)
+        if residue_site in seen_residue_sites:
+            continue
+
+        seen_residue_sites.add(residue_site)
+        residue_numbers_by_chain.setdefault(chain_id, set()).add(
+            int(residue_number_text)
+        )
+
+    return residue_numbers_by_chain
+
+
+def choose_relevant_chain_ids_from_range(
+    pdb_lines: list[str],
+    residue_range: str,
+) -> tuple[str, ...]:
+    """
+    Choose protein chain(s) most relevant for the requested residue range.
+
+    Strategy
+    --------
+    - compute overlap between requested range and observed protein residue numbers
+      for each chain
+    - keep all chains tied for best overlap
+    - if no chain overlaps, keep all chains with protein residues
+    """
+    residue_numbers_by_chain = _collect_protein_residue_numbers_by_chain(pdb_lines)
+
+    if not residue_numbers_by_chain:
+        return ()
+
+    start_residue, end_residue = _parse_residue_range(residue_range)
+    requested_range = set(range(start_residue, end_residue + 1))
+
+    score_rows: list[tuple[str, int, int]] = []
+    for chain_id, residue_number_set in sorted(residue_numbers_by_chain.items()):
+        overlap_count = len(residue_number_set & requested_range)
+        total_chain_residue_count = len(residue_number_set)
+        score_rows.append((chain_id, overlap_count, total_chain_residue_count))
+
+    best_overlap = max(row[1] for row in score_rows)
+    if best_overlap == 0:
+        return tuple(sorted(residue_numbers_by_chain.keys()))
+
+    best_rows = [row for row in score_rows if row[1] == best_overlap]
+    return tuple(sorted(row[0] for row in best_rows))
 
 
 def _is_water_line(line: str) -> bool:
@@ -429,27 +518,34 @@ def split_pdb_components(
     pdb_path: Path,
     output_dir: Path,
     protein_stem: str | None = None,
+    residue_range: str = "",
 ) -> dict[str, Any]:
     """
     Split one PDB into:
     - <PDBID>_protein.pdb
     - <PDBID>_water.pdb
     - <PDBID>_ligand.pdb
-    - <PDBID>_metal.pdb
+    - <PDBID>_metals.pdb
     - <PDBID>_artifact.pdb
 
     Classification
     --------------
     - protein:
         ATOM lines + protein-like nonstandard HETATM residues
+        optionally restricted to protein chain(s) relevant for residue_range
     - water:
         HETATM water residues
-    - metal:
+    - metals:
         HETATM metal residues
     - artifact:
         HETATM crystallization / buffer / salt artifacts such as SO4
     - ligand:
         remaining HETATM residues after exclusions
+
+    Notes
+    -----
+    residue_range filtering is applied only to the protein output.
+    Other component files are kept complete for conservative traceability.
     """
     pdb_lines = _read_pdb_lines(pdb_path)
 
@@ -461,17 +557,30 @@ def split_pdb_components(
     protein_path = output_dir / f"{protein_stem}_protein.pdb"
     water_path = output_dir / f"{protein_stem}_water.pdb"
     ligand_path = output_dir / f"{protein_stem}_ligand.pdb"
-    metal_path = output_dir / f"{protein_stem}_metal.pdb"
+    metals_path = output_dir / f"{protein_stem}_metals.pdb"
     artifact_path = output_dir / f"{protein_stem}_artifact.pdb"
+
+    relevant_chain_ids: tuple[str, ...] = ()
+    if str(residue_range).strip():
+        try:
+            relevant_chain_ids = choose_relevant_chain_ids_from_range(
+                pdb_lines=pdb_lines,
+                residue_range=residue_range,
+            )
+        except Exception:
+            relevant_chain_ids = ()
+    relevant_chain_id_set = set(relevant_chain_ids)
 
     protein_lines: list[str] = []
     water_lines: list[str] = []
     ligand_lines: list[str] = []
-    metal_lines: list[str] = []
+    metals_lines: list[str] = []
     artifact_lines: list[str] = []
 
     for line in pdb_lines:
         if line.startswith("ATOM"):
+            if relevant_chain_id_set and _chain_id(line) not in relevant_chain_id_set:
+                continue
             protein_lines.append(line)
             continue
 
@@ -481,8 +590,10 @@ def split_pdb_components(
         if _is_water_line(line):
             water_lines.append(line)
         elif _is_metal_line(line):
-            metal_lines.append(line)
+            metals_lines.append(line)
         elif _is_protein_like_residue_line(line):
+            if relevant_chain_id_set and _chain_id(line) not in relevant_chain_id_set:
+                continue
             protein_lines.append(line)
         elif _is_artifact_line(line):
             artifact_lines.append(line)
@@ -492,7 +603,7 @@ def split_pdb_components(
     protein_path.write_text("".join(protein_lines), encoding="utf-8")
     water_path.write_text("".join(water_lines), encoding="utf-8")
     ligand_path.write_text("".join(ligand_lines), encoding="utf-8")
-    metal_path.write_text("".join(metal_lines), encoding="utf-8")
+    metals_path.write_text("".join(metals_lines), encoding="utf-8")
     artifact_path.write_text("".join(artifact_lines), encoding="utf-8")
 
     summary = analyze_pdb_components(pdb_path)
@@ -502,12 +613,14 @@ def split_pdb_components(
             "protein_pdb": str(protein_path),
             "water_pdb": str(water_path),
             "ligand_pdb": str(ligand_path),
-            "metal_pdb": str(metal_path),
+            "metals_pdb": str(metals_path),
             "artifact_pdb": str(artifact_path),
+            "relevant_chain_ids": list(relevant_chain_ids),
+            "residue_range": residue_range,
             "n_protein_lines": len(protein_lines),
             "n_water_lines": len(water_lines),
             "n_ligand_lines": len(ligand_lines),
-            "n_metal_lines": len(metal_lines),
+            "n_metals_lines": len(metals_lines),
             "n_artifact_lines": len(artifact_lines),
         }
     )

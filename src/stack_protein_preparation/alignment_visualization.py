@@ -1,593 +1,666 @@
+# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/alignment_visualization.py
+
+"""
+Render pairwise sequence alignments as publication-style PNG images.
+
+Purpose
+-------
+- read a two-sequence FASTA alignment produced by MAFFT
+- render the alignment as a multi-line block image
+- show residue letters directly in the figure
+- color exact matches, mismatches, and gaps distinctly
+
+Default visual style
+--------------------
+- blue letters
+- yellow background for exact matches
+- grey background for residue mismatches
+- red background for gaps / missing residues
+- light page background
+
+Expected input
+--------------
+A FASTA alignment with exactly two records, for example:
+    >PDB|1ABC|ATOM|chain_A
+    MKT--AI...
+    >sp|P12345|PROT_HUMAN
+    MKTEQAI...
+
+Public API
+----------
+Main function expected by older pipeline code:
+    alignment_to_image(alignment_fasta_path, output_png_path, ...)
+
+Convenience alias:
+    render_alignment_png(...)
+
+Notes
+-----
+- this module does NOT compute alignments
+- this module only visualizes already aligned sequences
+"""
+
 from __future__ import annotations
 
-import math
-import re
 from dataclasses import dataclass
+from math import ceil
 from pathlib import Path
-from typing import Sequence
+from typing import Iterable
 
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from PIL import Image, ImageDraw, ImageFont
+
+from stack_protein_preparation.pipeline_logging import (
+    append_exception_traceback,
+    append_key_value_block,
+    append_log_text,
+    capture_python_output_to_log,
+    environment_snapshot_text,
+    log_and_print_start,
+    log_failure,
+    log_success,
+    print_light_table_box,
+    print_mixed_box,
+    print_step_end_box,
+)
+
+# ---------------------------------------------------------------------------
+# Default visual style
+# ---------------------------------------------------------------------------
+
+PAGE_BACKGROUND = (245, 245, 245)
+TEXT_BLUE = (48, 55, 97)
+MATCH_BACKGROUND = (138, 115, 15)
+MISMATCH_BACKGROUND = (136, 136, 136)
+GAP_BACKGROUND = (178, 58, 58)
+
+HEADER_TEXT = (40, 40, 40)
+GUIDE_TEXT = (70, 70, 70)
+BORDER_COLOR = (220, 220, 220)
+
+DEFAULT_FONT_SIZE = 18
+DEFAULT_HEADER_FONT_SIZE = 20
+DEFAULT_LINE_SPACING = 16
+DEFAULT_BLOCK_SPACING = 28
+DEFAULT_CELL_PADDING_X = 6
+DEFAULT_CELL_PADDING_Y = 4
+DEFAULT_RESIDUES_PER_LINE = 60
+DEFAULT_LABEL_WIDTH = 24
+DEFAULT_LEFT_MARGIN = 40
+DEFAULT_TOP_MARGIN = 36
+DEFAULT_RIGHT_MARGIN = 40
+DEFAULT_BOTTOM_MARGIN = 36
+
+MODULE_NAME = "alignment_visualization"
+
+# ---------------------------------------------------------------------------
+# Small containers
+# ---------------------------------------------------------------------------
 
 
-@dataclass
-class AlignmentEntry:
+@dataclass(frozen=True)
+class FastaRecord:
     header: str
     sequence: str
 
 
-def _read_fasta_alignment(fasta_path: str | Path) -> list[AlignmentEntry]:
+@dataclass(frozen=True)
+class AlignmentRenderConfig:
+    residues_per_line: int = DEFAULT_RESIDUES_PER_LINE
+    font_size: int = DEFAULT_FONT_SIZE
+    header_font_size: int = DEFAULT_HEADER_FONT_SIZE
+    line_spacing: int = DEFAULT_LINE_SPACING
+    block_spacing: int = DEFAULT_BLOCK_SPACING
+    cell_padding_x: int = DEFAULT_CELL_PADDING_X
+    cell_padding_y: int = DEFAULT_CELL_PADDING_Y
+    label_width: int = DEFAULT_LABEL_WIDTH
+    left_margin: int = DEFAULT_LEFT_MARGIN
+    top_margin: int = DEFAULT_TOP_MARGIN
+    right_margin: int = DEFAULT_RIGHT_MARGIN
+    bottom_margin: int = DEFAULT_BOTTOM_MARGIN
+
+
+# ---------------------------------------------------------------------------
+# Internal logging/path helpers
+# ---------------------------------------------------------------------------
+
+
+def _infer_pipeline_context(
+    alignment_fasta_path: str | Path,
+) -> tuple[Path | None, str | None]:
     """
-    Read an aligned FASTA file and return all entries in order.
+    Try to infer:
+    - protein_data_dir -> data/proteins
+    - pdb_id          -> e.g. 1UOU
+
+    Expected pipeline path shape:
+        .../data/proteins/<PDBID>/fasta/alignments/<file>.fasta
+
+    Returns
+    -------
+    tuple[Path | None, str | None]
+        (protein_data_dir, pdb_id)
+    """
+    path = Path(alignment_fasta_path).resolve()
+
+    parts = path.parts
+    try:
+        proteins_index = parts.index("proteins")
+    except ValueError:
+        return None, None
+
+    if proteins_index + 1 >= len(parts):
+        return None, None
+
+    protein_data_dir = Path(*parts[: proteins_index + 1])
+    pdb_id = parts[proteins_index + 1].strip().upper()
+
+    if not pdb_id:
+        return None, None
+
+    return protein_data_dir, pdb_id
+
+
+def _build_log_context_lines(
+    *,
+    alignment_fasta_path: Path,
+    output_png_path: Path,
+    residues_per_line: int,
+    font_size: int,
+    header_font_size: int,
+    label_width: int,
+) -> list[str]:
+    return [
+        f"alignment_fasta_path={alignment_fasta_path}",
+        f"output_png_path={output_png_path}",
+        f"residues_per_line={residues_per_line}",
+        f"font_size={font_size}",
+        f"header_font_size={header_font_size}",
+        f"label_width={label_width}",
+        *environment_snapshot_text(),
+    ]
+
+
+def _print_render_overview_box(
+    *,
+    alignment_fasta_path: Path,
+    output_png_path: Path,
+    residues_per_line: int,
+    font_size: int,
+    header_font_size: int,
+    label_width: int,
+) -> None:
+    print_light_table_box(
+        title="alignment_visualization · render plan",
+        row_list=[
+            ("Input FASTA", str(alignment_fasta_path)),
+            ("Output PNG", str(output_png_path)),
+            ("Residues/line", str(residues_per_line)),
+            ("Font size", str(font_size)),
+            ("Header font", str(header_font_size)),
+            ("Label width", str(label_width)),
+        ],
+        left_header="Field",
+        right_header="Value",
+    )
+
+
+# ---------------------------------------------------------------------------
+# FASTA parsing
+# ---------------------------------------------------------------------------
+
+
+def read_fasta_records(fasta_path: str | Path) -> list[FastaRecord]:
+    fasta_path = Path(fasta_path)
+
+    if not fasta_path.is_file():
+        raise FileNotFoundError(f"Alignment FASTA not found: {fasta_path}")
+
+    text = fasta_path.read_text(encoding="utf-8").strip()
+    if not text:
+        raise ValueError(f"Alignment FASTA is empty: {fasta_path}")
+
+    records: list[FastaRecord] = []
+    current_header: str | None = None
+    current_sequence_lines: list[str] = []
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        if line.startswith(">"):
+            if current_header is not None:
+                records.append(
+                    FastaRecord(
+                        header=current_header,
+                        sequence="".join(current_sequence_lines).replace(" ", ""),
+                    )
+                )
+            current_header = line[1:].strip()
+            current_sequence_lines = []
+            continue
+
+        current_sequence_lines.append(line)
+
+    if current_header is not None:
+        records.append(
+            FastaRecord(
+                header=current_header,
+                sequence="".join(current_sequence_lines).replace(" ", ""),
+            )
+        )
+
+    if not records:
+        raise ValueError(f"No FASTA records found in: {fasta_path}")
+
+    return records
+
+
+def read_pairwise_alignment(
+    alignment_fasta_path: str | Path,
+) -> tuple[FastaRecord, FastaRecord]:
+    records = read_fasta_records(alignment_fasta_path)
+
+    if len(records) != 2:
+        raise ValueError(
+            f"Expected exactly 2 FASTA records in pairwise alignment, found {len(records)}"
+        )
+
+    first_record, second_record = records
+
+    if len(first_record.sequence) != len(second_record.sequence):
+        raise ValueError(
+            "Aligned sequences do not have the same length: "
+            f"{len(first_record.sequence)} vs {len(second_record.sequence)}"
+        )
+
+    return first_record, second_record
+
+
+# ---------------------------------------------------------------------------
+# Text helpers
+# ---------------------------------------------------------------------------
+
+
+def _truncate_label(header: str, label_width: int) -> str:
+    if len(header) <= label_width:
+        return header
+    if label_width <= 3:
+        return header[:label_width]
+    return header[: label_width - 3] + "..."
+
+
+def _load_font(font_size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    preferred_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationMono-Regular.ttf",
+    ]
+
+    for font_path in preferred_paths:
+        path = Path(font_path)
+        if path.exists():
+            try:
+                return ImageFont.truetype(str(path), font_size)
+            except Exception:
+                pass
+
+    return ImageFont.load_default()
+
+
+def _measure_text(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+) -> tuple[int, int]:
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+
+# ---------------------------------------------------------------------------
+# Coloring logic
+# ---------------------------------------------------------------------------
+
+
+def _cell_background_color(char_a: str, char_b: str) -> tuple[int, int, int]:
+    if char_a == "-" or char_b == "-":
+        return GAP_BACKGROUND
+    if char_a == char_b:
+        return MATCH_BACKGROUND
+    return MISMATCH_BACKGROUND
+
+
+def _iter_alignment_blocks(
+    seq_a: str,
+    seq_b: str,
+    residues_per_line: int,
+) -> Iterable[tuple[int, int, str, str]]:
+    total_length = len(seq_a)
+    for start in range(0, total_length, residues_per_line):
+        end = min(start + residues_per_line, total_length)
+        yield start, end, seq_a[start:end], seq_b[start:end]
+
+
+# ---------------------------------------------------------------------------
+# Rendering
+# ---------------------------------------------------------------------------
+
+
+def render_alignment_png(
+    alignment_fasta_path: str | Path,
+    output_png_path: str | Path,
+    *,
+    residues_per_line: int = DEFAULT_RESIDUES_PER_LINE,
+    font_size: int = DEFAULT_FONT_SIZE,
+    header_font_size: int = DEFAULT_HEADER_FONT_SIZE,
+    label_width: int = DEFAULT_LABEL_WIDTH,
+) -> Path:
+    """
+    Render a two-sequence FASTA alignment as a PNG.
 
     Parameters
     ----------
-    fasta_path
-        Path to aligned FASTA file.
-
-    Returns
-    -------
-    list[AlignmentEntry]
-        Parsed FASTA entries.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the FASTA file does not exist.
-    ValueError
-        If the FASTA file is empty or contains no entries.
+    alignment_fasta_path
+        Path to the aligned FASTA file with exactly two records.
+    output_png_path
+        Destination PNG path.
+    residues_per_line
+        Number of alignment columns shown per horizontal block.
+    font_size
+        Monospace font size for sequence letters.
+    header_font_size
+        Font size for title/header text.
+    label_width
+        Maximum visible width for row labels.
     """
-    fasta_path = Path(fasta_path)
-
-    if not fasta_path.exists():
-        raise FileNotFoundError(f"Alignment FASTA not found: {fasta_path}")
-
-    entries: list[AlignmentEntry] = []
-    current_header: str | None = None
-    current_seq: list[str] = []
-
-    with fasta_path.open("r", encoding="utf-8") as handle:
-        for raw_line in handle:
-            line = raw_line.strip()
-            if not line:
-                continue
-
-            if line.startswith(">"):
-                if current_header is not None:
-                    entries.append(
-                        AlignmentEntry(
-                            header=current_header,
-                            sequence="".join(current_seq),
-                        )
-                    )
-                current_header = line[1:].strip()
-                current_seq = []
-            else:
-                current_seq.append(line)
-
-    if current_header is not None:
-        entries.append(
-            AlignmentEntry(
-                header=current_header,
-                sequence="".join(current_seq),
-            )
-        )
-
-    if not entries:
-        raise ValueError(f"No FASTA entries found in {fasta_path}")
-
-    return entries
-
-
-def _slugify_header(header: str) -> str:
-    slug = re.sub(r"[^A-Za-z0-9._-]+", "_", header.strip())
-    slug = slug.strip("_.")
-    return slug or "sequence"
-
-
-def _looks_like_uniprot_header(header: str) -> bool:
-    header_lower = header.lower()
-    return (
-        "uniprot" in header_lower
-        or header_lower.startswith("sp|")
-        or header_lower.startswith("tr|")
-        or "|uniprot|" in header_lower
-    )
-
-
-def _extract_chain_label(header: str) -> str:
-    """
-    Try to infer a compact chain label from FASTA header.
-
-    Examples
-    --------
-    '1A5H_CHAIN_A' -> 'A'
-    'chain A' -> 'A'
-    """
-    patterns = [
-        r"\bCHAIN[_\s-]?([A-Za-z0-9])\b",
-        r"\bchain[_\s-]?([A-Za-z0-9])\b",
-        r"_([A-Za-z0-9])$",
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, header)
-        if match:
-            return match.group(1)
-
-    return _slugify_header(header)
-
-
-def _pair_alignment_entries(
-    entries: list[AlignmentEntry],
-) -> list[tuple[AlignmentEntry, AlignmentEntry, str]]:
-    """
-    Split FASTA entries into pairwise plots.
-
-    Returns
-    -------
-    list[tuple[AlignmentEntry, AlignmentEntry, str]]
-        Tuples of:
-        (entry_a, entry_b, output_suffix)
-
-    Rules
-    -----
-    - exactly 2 entries:
-        render one pair
-    - exactly 1 UniProt entry + n non-UniProt entries:
-        render n pairs (chain vs UniProt)
-    - even number of entries without UniProt detection:
-        render in 0/1, 2/3, 4/5 order
-    """
-    if len(entries) == 2:
-        suffix = _slugify_header(entries[0].header)
-        return [(entries[0], entries[1], suffix)]
-
-    uniprot_entries = [
-        entry for entry in entries if _looks_like_uniprot_header(entry.header)
-    ]
-
-    if len(uniprot_entries) == 1:
-        uniprot_entry = uniprot_entries[0]
-        other_entries = [entry for entry in entries if entry is not uniprot_entry]
-
-        if not other_entries:
-            raise ValueError(
-                "Found UniProt entry, but no matching chain entries to render."
-            )
-
-        pairs: list[tuple[AlignmentEntry, AlignmentEntry, str]] = []
-        for other in other_entries:
-            suffix = f"chain_{_extract_chain_label(other.header)}"
-            pairs.append((other, uniprot_entry, suffix))
-        return pairs
-
-    if len(entries) % 2 == 0:
-        pairs: list[tuple[AlignmentEntry, AlignmentEntry, str]] = []
-        for i in range(0, len(entries), 2):
-            entry_a = entries[i]
-            entry_b = entries[i + 1]
-            suffix = _slugify_header(entry_a.header)
-            pairs.append((entry_a, entry_b, suffix))
-        return pairs
-
-    headers = [entry.header for entry in entries]
-    raise ValueError(
-        "Could not determine how to split alignment entries into pairwise plots. "
-        f"Found {len(entries)} entries: {headers}"
-    )
-
-
-def _truncate_header(header: str, max_len: int = 60) -> str:
-    if len(header) <= max_len:
-        return header
-    return f"{header[: max_len - 3]}..."
-
-
-def _residue_bg_color(res_a: str, res_b: str) -> str:
-    """
-    Background coloring rule.
-
-    - exact match (not gap): yellow
-    - any gap: red
-    - mismatch: light grey
-    """
-    if res_a == "-" or res_b == "-":
-        return "#f4a6a6"  # soft red
-    if res_a == res_b:
-        return "#fff3a3"  # soft yellow
-    return "#d9d9d9"  # light grey
-
-
-def _draw_sequence_block(
-    ax,
-    seq_a: str,
-    seq_b: str,
-    header_a: str,
-    header_b: str,
-    start_idx: int,
-    end_idx: int,
-    y_top: float,
-    row_height: float,
-    left_margin: float,
-    x_offset: float = 0.0,
-) -> None:
-    """
-    Draw one alignment block covering residues [start_idx:end_idx].
-    """
-    block_a = seq_a[start_idx:end_idx]
-    block_b = seq_b[start_idx:end_idx]
-
-    label_x = left_margin - 1.0
-    seq_start_x = left_margin + x_offset
-
-    # Left labels
-    ax.text(
-        label_x,
-        y_top,
-        _truncate_header(header_a, 28),
-        ha="right",
-        va="center",
-        fontsize=8,
-        fontfamily="monospace",
-        color="black",
-    )
-    ax.text(
-        label_x,
-        y_top - row_height,
-        _truncate_header(header_b, 28),
-        ha="right",
-        va="center",
-        fontsize=8,
-        fontfamily="monospace",
-        color="black",
-    )
-
-    # Residue positions
-    ax.text(
-        label_x - 0.25,
-        y_top,
-        str(start_idx + 1),
-        ha="right",
-        va="center",
-        fontsize=7,
-        fontfamily="monospace",
-        color="black",
-    )
-    ax.text(
-        label_x - 0.25,
-        y_top - row_height,
-        str(start_idx + 1),
-        ha="right",
-        va="center",
-        fontsize=7,
-        fontfamily="monospace",
-        color="black",
-    )
-
-    for i, (res_a, res_b) in enumerate(zip(block_a, block_b)):
-        x = seq_start_x + i
-        bg = _residue_bg_color(res_a, res_b)
-
-        # top row cell
-        ax.add_patch(
-            Rectangle(
-                (x - 0.5, y_top - 0.42),
-                width=1.0,
-                height=0.84,
-                facecolor=bg,
-                edgecolor="none",
-            )
-        )
-
-        # bottom row cell
-        ax.add_patch(
-            Rectangle(
-                (x - 0.5, y_top - row_height - 0.42),
-                width=1.0,
-                height=0.84,
-                facecolor=bg,
-                edgecolor="none",
-            )
-        )
-
-        # residues
-        ax.text(
-            x,
-            y_top,
-            res_a,
-            ha="center",
-            va="center",
-            fontsize=8,
-            fontfamily="monospace",
-            color="#1f4ed8",  # blue letters
-        )
-        ax.text(
-            x,
-            y_top - row_height,
-            res_b,
-            ha="center",
-            va="center",
-            fontsize=8,
-            fontfamily="monospace",
-            color="#1f4ed8",  # blue letters
-        )
-
-        # match marker row
-        if res_a == res_b and res_a != "-":
-            marker = "|"
-        elif res_a == "-" or res_b == "-":
-            marker = " "
-        else:
-            marker = "."
-
-        ax.text(
-            x,
-            y_top - (row_height / 2.0),
-            marker,
-            ha="center",
-            va="center",
-            fontsize=7,
-            fontfamily="monospace",
-            color="black",
-        )
-
-    # end positions
-    ax.text(
-        seq_start_x + len(block_a) + 0.25,
-        y_top,
-        str(end_idx),
-        ha="left",
-        va="center",
-        fontsize=7,
-        fontfamily="monospace",
-        color="black",
-    )
-    ax.text(
-        seq_start_x + len(block_b) + 0.25,
-        y_top - row_height,
-        str(end_idx),
-        ha="left",
-        va="center",
-        fontsize=7,
-        fontfamily="monospace",
-        color="black",
-    )
-
-
-def _render_alignment_core(
-    header_a: str,
-    seq_a: str,
-    header_b: str,
-    seq_b: str,
-    output_png_path: str | Path,
-    block_size: int = 80,
-    dpi: int = 300,
-) -> Path:
-    """
-    Render a pairwise alignment as a PNG.
-
-    Visual style:
-    - blue letters
-    - yellow background for exact matches
-    - red background for gaps
-    - grey background for mismatches
-    """
+    alignment_fasta_path = Path(alignment_fasta_path)
     output_png_path = Path(output_png_path)
 
-    if len(seq_a) != len(seq_b):
-        raise ValueError(
-            f"Aligned sequences must have the same length, got {len(seq_a)} and {len(seq_b)} "
-            f"for '{header_a}' vs '{header_b}'."
+    protein_data_dir, pdb_id = _infer_pipeline_context(alignment_fasta_path)
+    log_path: Path | None = None
+
+    if protein_data_dir is not None and pdb_id is not None:
+        log_path = log_and_print_start(
+            protein_data_dir=protein_data_dir,
+            pdb_id=pdb_id,
+            module_name=MODULE_NAME,
+            extra_log_lines=_build_log_context_lines(
+                alignment_fasta_path=alignment_fasta_path,
+                output_png_path=output_png_path,
+                residues_per_line=residues_per_line,
+                font_size=font_size,
+                header_font_size=header_font_size,
+                label_width=label_width,
+            ),
+        )
+    else:
+        print_mixed_box(
+            title=f"{MODULE_NAME} · START",
+            line_list=[
+                f"Input    : {alignment_fasta_path}",
+                f"Output   : {output_png_path}",
+            ],
         )
 
-    if block_size <= 0:
-        raise ValueError(f"block_size must be > 0, got {block_size}")
-
-    n_cols = len(seq_a)
-    n_blocks = math.ceil(n_cols / block_size)
-
-    # layout parameters in data coordinates
-    row_height = 1.2
-    block_vertical_gap = 1.4
-    top_margin = 1.5
-    bottom_margin = 1.0
-    left_margin = 8.5
-    right_margin = 2.5
-
-    total_height = (
-        top_margin + bottom_margin + n_blocks * (2 * row_height + block_vertical_gap)
-    )
-    total_width = left_margin + right_margin + block_size + 3
-
-    # convert rough data-space to figure inches
-    fig_width = max(12, total_width * 0.16)
-    fig_height = max(4, total_height * 0.28)
-
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height), dpi=dpi)
-    ax.set_xlim(0, total_width)
-    ax.set_ylim(0, total_height)
-    ax.axis("off")
-
-    title = f"{_truncate_header(header_a, 50)} vs {_truncate_header(header_b, 50)}"
-    ax.text(
-        left_margin,
-        total_height - 0.7,
-        title,
-        ha="left",
-        va="center",
-        fontsize=11,
-        fontweight="bold",
-        color="black",
-    )
-
-    for block_idx in range(n_blocks):
-        start_idx = block_idx * block_size
-        end_idx = min((block_idx + 1) * block_size, n_cols)
-
-        y_top = (
-            total_height
-            - top_margin
-            - block_idx * (2 * row_height + block_vertical_gap)
-        )
-
-        _draw_sequence_block(
-            ax=ax,
-            seq_a=seq_a,
-            seq_b=seq_b,
-            header_a=header_a,
-            header_b=header_b,
-            start_idx=start_idx,
-            end_idx=end_idx,
-            y_top=y_top,
-            row_height=row_height,
-            left_margin=left_margin,
-        )
-
-    output_png_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.tight_layout()
-    fig.savefig(output_png_path, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
-
-    return output_png_path
-
-
-def render_pairwise_alignment_entries_png(
-    entry_a: AlignmentEntry,
-    entry_b: AlignmentEntry,
-    output_png_path: str | Path,
-    block_size: int = 80,
-    dpi: int = 300,
-) -> Path:
-    """
-    Render two already-parsed alignment entries into a PNG.
-    """
-    return _render_alignment_core(
-        header_a=entry_a.header,
-        seq_a=entry_a.sequence,
-        header_b=entry_b.header,
-        seq_b=entry_b.sequence,
+    _print_render_overview_box(
+        alignment_fasta_path=alignment_fasta_path,
         output_png_path=output_png_path,
-        block_size=block_size,
-        dpi=dpi,
+        residues_per_line=residues_per_line,
+        font_size=font_size,
+        header_font_size=header_font_size,
+        label_width=label_width,
     )
 
+    try:
+        if log_path is not None:
+            with capture_python_output_to_log(log_path):
+                record_a, record_b = read_pairwise_alignment(alignment_fasta_path)
+        else:
+            record_a, record_b = read_pairwise_alignment(alignment_fasta_path)
 
-def render_pairwise_alignment_png(
-    fasta_path: str | Path,
-    output_png_path: str | Path,
-    block_size: int = 80,
-    dpi: int = 300,
-) -> Path:
-    """
-    Render a FASTA alignment containing exactly 2 entries into a PNG.
-    """
-    entries = _read_fasta_alignment(fasta_path)
-
-    if len(entries) != 2:
-        raise ValueError(
-            f"Expected exactly 2 aligned FASTA entries in {fasta_path}, got {len(entries)}."
+        config = AlignmentRenderConfig(
+            residues_per_line=residues_per_line,
+            font_size=font_size,
+            header_font_size=header_font_size,
+            label_width=label_width,
         )
 
-    return render_pairwise_alignment_entries_png(
-        entry_a=entries[0],
-        entry_b=entries[1],
-        output_png_path=output_png_path,
-        block_size=block_size,
-        dpi=dpi,
-    )
+        mono_font = _load_font(config.font_size)
+        header_font = _load_font(config.header_font_size)
+
+        scratch_image = Image.new("RGB", (10, 10), PAGE_BACKGROUND)
+        scratch_draw = ImageDraw.Draw(scratch_image)
+
+        char_width, char_height = _measure_text(scratch_draw, "M", mono_font)
+        title_height = _measure_text(scratch_draw, "Ag", header_font)[1]
+
+        cell_width = char_width + 2 * config.cell_padding_x
+        cell_height = char_height + 2 * config.cell_padding_y
+
+        label_a = _truncate_label(record_a.header, config.label_width)
+        label_b = _truncate_label(record_b.header, config.label_width)
+        label_pixel_width = max(
+            _measure_text(scratch_draw, label_a, mono_font)[0],
+            _measure_text(scratch_draw, label_b, mono_font)[0],
+            _measure_text(scratch_draw, "Pos", mono_font)[0],
+        )
+
+        n_blocks = ceil(len(record_a.sequence) / config.residues_per_line)
+
+        block_height = (
+            cell_height
+            + config.line_spacing
+            + cell_height
+            + config.line_spacing
+            + cell_height
+        )
+
+        image_width = (
+            config.left_margin
+            + label_pixel_width
+            + 24
+            + config.residues_per_line * cell_width
+            + config.right_margin
+        )
+
+        image_height = (
+            config.top_margin
+            + title_height
+            + 20
+            + n_blocks * block_height
+            + max(0, n_blocks - 1) * config.block_spacing
+            + config.bottom_margin
+        )
+
+        if log_path is not None:
+            append_key_value_block(
+                log_path=log_path,
+                title="RENDER METRICS",
+                key_value_pairs=[
+                    ("record_a_header", record_a.header),
+                    ("record_b_header", record_b.header),
+                    ("alignment_length", str(len(record_a.sequence))),
+                    ("n_blocks", str(n_blocks)),
+                    ("cell_width", str(cell_width)),
+                    ("cell_height", str(cell_height)),
+                    ("image_width", str(image_width)),
+                    ("image_height", str(image_height)),
+                ],
+            )
+
+        print_light_table_box(
+            title="alignment_visualization · parsed alignment",
+            row_list=[
+                ("Sequence A header", record_a.header),
+                ("Sequence B header", record_b.header),
+                ("Alignment length", str(len(record_a.sequence))),
+                ("Blocks", str(n_blocks)),
+                ("Image size", f"{image_width} x {image_height}"),
+            ],
+            left_header="Item",
+            right_header="Value",
+        )
+
+        image = Image.new("RGB", (image_width, image_height), PAGE_BACKGROUND)
+        draw = ImageDraw.Draw(image)
+
+        title = alignment_fasta_path.name
+        draw.text(
+            (config.left_margin, config.top_margin),
+            title,
+            fill=HEADER_TEXT,
+            font=header_font,
+        )
+
+        current_y = config.top_margin + title_height + 20
+        seq_x0 = config.left_margin + label_pixel_width + 24
+
+        for start, end, block_a, block_b in _iter_alignment_blocks(
+            record_a.sequence,
+            record_b.sequence,
+            config.residues_per_line,
+        ):
+            draw.text(
+                (config.left_margin, current_y + config.cell_padding_y),
+                "Pos",
+                fill=GUIDE_TEXT,
+                font=mono_font,
+            )
+
+            for i in range(len(block_a)):
+                absolute_index = start + i + 1
+                x = seq_x0 + i * cell_width
+
+                if i == 0 or absolute_index % 10 == 0:
+                    draw.text(
+                        (x + 1, current_y + config.cell_padding_y),
+                        str(absolute_index),
+                        fill=GUIDE_TEXT,
+                        font=mono_font,
+                    )
+
+            row_a_y = current_y + cell_height + config.line_spacing
+            draw.text(
+                (config.left_margin, row_a_y + config.cell_padding_y),
+                label_a,
+                fill=HEADER_TEXT,
+                font=mono_font,
+            )
+
+            row_b_y = row_a_y + cell_height + config.line_spacing
+            draw.text(
+                (config.left_margin, row_b_y + config.cell_padding_y),
+                label_b,
+                fill=HEADER_TEXT,
+                font=mono_font,
+            )
+
+            for i, (char_a, char_b) in enumerate(zip(block_a, block_b)):
+                x = seq_x0 + i * cell_width
+                cell_color = _cell_background_color(char_a, char_b)
+
+                draw.rectangle(
+                    [x, row_a_y, x + cell_width, row_a_y + cell_height],
+                    fill=cell_color,
+                    outline=BORDER_COLOR,
+                )
+                draw.text(
+                    (x + config.cell_padding_x, row_a_y + config.cell_padding_y),
+                    char_a,
+                    fill=TEXT_BLUE,
+                    font=mono_font,
+                )
+
+                draw.rectangle(
+                    [x, row_b_y, x + cell_width, row_b_y + cell_height],
+                    fill=cell_color,
+                    outline=BORDER_COLOR,
+                )
+                draw.text(
+                    (x + config.cell_padding_x, row_b_y + config.cell_padding_y),
+                    char_b,
+                    fill=TEXT_BLUE,
+                    font=mono_font,
+                )
+
+            current_y += block_height + config.block_spacing
+
+        output_png_path.parent.mkdir(parents=True, exist_ok=True)
+        image.save(output_png_path)
+
+        if log_path is not None:
+            append_log_text(log_path, f"[OUTPUT PNG] {output_png_path}")
+            log_success(log_path, f"rendered alignment PNG -> {output_png_path}")
+
+        if pdb_id is not None:
+            print_step_end_box(
+                module_name=MODULE_NAME,
+                pdb_id=pdb_id,
+                status="success",
+                detail_lines=[
+                    f"Alignment length : {len(record_a.sequence)}",
+                    f"Blocks           : {n_blocks}",
+                    f"PNG              : {output_png_path}",
+                ],
+            )
+        else:
+            print_mixed_box(
+                title=f"{MODULE_NAME} · END",
+                line_list=[
+                    "Status           : success",
+                    f"Alignment length : {len(record_a.sequence)}",
+                    f"Blocks           : {n_blocks}",
+                    f"PNG              : {output_png_path}",
+                ],
+            )
+
+        return output_png_path
+
+    except Exception as error:
+        if log_path is not None:
+            log_failure(log_path, "alignment rendering failed", error)
+            append_exception_traceback(log_path, error)
+
+        if pdb_id is not None:
+            print_step_end_box(
+                module_name=MODULE_NAME,
+                pdb_id=pdb_id,
+                status="failed",
+                detail_lines=[f"Error   : {error!r}"],
+            )
+        else:
+            print_mixed_box(
+                title=f"{MODULE_NAME} · END",
+                line_list=[
+                    "Status  : failed",
+                    f"Error   : {error!r}",
+                ],
+            )
+
+        raise
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible public name expected by older code
+# ---------------------------------------------------------------------------
 
 
 def alignment_to_image(
-    fasta_path: str | Path,
+    alignment_fasta_path: str | Path,
     output_png_path: str | Path,
-    block_size: int = 80,
-    dpi: int = 300,
-) -> list[Path]:
+    *,
+    residues_per_line: int = DEFAULT_RESIDUES_PER_LINE,
+    font_size: int = DEFAULT_FONT_SIZE,
+    header_font_size: int = DEFAULT_HEADER_FONT_SIZE,
+    label_width: int = DEFAULT_LABEL_WIDTH,
+) -> Path:
     """
-    Convert an aligned FASTA file into one or more PNG images.
-
-    Behavior
-    --------
-    - 2 entries:
-        exactly 1 PNG
-    - 1 UniProt + n chains:
-        n PNGs, one chain vs UniProt
-    - even number of entries without UniProt header:
-        pairwise PNGs in order
-
-    Returns
-    -------
-    list[Path]
-        Paths to generated PNG files.
+    Backward-compatible wrapper used by older pipeline code.
     """
-    fasta_path = Path(fasta_path)
-    output_png_path = Path(output_png_path)
-
-    entries = _read_fasta_alignment(fasta_path)
-    pairs = _pair_alignment_entries(entries)
-
-    generated_paths: list[Path] = []
-
-    if len(pairs) == 1:
-        entry_a, entry_b, _suffix = pairs[0]
-        png_path = render_pairwise_alignment_entries_png(
-            entry_a=entry_a,
-            entry_b=entry_b,
-            output_png_path=output_png_path,
-            block_size=block_size,
-            dpi=dpi,
-        )
-        generated_paths.append(png_path)
-        return generated_paths
-
-    stem = output_png_path.stem
-    suffix = output_png_path.suffix or ".png"
-    parent = output_png_path.parent
-
-    for entry_a, entry_b, pair_suffix in pairs:
-        pair_output = parent / f"{stem}_{pair_suffix}{suffix}"
-        png_path = render_pairwise_alignment_entries_png(
-            entry_a=entry_a,
-            entry_b=entry_b,
-            output_png_path=pair_output,
-            block_size=block_size,
-            dpi=dpi,
-        )
-        generated_paths.append(png_path)
-
-    return generated_paths
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Render aligned FASTA file into one or more alignment PNGs."
+    return render_alignment_png(
+        alignment_fasta_path=alignment_fasta_path,
+        output_png_path=output_png_path,
+        residues_per_line=residues_per_line,
+        font_size=font_size,
+        header_font_size=header_font_size,
+        label_width=label_width,
     )
-    parser.add_argument("fasta_path", type=Path, help="Path to aligned FASTA file")
-    parser.add_argument("output_png_path", type=Path, help="Base output PNG path")
-    parser.add_argument(
-        "--block-size",
-        type=int,
-        default=80,
-        help="Number of aligned residues per line block",
-    )
-    parser.add_argument(
-        "--dpi",
-        type=int,
-        default=300,
-        help="Output DPI",
-    )
-
-    args = parser.parse_args()
-
-    generated = alignment_to_image(
-        fasta_path=args.fasta_path,
-        output_png_path=args.output_png_path,
-        block_size=args.block_size,
-        dpi=args.dpi,
-    )
-
-    for path in generated:
-        print(path)

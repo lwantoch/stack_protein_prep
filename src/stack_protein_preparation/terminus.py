@@ -1,55 +1,12 @@
-"""
-/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/terminus.py
-
-Convert true chain termini of a protein-only PDB into AMBER-compatible termini.
-
-Purpose
--------
-- detect the first and last polymer residue in each chain
-- convert the first residue to an AMBER N-terminus residue name
-  (for example ALA -> NALA)
-- convert the last residue to an AMBER C-terminus residue name
-  (for example ALA -> CALA)
-- normalize terminal atom naming for AMBER / tleap compatibility
-- write the result to the standard pipeline output path
-
-Standard output naming
-----------------------
-Given:
-    data/proteins/<PDBID>/
-
-this module writes by default:
-    data/proteins/<PDBID>/components/<PDBID>_protein_amber_termini.pdb
-
-Important
----------
-- intended input: protein-only PDB
-- recommended input in your pipeline: the protonated protein PDB
-- this module is for TRUE chain termini
-- internal cuts / missing internal fragments should be handled separately in cap.py
-- existing AMBER-style internal residue names are preserved:
-    HID, HIE, HIP, ASH, GLH, CYM, CYX, LYN, ...
-- newly added atom coordinates are heuristic and should be relaxed later
-- single-residue chains are chemically awkward for generic AMBER terminal naming;
-  this module preserves the base residue name in that special case, but still
-  normalizes the terminal atoms
-
-Dependencies
-------------
-- Biopython
-- numpy
-"""
+# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/terminus.py
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Dict, Iterable, List, Tuple
 
-import numpy as np
-from Bio.PDB import PDBIO, Atom, Chain, Model, PDBParser, Residue, Structure
-
-SUPPORTED_POLYMER_RESIDUE_NAMES = {
+STANDARD_AMINO_ACID_RESNAMES = {
     "ALA",
     "ARG",
     "ASN",
@@ -71,7 +28,6 @@ SUPPORTED_POLYMER_RESIDUE_NAMES = {
     "LYS",
     "LYN",
     "MET",
-    "MSE",
     "PHE",
     "PRO",
     "SER",
@@ -81,648 +37,297 @@ SUPPORTED_POLYMER_RESIDUE_NAMES = {
     "VAL",
 }
 
-N_TERMINAL_RESNAME_MAP = {
-    residue_name: f"N{residue_name}" for residue_name in SUPPORTED_POLYMER_RESIDUE_NAMES
+PROTEIN_LIKE_NONSTANDARD_RESNAMES = {
+    "MSE",
+    "SEC",
+    "PYL",
+    "SEP",
+    "TPO",
+    "PTR",
+    "CSO",
+    "CSD",
+    "OCS",
+    "KCX",
+    "LLP",
+    "MLY",
+    "HYP",
 }
 
-C_TERMINAL_RESNAME_MAP = {
-    residue_name: f"C{residue_name}" for residue_name in SUPPORTED_POLYMER_RESIDUE_NAMES
+POLYMER_PROTEIN_RESNAMES = (
+    STANDARD_AMINO_ACID_RESNAMES | PROTEIN_LIKE_NONSTANDARD_RESNAMES
+)
+
+INTERNAL_CAP_RESNAMES = {"ACE", "NME"}
+
+N_TERMINAL_AMBER_NAME_MAP = {
+    "ALA": "NALA",
+    "ARG": "NARG",
+    "ASN": "NASN",
+    "ASP": "NASP",
+    "ASH": "NASH",
+    "CYS": "NCYS",
+    "CYM": "NCYM",
+    "CYX": "NCYX",
+    "GLN": "NGLN",
+    "GLU": "NGLU",
+    "GLH": "NGLH",
+    "GLY": "NGLY",
+    "HIS": "NHIS",
+    "HID": "NHID",
+    "HIE": "NHIE",
+    "HIP": "NHIP",
+    "ILE": "NILE",
+    "LEU": "NLEU",
+    "LYS": "NLYS",
+    "LYN": "NLYN",
+    "MET": "NMET",
+    "PHE": "NPHE",
+    "PRO": "NPRO",
+    "SER": "NSER",
+    "THR": "NTHR",
+    "TRP": "NTRP",
+    "TYR": "NTYR",
+    "VAL": "NVAL",
 }
 
-NTERM_HYDROGEN_ALIASES = {
-    "H",
-    "H1",
-    "H2",
-    "H3",
-    "HT1",
-    "HT2",
-    "HT3",
-    "1H",
-    "2H",
-    "3H",
+C_TERMINAL_AMBER_NAME_MAP = {
+    "ALA": "CALA",
+    "ARG": "CARG",
+    "ASN": "CASN",
+    "ASP": "CASP",
+    "ASH": "CASH",
+    "CYS": "CCYS",
+    "CYM": "CCYM",
+    "CYX": "CCYX",
+    "GLN": "CGLN",
+    "GLU": "CGLU",
+    "GLH": "CGLH",
+    "GLY": "CGLY",
+    "HIS": "CHIS",
+    "HID": "CHID",
+    "HIE": "CHIE",
+    "HIP": "CHIP",
+    "ILE": "CILE",
+    "LEU": "CLEU",
+    "LYS": "CLYS",
+    "LYN": "CLYN",
+    "MET": "CMET",
+    "PHE": "CPHE",
+    "PRO": "CPRO",
+    "SER": "CSER",
+    "THR": "CTHR",
+    "TRP": "CTRP",
+    "TYR": "CTYR",
+    "VAL": "CVAL",
 }
 
-CTERM_OXYGEN_ALIASES = {
-    "O",
-    "OXT",
-    "OT1",
-    "OT2",
-    "O1",
-    "O2",
-}
 
-
-@dataclass(slots=True)
-class ChainTerminusResult:
+@dataclass(frozen=True)
+class TerminusConversionResult:
     chain_id: str
-    first_resseq: int | None
-    last_resseq: int | None
-    first_old_resname: str | None
-    first_new_resname: str | None
-    last_old_resname: str | None
-    last_new_resname: str | None
-    n_h_added: int
-    oxt_added: bool
+    first_resseq: int
+    last_resseq: int
+    first_old_resname: str
+    first_new_resname: str
+    last_old_resname: str
+    last_new_resname: str
     single_residue_chain: bool
 
 
-def _as_vec(values: Iterable[float]) -> np.ndarray:
-    return np.asarray(list(values), dtype=float)
+@dataclass
+class AtomRecord:
+    record_name: str
+    serial: int
+    atom_name: str
+    altloc: str
+    resname: str
+    chain_id: str
+    resseq: int
+    icode: str
+    x: float
+    y: float
+    z: float
+    occupancy: float
+    tempfactor: float
+    element: str
+    charge: str
+    original_line: str
 
+    @property
+    def residue_key(self) -> Tuple[str, int, str]:
+        return (self.chain_id, self.resseq, self.icode)
 
-def _norm(vector: np.ndarray) -> float:
-    return float(np.linalg.norm(vector))
+    def format_pdb_line(self) -> str:
+        record_name = f"{self.record_name:<6}"
+        atom_name = _format_atom_name(self.atom_name, self.element)
+        altloc = (self.altloc or " ")[:1]
+        resname = f"{self.resname:>4}"[:4]
+        chain_id = (self.chain_id or " ")[:1]
+        icode = (self.icode or " ")[:1]
+        element = f"{(self.element or '').strip():>2}"[:2]
+        charge = f"{(self.charge or '').strip():>2}"[:2]
 
-
-def _unit(vector: np.ndarray, fallback: np.ndarray | None = None) -> np.ndarray:
-    length = _norm(vector)
-    if length > 1e-8:
-        return vector / length
-
-    if fallback is not None and _norm(fallback) > 1e-8:
-        return fallback / _norm(fallback)
-
-    return np.array([1.0, 0.0, 0.0], dtype=float)
-
-
-def _orthogonal_unit(vector: np.ndarray) -> np.ndarray:
-    vector_u = _unit(vector)
-    trial = np.array([1.0, 0.0, 0.0], dtype=float)
-    if abs(float(np.dot(vector_u, trial))) > 0.9:
-        trial = np.array([0.0, 1.0, 0.0], dtype=float)
-    return _unit(np.cross(vector_u, trial), fallback=np.array([0.0, 0.0, 1.0]))
-
-
-def _safe_occupancy(atom: Atom.Atom) -> float:
-    return 1.0 if atom.get_occupancy() is None else float(atom.get_occupancy())
-
-
-def _safe_element(atom: Atom.Atom) -> str:
-    if atom.element and atom.element.strip():
-        return atom.element.strip()
-    atom_name = atom.get_name().strip()
-    return atom_name[0] if atom_name else "X"
-
-
-def _make_atom(
-    name: str,
-    coord: np.ndarray,
-    serial_number: int,
-    element: str,
-    bfactor: float = 20.0,
-    occupancy: float = 1.0,
-) -> Atom.Atom:
-    return Atom.Atom(
-        name=name,
-        coord=np.asarray(coord, dtype=float),
-        bfactor=bfactor,
-        occupancy=occupancy,
-        altloc=" ",
-        fullname=f"{name:>4}",
-        serial_number=serial_number,
-        element=element,
-    )
-
-
-def _clone_atom_with_new_name(
-    atom: Atom.Atom,
-    serial_number: int,
-    new_name: str | None = None,
-) -> Atom.Atom:
-    output_name = atom.get_name() if new_name is None else new_name
-    return Atom.Atom(
-        name=output_name,
-        coord=np.array(atom.get_coord(), dtype=float),
-        bfactor=float(atom.get_bfactor()),
-        occupancy=_safe_occupancy(atom),
-        altloc=atom.get_altloc(),
-        fullname=f"{output_name:>4}",
-        serial_number=serial_number,
-        element=_safe_element(atom) if new_name is None else output_name[0],
-    )
-
-
-def _copy_residue_with_skips(
-    residue: Residue.Residue,
-    serial_counter: list[int],
-    new_resname: str | None = None,
-    skip_atom_names: set[str] | None = None,
-) -> Residue.Residue:
-    skip_atom_names = skip_atom_names or set()
-
-    output_residue = Residue.Residue(
-        id=residue.id,
-        resname=residue.get_resname() if new_resname is None else new_resname,
-        segid=residue.get_segid(),
-    )
-
-    for atom in residue.get_atoms():
-        if atom.get_name().strip() in skip_atom_names:
-            continue
-        serial_counter[0] += 1
-        output_residue.add(
-            _clone_atom_with_new_name(
-                atom=atom,
-                serial_number=serial_counter[0],
-            )
+        return (
+            f"{record_name}"
+            f"{self.serial:5d} "
+            f"{atom_name}"
+            f"{altloc}"
+            f"{resname}"
+            f"{chain_id}"
+            f"{self.resseq:4d}"
+            f"{icode}   "
+            f"{self.x:8.3f}"
+            f"{self.y:8.3f}"
+            f"{self.z:8.3f}"
+            f"{self.occupancy:6.2f}"
+            f"{self.tempfactor:6.2f}"
+            f"          "
+            f"{element}"
+            f"{charge}"
         )
 
-    return output_residue
+
+@dataclass
+class RawLine:
+    line: str
 
 
-def _is_polymer_residue(residue: Residue.Residue) -> bool:
-    if residue.id[0] != " ":
-        return False
-    return residue.get_resname().strip().upper() in SUPPORTED_POLYMER_RESIDUE_NAMES
+ParsedEntry = AtomRecord | RawLine
 
 
-def _require_atom(residue: Residue.Residue, atom_name: str) -> Atom.Atom:
-    if atom_name not in residue:
-        raise ValueError(
-            f"Residue {residue.get_resname()} {residue.id} is missing required atom '{atom_name}'."
-        )
-    return residue[atom_name]
-
-
-def _find_first_and_last_polymer_indices(
-    chain: Chain.Chain,
-) -> tuple[int, int] | None:
-    residue_list = list(chain.get_residues())
-
-    polymer_indices = [
-        index
-        for index, residue in enumerate(residue_list)
-        if _is_polymer_residue(residue)
-    ]
-
-    if not polymer_indices:
-        return None
-
-    return polymer_indices[0], polymer_indices[-1]
-
-
-def _collect_existing_nterm_hydrogens(residue: Residue.Residue) -> list[Atom.Atom]:
-    hydrogen_atoms: list[Atom.Atom] = []
-
-    for atom in residue.get_atoms():
-        if atom.get_name().strip() in NTERM_HYDROGEN_ALIASES:
-            hydrogen_atoms.append(atom)
-
-    return hydrogen_atoms
-
-
-def _target_nterm_h_names(base_resname: str) -> list[str]:
-    if base_resname.upper() == "PRO":
-        return ["H2", "H3"]
-    return ["H1", "H2", "H3"]
-
-
-def _build_missing_nterm_h_positions(
-    residue: Residue.Residue,
-    missing_count: int,
-) -> list[np.ndarray]:
-    if missing_count <= 0:
-        return []
-
-    n_atom = _require_atom(residue, "N")
-    ca_atom = _require_atom(residue, "CA")
-
-    n_coord = _as_vec(n_atom.coord)
-    ca_coord = _as_vec(ca_atom.coord)
-
-    bond_length = 1.01
-
-    if residue.get_resname().strip().upper() == "PRO" and "CD" in residue:
-        cd_coord = _as_vec(residue["CD"].coord)
-        axis = -_unit((ca_coord - n_coord) + (cd_coord - n_coord))
-    else:
-        axis = -_unit(ca_coord - n_coord)
-
-    u = _orthogonal_unit(axis)
-    v = _unit(np.cross(axis, u))
-    theta = np.deg2rad(55.0)
-
-    if missing_count == 1:
-        direction_list = [axis]
-    elif missing_count == 2:
-        direction_list = [
-            _unit(np.cos(theta) * axis + np.sin(theta) * u),
-            _unit(np.cos(theta) * axis - np.sin(theta) * u),
-        ]
-    else:
-        direction_list = [
-            _unit(np.cos(theta) * axis + np.sin(theta) * u),
-            _unit(np.cos(theta) * axis + np.sin(theta) * (-0.5 * u + 0.8660254 * v)),
-            _unit(np.cos(theta) * axis + np.sin(theta) * (-0.5 * u - 0.8660254 * v)),
-        ]
-
-    return [n_coord + bond_length * direction for direction in direction_list]
-
-
-def _normalize_or_add_nterm_hydrogens(
-    source_residue: Residue.Residue,
-    output_residue: Residue.Residue,
-    serial_counter: list[int],
-) -> int:
-    """
-    Normalize N-terminal hydrogens to AMBER-style names.
-
-    PRO -> H2, H3
-    all others -> H1, H2, H3
-    """
-    target_names = _target_nterm_h_names(source_residue.get_resname().strip().upper())
-    target_count = len(target_names)
-
-    existing_h_atoms = _collect_existing_nterm_hydrogens(source_residue)[:target_count]
-
-    names_to_remove = [
-        atom.get_id()
-        for atom in output_residue.get_atoms()
-        if atom.get_name().strip() in NTERM_HYDROGEN_ALIASES
-    ]
-    for atom_name in names_to_remove:
-        output_residue.detach_child(atom_name)
-
-    for atom_index, atom in enumerate(existing_h_atoms):
-        serial_counter[0] += 1
-        output_residue.add(
-            _clone_atom_with_new_name(
-                atom=atom,
-                serial_number=serial_counter[0],
-                new_name=target_names[atom_index],
-            )
-        )
-
-    missing_count = target_count - len(existing_h_atoms)
-    if missing_count <= 0:
-        return 0
-
-    missing_coords = _build_missing_nterm_h_positions(
-        residue=source_residue,
-        missing_count=missing_count,
+def sanitize_variant_label(variant_label: str) -> str:
+    cleaned = "".join(
+        character if character.isalnum() or character in {"_", "-"} else "_"
+        for character in variant_label.strip()
     )
-
-    for coord_index, coord in enumerate(missing_coords):
-        target_name = target_names[len(existing_h_atoms) + coord_index]
-        serial_counter[0] += 1
-        output_residue.add(
-            _make_atom(
-                name=target_name,
-                coord=coord,
-                serial_number=serial_counter[0],
-                element="H",
-            )
-        )
-
-    return missing_count
+    cleaned = cleaned.strip("_")
+    if not cleaned:
+        raise ValueError(f"Invalid empty variant label derived from {variant_label!r}")
+    return cleaned
 
 
-def _normalize_or_add_c_terminal_oxygens(
-    source_residue: Residue.Residue,
-    output_residue: Residue.Residue,
-    serial_counter: list[int],
-) -> bool:
-    """
-    Ensure AMBER-style C-terminal oxygen naming:
-    - O
-    - OXT
-    """
-    names_to_remove = [
-        atom.get_id()
-        for atom in output_residue.get_atoms()
-        if atom.get_name().strip() in CTERM_OXYGEN_ALIASES
-    ]
-    for atom_name in names_to_remove:
-        output_residue.detach_child(atom_name)
-
-    oxygen_like_atoms: list[Atom.Atom] = []
-    for atom in source_residue.get_atoms():
-        if atom.get_name().strip() in CTERM_OXYGEN_ALIASES:
-            oxygen_like_atoms.append(atom)
-
-    if not oxygen_like_atoms:
-        raise ValueError(
-            f"Residue {source_residue.get_resname()} {source_residue.id} has no terminal oxygen atoms."
-        )
-
-    main_o_atom: Atom.Atom | None = None
-    extra_o_atom: Atom.Atom | None = None
-
-    for atom in oxygen_like_atoms:
-        atom_name = atom.get_name().strip()
-        if atom_name == "O" and main_o_atom is None:
-            main_o_atom = atom
-        elif atom_name != "O" and extra_o_atom is None:
-            extra_o_atom = atom
-
-    if main_o_atom is None:
-        main_o_atom = oxygen_like_atoms[0]
-
-    serial_counter[0] += 1
-    output_residue.add(
-        _clone_atom_with_new_name(
-            atom=main_o_atom,
-            serial_number=serial_counter[0],
-            new_name="O",
-        )
-    )
-
-    if extra_o_atom is not None:
-        serial_counter[0] += 1
-        output_residue.add(
-            _clone_atom_with_new_name(
-                atom=extra_o_atom,
-                serial_number=serial_counter[0],
-                new_name="OXT",
-            )
-        )
-        return False
-
-    c_atom = _require_atom(source_residue, "C")
-    ca_atom = _require_atom(source_residue, "CA")
-
-    c_coord = _as_vec(c_atom.coord)
-    ca_coord = _as_vec(ca_atom.coord)
-    o_coord = _as_vec(main_o_atom.coord)
-
-    c_to_o = _unit(o_coord - c_coord)
-    c_to_ca = _unit(ca_coord - c_coord)
-
-    reflected_direction = _unit(
-        c_to_o - 2.0 * np.dot(c_to_o, c_to_ca) * c_to_ca,
-        fallback=-c_to_o,
-    )
-    oxt_coord = c_coord + 1.25 * reflected_direction
-
-    serial_counter[0] += 1
-    output_residue.add(
-        _make_atom(
-            name="OXT",
-            coord=oxt_coord,
-            serial_number=serial_counter[0],
-            element="O",
-        )
-    )
-    return True
-
-
-def _convert_first_residue_to_nterm(
-    residue: Residue.Residue,
-    serial_counter: list[int],
-) -> tuple[Residue.Residue, int]:
-    base_resname = residue.get_resname().strip().upper()
-    new_resname = N_TERMINAL_RESNAME_MAP[base_resname]
-
-    output_residue = _copy_residue_with_skips(
-        residue=residue,
-        serial_counter=serial_counter,
-        new_resname=new_resname,
-        skip_atom_names=NTERM_HYDROGEN_ALIASES,
-    )
-
-    n_h_added = _normalize_or_add_nterm_hydrogens(
-        source_residue=residue,
-        output_residue=output_residue,
-        serial_counter=serial_counter,
-    )
-
-    return output_residue, n_h_added
-
-
-def _convert_last_residue_to_cterm(
-    residue: Residue.Residue,
-    serial_counter: list[int],
-) -> tuple[Residue.Residue, bool]:
-    base_resname = residue.get_resname().strip().upper()
-    new_resname = C_TERMINAL_RESNAME_MAP[base_resname]
-
-    output_residue = _copy_residue_with_skips(
-        residue=residue,
-        serial_counter=serial_counter,
-        new_resname=new_resname,
-        skip_atom_names=CTERM_OXYGEN_ALIASES,
-    )
-
-    oxt_added = _normalize_or_add_c_terminal_oxygens(
-        source_residue=residue,
-        output_residue=output_residue,
-        serial_counter=serial_counter,
-    )
-
-    return output_residue, oxt_added
-
-
-def _normalize_single_residue_chain(
-    residue: Residue.Residue,
-    serial_counter: list[int],
-) -> tuple[Residue.Residue, int, bool]:
-    """
-    Special case: one polymer residue is simultaneously chain start and chain end.
-
-    Generic AMBER naming with both NXXX and CXXX is not handled cleanly in tleap for
-    arbitrary standard protein loading, so here we keep the base residue name but
-    normalize the atom-level terminal features.
-    """
-    output_residue = _copy_residue_with_skips(
-        residue=residue,
-        serial_counter=serial_counter,
-        new_resname=residue.get_resname(),
-        skip_atom_names=NTERM_HYDROGEN_ALIASES | CTERM_OXYGEN_ALIASES,
-    )
-
-    n_h_added = _normalize_or_add_nterm_hydrogens(
-        source_residue=residue,
-        output_residue=output_residue,
-        serial_counter=serial_counter,
-    )
-    oxt_added = _normalize_or_add_c_terminal_oxygens(
-        source_residue=residue,
-        output_residue=output_residue,
-        serial_counter=serial_counter,
-    )
-
-    return output_residue, n_h_added, oxt_added
-
-
-def convert_chain_termini_to_amber(
-    chain: Chain.Chain,
-    serial_counter: list[int],
-) -> tuple[Chain.Chain, ChainTerminusResult]:
-    residue_list = list(chain.get_residues())
-    output_chain = Chain.Chain(chain.id)
-
-    first_last_indices = _find_first_and_last_polymer_indices(chain)
-    if first_last_indices is None:
-        for residue in residue_list:
-            output_chain.add(
-                _copy_residue_with_skips(
-                    residue=residue,
-                    serial_counter=serial_counter,
-                )
-            )
-
-        return output_chain, ChainTerminusResult(
-            chain_id=chain.id,
-            first_resseq=None,
-            last_resseq=None,
-            first_old_resname=None,
-            first_new_resname=None,
-            last_old_resname=None,
-            last_new_resname=None,
-            n_h_added=0,
-            oxt_added=False,
-            single_residue_chain=False,
-        )
-
-    first_index, last_index = first_last_indices
-    first_residue = residue_list[first_index]
-    last_residue = residue_list[last_index]
-
-    first_old_resname = first_residue.get_resname().strip().upper()
-    last_old_resname = last_residue.get_resname().strip().upper()
-
-    n_h_added = 0
-    oxt_added = False
-    single_residue_chain = first_index == last_index
-
-    for residue_index, residue in enumerate(residue_list):
-        if residue_index == first_index == last_index:
-            normalized_residue, n_h_added, oxt_added = _normalize_single_residue_chain(
-                residue=residue,
-                serial_counter=serial_counter,
-            )
-            output_chain.add(normalized_residue)
-            continue
-
-        if residue_index == first_index:
-            nterm_residue, n_h_added = _convert_first_residue_to_nterm(
-                residue=residue,
-                serial_counter=serial_counter,
-            )
-            output_chain.add(nterm_residue)
-            continue
-
-        if residue_index == last_index:
-            cterm_residue, oxt_added = _convert_last_residue_to_cterm(
-                residue=residue,
-                serial_counter=serial_counter,
-            )
-            output_chain.add(cterm_residue)
-            continue
-
-        output_chain.add(
-            _copy_residue_with_skips(
-                residue=residue,
-                serial_counter=serial_counter,
-            )
-        )
-
-    return output_chain, ChainTerminusResult(
-        chain_id=chain.id,
-        first_resseq=first_residue.id[1],
-        last_resseq=last_residue.id[1],
-        first_old_resname=first_old_resname,
-        first_new_resname=(
-            first_residue.get_resname().strip()
-            if single_residue_chain
-            else N_TERMINAL_RESNAME_MAP[first_old_resname]
-        ),
-        last_old_resname=last_old_resname,
-        last_new_resname=(
-            last_residue.get_resname().strip()
-            if single_residue_chain
-            else C_TERMINAL_RESNAME_MAP[last_old_resname]
-        ),
-        n_h_added=n_h_added,
-        oxt_added=oxt_added,
-        single_residue_chain=single_residue_chain,
-    )
-
-
-def get_default_amber_termini_output_path(
-    pdb_directory: str | Path,
+def build_default_terminus_output_path(
+    pdb_directory: Path | str,
     pdb_id: str,
 ) -> Path:
-    """
-    Return the standard pipeline output path for the protein with AMBER termini.
-
-    Example
-    -------
-    data/proteins/1ABC/ -> data/proteins/1ABC/components/1ABC_protein_amber_termini.pdb
-    """
     pdb_directory = Path(pdb_directory)
     return pdb_directory / "components" / f"{pdb_id}_protein_amber_termini.pdb"
 
 
+def build_variant_terminus_output_path(
+    pdb_directory: Path | str,
+    pdb_id: str,
+    variant_label: str,
+) -> Path:
+    pdb_directory = Path(pdb_directory)
+    safe_variant_label = sanitize_variant_label(variant_label)
+    return (
+        pdb_directory
+        / "components"
+        / f"{pdb_id}_protein_amber_termini_{safe_variant_label}.pdb"
+    )
+
+
 def convert_protein_termini_to_amber(
-    input_pdb_path: str | Path,
-    output_pdb_path: str | Path,
-) -> list[ChainTerminusResult]:
-    """
-    Convert true chain termini of a protein-only PDB to AMBER-compatible termini.
-
-    Parameters
-    ----------
-    input_pdb_path
-        Input protein-only PDB path.
-    output_pdb_path
-        Output protein-only PDB path.
-
-    Returns
-    -------
-    list[ChainTerminusResult]
-        Per-chain summary.
-    """
+    input_pdb_path: Path | str,
+    output_pdb_path: Path | str,
+) -> List[TerminusConversionResult]:
     input_pdb_path = Path(input_pdb_path)
     output_pdb_path = Path(output_pdb_path)
 
-    if not input_pdb_path.exists():
-        raise FileNotFoundError(f"Input PDB not found: {input_pdb_path}")
+    parsed_entries = _read_pdb_entries(input_pdb_path)
+    atom_records = [entry for entry in parsed_entries if isinstance(entry, AtomRecord)]
 
-    parser = PDBParser(QUIET=True)
-    input_structure = parser.get_structure("protein_input", str(input_pdb_path))
+    residue_map = _collect_residue_records(atom_records)
+    chain_polymer_residue_keys = _collect_polymer_residue_keys_by_chain(residue_map)
 
-    if len(input_structure) == 0:
-        raise ValueError(f"No model found in input PDB: {input_pdb_path}")
+    terminus_result_list: List[TerminusConversionResult] = []
+    n_terminal_keys: set[Tuple[str, int, str]] = set()
+    c_terminal_keys: set[Tuple[str, int, str]] = set()
 
-    input_model = next(input_structure.get_models())
+    for chain_id, residue_key_list in chain_polymer_residue_keys.items():
+        if not residue_key_list:
+            continue
 
-    output_structure = Structure.Structure("protein_amber_termini")
-    output_model = Model.Model(input_model.id)
-    output_structure.add(output_model)
+        first_key = residue_key_list[0]
+        last_key = residue_key_list[-1]
 
-    serial_counter = [0]
-    result_list: list[ChainTerminusResult] = []
+        first_record = residue_map[first_key][0]
+        last_record = residue_map[last_key][0]
 
-    for chain in input_model.get_chains():
-        output_chain, result = convert_chain_termini_to_amber(
-            chain=chain,
-            serial_counter=serial_counter,
+        first_old_resname = first_record.resname
+        last_old_resname = last_record.resname
+        single_residue_chain = first_key == last_key
+
+        if single_residue_chain:
+            first_new_resname = first_old_resname
+            last_new_resname = last_old_resname
+        else:
+            first_new_resname = N_TERMINAL_AMBER_NAME_MAP.get(
+                first_old_resname,
+                first_old_resname,
+            )
+            last_new_resname = C_TERMINAL_AMBER_NAME_MAP.get(
+                last_old_resname,
+                last_old_resname,
+            )
+
+        _apply_residue_name_to_key(
+            residue_map=residue_map,
+            residue_key=first_key,
+            new_resname=first_new_resname,
         )
-        output_model.add(output_chain)
-        result_list.append(result)
+        if last_key != first_key:
+            _apply_residue_name_to_key(
+                residue_map=residue_map,
+                residue_key=last_key,
+                new_resname=last_new_resname,
+            )
+
+        terminus_result_list.append(
+            TerminusConversionResult(
+                chain_id=chain_id,
+                first_resseq=first_record.resseq,
+                last_resseq=last_record.resseq,
+                first_old_resname=first_old_resname,
+                first_new_resname=first_new_resname,
+                last_old_resname=last_old_resname,
+                last_new_resname=last_new_resname,
+                single_residue_chain=single_residue_chain,
+            )
+        )
+
+        n_terminal_keys.add(first_key)
+        c_terminal_keys.add(last_key)
+
+    new_atom_records = _normalize_terminal_atom_names(
+        atom_records=atom_records,
+        n_terminal_keys=n_terminal_keys,
+        c_terminal_keys=c_terminal_keys,
+        residue_map=residue_map,
+    )
+
+    parsed_entries.extend(new_atom_records)
 
     output_pdb_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_pdb_entries(parsed_entries, output_pdb_path)
 
-    io = PDBIO()
-    io.set_structure(output_structure)
-    io.save(str(output_pdb_path))
-
-    return result_list
+    return terminus_result_list
 
 
-def convert_protein_termini_for_pdb_directory(
-    pdb_directory: str | Path,
+def convert_variant_protein_termini_to_amber(
     pdb_id: str,
-    input_pdb_path: str | Path,
-) -> tuple[Path, list[ChainTerminusResult]]:
-    """
-    Convert protein chain termini to AMBER-compatible termini and write to the
-    standard pipeline output path.
-    """
-    output_pdb_path = get_default_amber_termini_output_path(
+    pdb_directory: Path | str,
+    *,
+    variant_label: str,
+    input_pdb_path: Path | str,
+) -> dict[str, str | bool | int]:
+    pdb_directory = Path(pdb_directory)
+    input_pdb_path = Path(input_pdb_path)
+    output_pdb_path = build_variant_terminus_output_path(
         pdb_directory=pdb_directory,
         pdb_id=pdb_id,
+        variant_label=variant_label,
     )
 
     result_list = convert_protein_termini_to_amber(
@@ -730,60 +335,412 @@ def convert_protein_termini_for_pdb_directory(
         output_pdb_path=output_pdb_path,
     )
 
-    return output_pdb_path, result_list
+    return {
+        "amber_termini_success": output_pdb_path.is_file()
+        and output_pdb_path.stat().st_size > 0,
+        "amber_termini_input_path": str(input_pdb_path.resolve()),
+        "amber_termini_output_path": str(output_pdb_path.resolve()),
+        "amber_termini_variant": variant_label,
+        "amber_termini_chain_count": len(result_list),
+    }
 
 
-def summarize_terminus_results(result_list: list[ChainTerminusResult]) -> str:
-    summary_lines: list[str] = []
+def _read_pdb_entries(pdb_path: Path) -> List[ParsedEntry]:
+    parsed_entries: List[ParsedEntry] = []
 
-    for result in result_list:
-        summary_lines.append(
-            (
-                f"chain={result.chain_id} "
-                f"first_resseq={result.first_resseq} "
-                f"last_resseq={result.last_resseq} "
-                f"first_old_resname={result.first_old_resname} "
-                f"first_new_resname={result.first_new_resname} "
-                f"last_old_resname={result.last_old_resname} "
-                f"last_new_resname={result.last_new_resname} "
-                f"n_h_added={result.n_h_added} "
-                f"oxt_added={result.oxt_added} "
-                f"single_residue_chain={result.single_residue_chain}"
-            )
+    for line in pdb_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith(("ATOM  ", "HETATM")):
+            parsed_entries.append(_parse_atom_line(line))
+        else:
+            parsed_entries.append(RawLine(line=line))
+
+    return parsed_entries
+
+
+def _write_pdb_entries(
+    parsed_entries: Iterable[ParsedEntry],
+    output_pdb_path: Path,
+) -> None:
+    output_line_list: List[str] = []
+
+    for entry in parsed_entries:
+        if isinstance(entry, AtomRecord):
+            output_line_list.append(entry.format_pdb_line())
+        else:
+            output_line_list.append(entry.line)
+
+    output_pdb_path.write_text(
+        "\n".join(output_line_list) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _parse_atom_line(line: str) -> AtomRecord:
+    padded = line.rstrip("\n")
+    if len(padded) < 80:
+        padded = padded.ljust(80)
+
+    record_name = padded[0:6].strip()
+    serial_text = padded[6:11].strip()
+    atom_name = padded[12:16]
+    altloc = padded[16]
+    resname = padded[17:21].strip()
+    chain_id = padded[21]
+    resseq_text = padded[22:26].strip()
+    icode = padded[26]
+    x_text = padded[30:38].strip()
+    y_text = padded[38:46].strip()
+    z_text = padded[46:54].strip()
+    occupancy_text = padded[54:60].strip()
+    tempfactor_text = padded[60:66].strip()
+    element = padded[76:78].strip()
+    charge = padded[78:80].strip()
+
+    return AtomRecord(
+        record_name=record_name,
+        serial=int(serial_text) if serial_text else 0,
+        atom_name=atom_name.strip(),
+        altloc=altloc if altloc != " " else "",
+        resname=resname,
+        chain_id=chain_id if chain_id != " " else "",
+        resseq=int(resseq_text) if resseq_text else 0,
+        icode=icode if icode != " " else "",
+        x=float(x_text) if x_text else 0.0,
+        y=float(y_text) if y_text else 0.0,
+        z=float(z_text) if z_text else 0.0,
+        occupancy=float(occupancy_text) if occupancy_text else 1.0,
+        tempfactor=float(tempfactor_text) if tempfactor_text else 0.0,
+        element=element or _infer_element_from_atom_name(atom_name.strip()),
+        charge=charge,
+        original_line=line,
+    )
+
+
+def _collect_residue_records(
+    atom_records: Iterable[AtomRecord],
+) -> Dict[Tuple[str, int, str], List[AtomRecord]]:
+    residue_map: Dict[Tuple[str, int, str], List[AtomRecord]] = {}
+
+    for atom_record in atom_records:
+        residue_map.setdefault(atom_record.residue_key, []).append(atom_record)
+
+    return residue_map
+
+
+def _collect_polymer_residue_keys_by_chain(
+    residue_map: Dict[Tuple[str, int, str], List[AtomRecord]],
+) -> Dict[str, List[Tuple[str, int, str]]]:
+    chain_polymer_residue_keys: Dict[str, List[Tuple[str, int, str]]] = {}
+
+    for residue_key, residue_atom_records in residue_map.items():
+        representative = residue_atom_records[0]
+        resname = representative.resname
+        chain_id = representative.chain_id
+
+        if resname in INTERNAL_CAP_RESNAMES:
+            continue
+
+        if resname not in POLYMER_PROTEIN_RESNAMES:
+            continue
+
+        chain_polymer_residue_keys.setdefault(chain_id, []).append(residue_key)
+
+    for chain_id in chain_polymer_residue_keys:
+        chain_polymer_residue_keys[chain_id].sort(key=lambda key: (key[1], key[2]))
+
+    return chain_polymer_residue_keys
+
+
+def _apply_residue_name_to_key(
+    residue_map: Dict[Tuple[str, int, str], List[AtomRecord]],
+    residue_key: Tuple[str, int, str],
+    new_resname: str,
+) -> None:
+    for atom_record in residue_map.get(residue_key, []):
+        atom_record.resname = new_resname
+
+
+def _normalize_terminal_atom_names(
+    atom_records: Iterable[AtomRecord],
+    n_terminal_keys: set[Tuple[str, int, str]],
+    c_terminal_keys: set[Tuple[str, int, str]],
+    residue_map: Dict[Tuple[str, int, str], List[AtomRecord]],
+) -> List[AtomRecord]:
+    residue_to_atoms: Dict[Tuple[str, int, str], List[AtomRecord]] = {}
+    for atom_record in atom_records:
+        residue_to_atoms.setdefault(atom_record.residue_key, []).append(atom_record)
+
+    serial_counter = [max((atom.serial for atom in atom_records), default=0)]
+    single_residue_keys = n_terminal_keys & c_terminal_keys
+    new_atom_records: List[AtomRecord] = []
+
+    for residue_key in n_terminal_keys:
+        residue_atom_records = residue_to_atoms.get(residue_key, [])
+        _normalize_n_terminal_hydrogens(residue_atom_records)
+
+    for residue_key in c_terminal_keys:
+        residue_atom_records = residue_to_atoms.get(residue_key, [])
+        new_oxt_atom = _normalize_c_terminal_oxygens(
+            residue_atom_records,
+            serial_counter=serial_counter,
+            add_oxt_if_missing=residue_key in single_residue_keys,
         )
+        if new_oxt_atom is not None:
+            residue_map.setdefault(residue_key, []).append(new_oxt_atom)
+            new_atom_records.append(new_oxt_atom)
 
-    return "\n".join(summary_lines)
+    for residue_key in single_residue_keys:
+        residue_atom_records = residue_to_atoms.get(residue_key, [])
+        _ensure_single_residue_terminal_hydrogen(residue_atom_records)
+
+    return new_atom_records
 
 
-if __name__ == "__main__":
-    import argparse
+def _normalize_n_terminal_hydrogens(
+    residue_atom_records: List[AtomRecord],
+) -> None:
+    n_hydrogen_records: List[AtomRecord] = []
 
-    argument_parser = argparse.ArgumentParser(
-        description="Convert true protein chain termini to AMBER-compatible termini."
+    for atom_record in residue_atom_records:
+        stripped_name = atom_record.atom_name.strip().upper()
+
+        if stripped_name in {
+            "H",
+            "H1",
+            "H2",
+            "H3",
+            "1H",
+            "2H",
+            "3H",
+            "HT1",
+            "HT2",
+            "HT3",
+        }:
+            n_hydrogen_records.append(atom_record)
+
+    if not n_hydrogen_records:
+        return
+
+    canonical_name_order = ["H1", "H2", "H3"]
+    normalized_names: List[str] = []
+
+    for atom_record in n_hydrogen_records:
+        current = atom_record.atom_name.strip().upper()
+        if current in {"H1", "H2", "H3"}:
+            normalized_names.append(current)
+        elif current in {"1H", "HT1"}:
+            normalized_names.append("H1")
+        elif current in {"2H", "HT2"}:
+            normalized_names.append("H2")
+        elif current in {"3H", "HT3"}:
+            normalized_names.append("H3")
+        elif current == "H":
+            normalized_names.append("H")
+        else:
+            normalized_names.append(current)
+
+    unique_non_plain_h = [name for name in normalized_names if name != "H"]
+    if len(n_hydrogen_records) == 1:
+        if normalized_names[0] != "H":
+            n_hydrogen_records[0].atom_name = "H"
+        return
+
+    assigned_name_list: List[str] = []
+
+    for preferred_name in canonical_name_order:
+        if (
+            preferred_name in unique_non_plain_h
+            and preferred_name not in assigned_name_list
+        ):
+            assigned_name_list.append(preferred_name)
+
+    for preferred_name in canonical_name_order:
+        if len(assigned_name_list) >= len(n_hydrogen_records):
+            break
+        if preferred_name not in assigned_name_list:
+            assigned_name_list.append(preferred_name)
+
+    for atom_record, assigned_name in zip(n_hydrogen_records, assigned_name_list):
+        atom_record.atom_name = assigned_name
+
+
+def _normalize_c_terminal_oxygens(
+    residue_atom_records: List[AtomRecord],
+    *,
+    serial_counter: List[int],
+    add_oxt_if_missing: bool = False,
+) -> AtomRecord | None:
+    oxygen_like_records: List[AtomRecord] = []
+
+    for atom_record in residue_atom_records:
+        if _infer_element_from_atom_name(atom_record.atom_name) != "O":
+            continue
+
+        stripped_name = atom_record.atom_name.strip().upper()
+        if stripped_name in {"O", "O1", "OT1", "OXT", "O2", "OT2"}:
+            oxygen_like_records.append(atom_record)
+
+    if not oxygen_like_records:
+        return None
+
+    if len(oxygen_like_records) == 1:
+        oxygen_like_records[0].atom_name = "O"
+        if add_oxt_if_missing:
+            return _duplicate_atom_as_oxt(
+                source_atom=oxygen_like_records[0],
+                serial_counter=serial_counter,
+            )
+        return None
+
+    primary_assigned = False
+    secondary_assigned = False
+
+    for atom_record in oxygen_like_records:
+        stripped_name = atom_record.atom_name.strip().upper()
+
+        if stripped_name in {"O", "O1", "OT1"} and not primary_assigned:
+            atom_record.atom_name = "O"
+            primary_assigned = True
+            continue
+
+        if stripped_name in {"OXT", "O2", "OT2"} and not secondary_assigned:
+            atom_record.atom_name = "OXT"
+            secondary_assigned = True
+            continue
+
+    for atom_record in oxygen_like_records:
+        stripped_name = atom_record.atom_name.strip().upper()
+
+        if not primary_assigned:
+            atom_record.atom_name = "O"
+            primary_assigned = True
+            continue
+
+        if not secondary_assigned and stripped_name != "O":
+            atom_record.atom_name = "OXT"
+            secondary_assigned = True
+            continue
+
+    seen_o = False
+    seen_oxt = False
+    for atom_record in oxygen_like_records:
+        stripped_name = atom_record.atom_name.strip().upper()
+        if stripped_name == "O":
+            if not seen_o:
+                seen_o = True
+            elif not seen_oxt:
+                atom_record.atom_name = "OXT"
+                seen_oxt = True
+        elif stripped_name == "OXT":
+            seen_oxt = True
+
+    if add_oxt_if_missing and not any(
+        atom.atom_name.strip().upper() == "OXT" for atom in residue_atom_records
+    ):
+        first_o = next(
+            (
+                atom
+                for atom in residue_atom_records
+                if atom.atom_name.strip().upper() == "O"
+            ),
+            None,
+        )
+        if first_o is not None:
+            return _duplicate_atom_as_oxt(
+                source_atom=first_o,
+                serial_counter=serial_counter,
+            )
+
+    return None
+
+
+def _ensure_single_residue_terminal_hydrogen(
+    residue_atom_records: List[AtomRecord],
+) -> None:
+    hydrogen_records = [
+        atom
+        for atom in residue_atom_records
+        if atom.atom_name.strip().upper() in {"H", "H1", "1H", "HT1"}
+    ]
+
+    if not hydrogen_records:
+        return
+
+    hydrogen_records[0].atom_name = "H1"
+
+
+def _duplicate_atom_as_oxt(
+    source_atom: AtomRecord,
+    serial_counter: List[int],
+) -> AtomRecord:
+    serial_counter[0] += 1
+    duplicated = AtomRecord(
+        record_name=source_atom.record_name,
+        serial=serial_counter[0],
+        atom_name="OXT",
+        altloc=source_atom.altloc,
+        resname=source_atom.resname,
+        chain_id=source_atom.chain_id,
+        resseq=source_atom.resseq,
+        icode=source_atom.icode,
+        x=source_atom.x,
+        y=source_atom.y,
+        z=source_atom.z,
+        occupancy=source_atom.occupancy,
+        tempfactor=source_atom.tempfactor,
+        element="O",
+        charge=source_atom.charge,
+        original_line=source_atom.original_line,
     )
-    argument_parser.add_argument(
-        "pdb_directory",
-        type=Path,
-        help="Protein directory, for example data/proteins/1ABC",
-    )
-    argument_parser.add_argument(
-        "pdb_id",
-        type=str,
-        help="PDB ID, for example 1ABC",
-    )
-    argument_parser.add_argument(
-        "input_pdb",
-        type=Path,
-        help="Input protein-only PDB path.",
+    return duplicated
+
+
+def _format_atom_name(atom_name: str, element: str) -> str:
+    atom_name = atom_name.strip()
+    if not atom_name:
+        return "    "
+
+    inferred_element = (
+        (element or _infer_element_from_atom_name(atom_name)).strip().upper()
     )
 
-    arguments = argument_parser.parse_args()
+    if len(atom_name) >= 4:
+        return atom_name[:4]
 
-    output_pdb_path, result_list = convert_protein_termini_for_pdb_directory(
-        pdb_directory=arguments.pdb_directory,
-        pdb_id=arguments.pdb_id,
-        input_pdb_path=arguments.input_pdb,
-    )
+    if len(inferred_element) == 1 and len(atom_name) < 4:
+        return f"{atom_name:>4}"
 
-    print(f"output_pdb_path={output_pdb_path}")
-    print(summarize_terminus_results(result_list))
+    return f"{atom_name:<4}"
+
+
+def _infer_element_from_atom_name(atom_name: str) -> str:
+    stripped = atom_name.strip()
+    if not stripped:
+        return ""
+
+    letters_only = "".join(character for character in stripped if character.isalpha())
+    if not letters_only:
+        return ""
+
+    letters_only = letters_only.upper()
+
+    two_letter_elements = {
+        "ZN",
+        "FE",
+        "MG",
+        "MN",
+        "CL",
+        "BR",
+        "NA",
+        "CA",
+        "CU",
+        "CO",
+        "NI",
+        "CD",
+        "HG",
+    }
+
+    if len(letters_only) >= 2 and letters_only[:2] in two_letter_elements:
+        return letters_only[:2]
+
+    return letters_only[0]

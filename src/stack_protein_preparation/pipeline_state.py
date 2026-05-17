@@ -9,9 +9,12 @@ This module defines which fields belong to one protein record in the pipeline.
 
 Design choice
 -------------
-The state should stay small and practical.
-Only fields that are actually useful for orchestration, debugging, JSON export,
-and XLSX export should live here.
+The state should stay practical and flat enough for:
+- orchestration
+- JSON persistence
+- XLSX export
+- debugging
+- downstream branching
 
 This module does NOT read or write files.
 It only defines and prepares record structure.
@@ -28,25 +31,26 @@ ALIGNMENT_DIRECTORY_COLUMN_NAME = "alignment_directory"
 COMPONENTS_DIRECTORY_COLUMN_NAME = "components_directory"
 FILLER_DIRECTORY_COLUMN_NAME = "filler_directory"
 PREPARED_DIRECTORY_COLUMN_NAME = "prepared_directory"
+METALL_PARAMS_DIRECTORY_COLUMN_NAME = "metall_params_directory"
 
 UNIPROT_ID_COLUMN_NAME = "uniprot_id"
 
 N_GAPS_COLUMN_NAME = "n_gaps"
 GAP_SIZES_COLUMN_NAME = "gap_sizes"
+HAS_GAPS_COLUMN_NAME = "has_gaps"
 
 PDB_SYNC_DONE_COLUMN_NAME = "pdb_sync_done"
 FASTA_FILES_DONE_COLUMN_NAME = "fasta_files_done"
 SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME = "sequence_alignment_done"
 INSERTION_CODES_DONE_COLUMN_NAME = "insertion_codes_done"
-NUMBERING_CHECK_DONE_COLUMN_NAME = "numbering_check_done"
 
-HAS_GAPS_COLUMN_NAME = "has_gaps"
 HAS_METALS_COLUMN_NAME = "has_metals"
 HAS_LIGANDS_COLUMN_NAME = "has_ligands"
 HAS_NONSTANDARD_RESIDUES_COLUMN_NAME = "has_nonstandard_residues"
 
 FILLER_STATUS_COLUMN_NAME = "filler.status"
 FILLER_MODEL_PATH_COLUMN_NAME = "filler.model_path"
+FILLER_MODEL_SOURCE_COLUMN_NAME = "filler.model_source"
 
 PROTONATION_STATUS_COLUMN_NAME = "protonation.status"
 PROTONATION_INPUT_SOURCE_COLUMN_NAME = "protonation.input_source"
@@ -65,18 +69,49 @@ INTERNAL_CAPPING_STATUS_COLUMN_NAME = "internal_capping.status"
 INTERNAL_CAPPING_INPUT_PATH_COLUMN_NAME = "internal_capping.input_path"
 INTERNAL_CAPPING_OUTPUT_PATH_COLUMN_NAME = "internal_capping.output_path"
 
-NUMBERING_RESTORE_STATUS_COLUMN_NAME = "numbering_restore.status"
-NUMBERING_RESTORE_INPUT_PATH_COLUMN_NAME = "numbering_restore.input_path"
-NUMBERING_RESTORE_OUTPUT_PATH_COLUMN_NAME = "numbering_restore.output_path"
-NUMBERING_RESTORE_MAPPING_PATH_COLUMN_NAME = "numbering_restore.mapping_path"
-NUMBERING_RESTORE_SOURCE_COLUMN_NAME = "numbering_restore.source"
-
 PREPARED_STRUCTURE_STATUS_COLUMN_NAME = "prepared_structure.status"
 PREPARED_STRUCTURE_VARIANT_COLUMN_NAME = "prepared_structure.variant"
 PREPARED_STRUCTURE_PROTEIN_INPUT_PATH_COLUMN_NAME = (
     "prepared_structure.protein_input_path"
 )
 PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME = "prepared_structure.output_path"
+
+# Variant logic summary
+VARIANT_POLICY_COLUMN_NAME = "variant.policy"
+RETAIN_GAPS_VARIANT_COLUMN_NAME = "variant.retain_gaps"
+RETAIN_MODELLER_VARIANT_COLUMN_NAME = "variant.retain_modeller"
+RETAIN_ALPHAFOLD_VARIANT_COLUMN_NAME = "variant.retain_alphafold"
+
+# Optional future-ready per-variant prepared outputs
+PREPARED_GAPS_OUTPUT_PATH_COLUMN_NAME = "prepared.gaps.output_path"
+PREPARED_MODELLER_OUTPUT_PATH_COLUMN_NAME = "prepared.modeller.output_path"
+PREPARED_ALPHAFOLD_OUTPUT_PATH_COLUMN_NAME = "prepared.alphafold.output_path"
+
+# Human-readable final summary of which model families were actually produced.
+# Example values:
+# - "initial"
+# - "gaps | modeller"
+# - "gaps | alphafold"
+# - "initial | gaps | modeller"
+AVAILABLE_MODELS_COLUMN_NAME = "available_models"
+
+
+# Metal check / geometry summary
+METALS_CHECK_STATUS_COLUMN_NAME = "metals_check.status"
+METALS_ION_TYPE_COLUMN_NAME = "metals.ion_type"
+METALS_CLASS_COLUMN_NAME = "metals.class"
+METALS_PARAMETER_REFERENCE_COLUMN_NAME = "metals.parameter_reference"
+METALS_GEOMETRY_FOUND_COLUMN_NAME = "metals.geometry_found"
+METALS_GEOMETRY_PROBABLE_COLUMN_NAME = "metals.geometry_probable"
+METALS_GEOMETRY_MATCH_COLUMN_NAME = "metals.geometry_match"
+METALS_MODEL_READY_COLUMN_NAME = "metals.model_ready"
+METALS_CHECK_LOG_PATH_COLUMN_NAME = "metals.check_log_path"
+METALS_CHECK_MANIFEST_PATH_COLUMN_NAME = "metals.check_manifest_path"
+
+# Metal branch
+METALL_PARAMS_STATUS_COLUMN_NAME = "metall_params.status"
+METALL_PARAMS_CONTACTS_FILE_COLUMN_NAME = "metall_params.contacts_file"
+METALL_PARAMS_TMP_PARAM_PDB_COLUMN_NAME = "metall_params.tmp_param_pdb"
 
 STATE_COLUMN_NAME_LIST = [
     PDB_ID_COLUMN_NAME,
@@ -87,6 +122,7 @@ STATE_COLUMN_NAME_LIST = [
     COMPONENTS_DIRECTORY_COLUMN_NAME,
     FILLER_DIRECTORY_COLUMN_NAME,
     PREPARED_DIRECTORY_COLUMN_NAME,
+    METALL_PARAMS_DIRECTORY_COLUMN_NAME,
     UNIPROT_ID_COLUMN_NAME,
     N_GAPS_COLUMN_NAME,
     GAP_SIZES_COLUMN_NAME,
@@ -95,12 +131,12 @@ STATE_COLUMN_NAME_LIST = [
     FASTA_FILES_DONE_COLUMN_NAME,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
     INSERTION_CODES_DONE_COLUMN_NAME,
-    NUMBERING_CHECK_DONE_COLUMN_NAME,
     HAS_METALS_COLUMN_NAME,
     HAS_LIGANDS_COLUMN_NAME,
     HAS_NONSTANDARD_RESIDUES_COLUMN_NAME,
     FILLER_STATUS_COLUMN_NAME,
     FILLER_MODEL_PATH_COLUMN_NAME,
+    FILLER_MODEL_SOURCE_COLUMN_NAME,
     PROTONATION_STATUS_COLUMN_NAME,
     PROTONATION_INPUT_SOURCE_COLUMN_NAME,
     PROTONATION_INPUT_PATH_COLUMN_NAME,
@@ -114,15 +150,31 @@ STATE_COLUMN_NAME_LIST = [
     INTERNAL_CAPPING_STATUS_COLUMN_NAME,
     INTERNAL_CAPPING_INPUT_PATH_COLUMN_NAME,
     INTERNAL_CAPPING_OUTPUT_PATH_COLUMN_NAME,
-    NUMBERING_RESTORE_STATUS_COLUMN_NAME,
-    NUMBERING_RESTORE_INPUT_PATH_COLUMN_NAME,
-    NUMBERING_RESTORE_OUTPUT_PATH_COLUMN_NAME,
-    NUMBERING_RESTORE_MAPPING_PATH_COLUMN_NAME,
-    NUMBERING_RESTORE_SOURCE_COLUMN_NAME,
     PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
     PREPARED_STRUCTURE_VARIANT_COLUMN_NAME,
     PREPARED_STRUCTURE_PROTEIN_INPUT_PATH_COLUMN_NAME,
     PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME,
+    VARIANT_POLICY_COLUMN_NAME,
+    RETAIN_GAPS_VARIANT_COLUMN_NAME,
+    RETAIN_MODELLER_VARIANT_COLUMN_NAME,
+    RETAIN_ALPHAFOLD_VARIANT_COLUMN_NAME,
+    PREPARED_GAPS_OUTPUT_PATH_COLUMN_NAME,
+    PREPARED_MODELLER_OUTPUT_PATH_COLUMN_NAME,
+    PREPARED_ALPHAFOLD_OUTPUT_PATH_COLUMN_NAME,
+    AVAILABLE_MODELS_COLUMN_NAME,
+    METALS_CHECK_STATUS_COLUMN_NAME,
+    METALS_ION_TYPE_COLUMN_NAME,
+    METALS_CLASS_COLUMN_NAME,
+    METALS_PARAMETER_REFERENCE_COLUMN_NAME,
+    METALS_GEOMETRY_FOUND_COLUMN_NAME,
+    METALS_GEOMETRY_PROBABLE_COLUMN_NAME,
+    METALS_GEOMETRY_MATCH_COLUMN_NAME,
+    METALS_MODEL_READY_COLUMN_NAME,
+    METALS_CHECK_LOG_PATH_COLUMN_NAME,
+    METALS_CHECK_MANIFEST_PATH_COLUMN_NAME,
+    METALL_PARAMS_STATUS_COLUMN_NAME,
+    METALL_PARAMS_CONTACTS_FILE_COLUMN_NAME,
+    METALL_PARAMS_TMP_PARAM_PDB_COLUMN_NAME,
 ]
 
 STEP_STATUS_COLUMN_NAME_LIST = [
@@ -130,14 +182,14 @@ STEP_STATUS_COLUMN_NAME_LIST = [
     FASTA_FILES_DONE_COLUMN_NAME,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
     INSERTION_CODES_DONE_COLUMN_NAME,
-    NUMBERING_CHECK_DONE_COLUMN_NAME,
     FILLER_STATUS_COLUMN_NAME,
     PROTONATION_STATUS_COLUMN_NAME,
     AMBER_RENAMING_STATUS_COLUMN_NAME,
     AMBER_TERMINI_STATUS_COLUMN_NAME,
     INTERNAL_CAPPING_STATUS_COLUMN_NAME,
-    NUMBERING_RESTORE_STATUS_COLUMN_NAME,
     PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
+    METALS_CHECK_STATUS_COLUMN_NAME,
+    METALL_PARAMS_STATUS_COLUMN_NAME,
 ]
 
 STATUS_EMPTY = ""
@@ -172,13 +224,8 @@ def create_protein_record(
     Create one protein record with required initial values.
     """
     protein_record = create_empty_protein_record()
-
-    normalized_pdb_id = str(pdb_id).strip().upper()
-    normalized_residue_range = str(residue_range).strip()
-
-    protein_record[PDB_ID_COLUMN_NAME] = normalized_pdb_id
-    protein_record[RANGE_COLUMN_NAME] = normalized_residue_range
-
+    protein_record[PDB_ID_COLUMN_NAME] = str(pdb_id).strip().upper()
+    protein_record[RANGE_COLUMN_NAME] = str(residue_range).strip()
     return protein_record
 
 

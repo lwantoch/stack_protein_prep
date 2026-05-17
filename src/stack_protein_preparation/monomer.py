@@ -1,13 +1,13 @@
 """Analyze and write representative monomer units from PDB structures.
 
-This module identifies equivalent coordinate chains in a PDB file and writes one
-representative chain per detected monomer unit. It is intentionally conservative:
-it does not infer biological assemblies, rebuild missing residues, renumber
-residues, assign chemistry, or decide which ligand/cofactor is biologically
-essential. The module is meant as a preprocessing helper for cases where a PDB
-file may contain repeated copies of the same protein chain and downstream
-workflow steps should receive representative monomer units rather than the whole
-multichain structure.
+This module identifies equivalent coordinate chains in a PDB file and writes
+representative protein units for downstream preparation workflows. It is
+intentionally conservative: it does not infer biological assemblies, rebuild
+missing residues, renumber residues, assign chemistry, or decide which
+ligand/cofactor is biologically essential. The module is meant as a preprocessing
+helper for cases where a PDB file may contain repeated copies of the same
+protein chain and downstream workflow steps should receive a representative
+protein unit rather than the whole multichain structure.
 
 Chain equivalence is based on coordinate-derived amino-acid sequences. Sequences
 are extracted from the first model only, because most docking and parametrization
@@ -91,7 +91,7 @@ class ChainPairComparison:
 
 @dataclass(frozen=True)
 class MonomerGroup:
-    """Represent one detected monomer unit.
+    """Represent one detected chain-equivalence group.
 
     A group contains chains that passed the configured identity and coverage
     thresholds against every other chain in the same group. The representative is
@@ -114,7 +114,7 @@ class MonomerAnalysisResult:
     ``chains`` contains the coordinate-derived sequences extracted from the first
     model. ``comparisons`` contains all pairwise comparisons used during
     grouping. ``groups`` is the conservative final clustering result and is used
-    by ``write_representative_monomer_units``. The thresholds are stored so JSON
+    by the representative write helpers. The thresholds are stored so JSON
     summaries or test assertions can report exactly which criteria produced the
     grouping.
     """
@@ -129,27 +129,34 @@ class MonomerAnalysisResult:
 
     @property
     def is_single_monomer_type(self) -> bool:
-        """Return whether all detected chains belong to one monomer type."""
+        """Return whether all detected chains belong to one chain type."""
 
         return len(self.groups) == 1
 
 
 @dataclass(frozen=True)
 class MonomerWriteResult:
-    """Describe one representative monomer PDB written to disk.
+    """Describe one representative protein-unit PDB written to disk.
 
-    ``representative_chain_id`` is the actual chain copied to the output file.
-    ``represented_chain_ids`` records the equivalent source chains represented by
-    that output. The record counters are calculated from the written file so they
-    reflect what BioPython actually emitted. They are intended for sanity checks,
-    not for chemistry validation.
+    ``representative_chain_ids`` are the actual chains copied to the output file.
+    ``represented_chain_groups`` records which equivalent source chains each
+    copied chain represents. For a homomeric structure this usually contains one
+    representative chain. For a heteromeric repeated unit, such as A/B plus C/D,
+    this contains one representative chain per non-equivalent group, for example
+    A and C.
+
+    The record counters are calculated from the written file so they reflect
+    what BioPython actually emitted. Non-protein HETATM records are retained only
+    when they belong to one of the selected representative chains and
+    ``keep_non_protein_hetero`` is enabled. Compatibility properties are provided
+    for older callers that expected a single representative chain.
     """
 
     output_pdb: Path
     source_pdb: Path
     model_id: Any
-    representative_chain_id: str
-    represented_chain_ids: tuple[str, ...]
+    representative_chain_ids: tuple[str, ...]
+    represented_chain_groups: tuple[tuple[str, ...], ...]
     atom_records_written: int
     hetatm_records_written: int
     ter_records_written: int
@@ -159,6 +166,22 @@ class MonomerWriteResult:
         """Return the total number of written coordinate records."""
 
         return self.atom_records_written + self.hetatm_records_written
+
+    @property
+    def representative_chain_id(self) -> str:
+        """Return a legacy string representation of representative chains."""
+
+        return "/".join(self.representative_chain_ids)
+
+    @property
+    def represented_chain_ids(self) -> tuple[str, ...]:
+        """Return all represented source chain IDs as a flattened tuple."""
+
+        return tuple(
+            chain_id
+            for group in self.represented_chain_groups
+            for chain_id in group
+        )
 
 
 def analyze_monomer_units(
@@ -301,24 +324,24 @@ def write_representative_monomer_units(
     identity_threshold: float = DEFAULT_IDENTITY_THRESHOLD,
     coverage_threshold: float = DEFAULT_COVERAGE_THRESHOLD,
     keep_modified_residues: bool = True,
-    keep_non_protein_hetero: bool = False,
+    keep_non_protein_hetero: bool = True,
     keep_waters: bool = False,
     overwrite: bool = True,
 ) -> tuple[MonomerWriteResult, ...]:
-    """Write one representative PDB file per detected monomer group.
+    """Write one representative PDB file per detected chain group.
 
     The function first runs ``analyze_monomer_units`` and then writes only the
     representative chain for each detected group. For a homomeric structure this
     normally produces one output file. For a heteromeric structure this produces
-    one representative file per non-equivalent chain group, which is safer than
-    silently choosing chain A.
+    one representative file per non-equivalent chain group, which is useful for
+    diagnostics and for workflows that intentionally want separate chain-type
+    files.
 
     Standard amino-acid residues are always retained for the representative
     chain. Modified amino-acid residues can be retained separately from generic
     non-protein hetero residues so users do not need to choose between losing
     common modified residues and carrying every ligand or ion into the monomer
-    output. Water retention is also separate because crystallographic waters are
-    often not intended to define the monomer unit.
+    output. Water retention is separate and remains disabled by default.
     """
 
     input_path = Path(input_pdb)
@@ -353,29 +376,31 @@ def write_representative_monomer_units(
     return tuple(results)
 
 
-def write_single_representative_monomer_unit(
+def write_representative_monomer_unit(
     input_pdb: str | Path,
     output_pdb: str | Path,
     *,
     identity_threshold: float = DEFAULT_IDENTITY_THRESHOLD,
     coverage_threshold: float = DEFAULT_COVERAGE_THRESHOLD,
     keep_modified_residues: bool = True,
-    keep_non_protein_hetero: bool = False,
+    keep_non_protein_hetero: bool = True,
     keep_waters: bool = False,
     overwrite: bool = True,
 ) -> MonomerWriteResult:
-    """Write a single representative monomer and fail for heteromeric inputs.
+    """Write one representative protein unit to a single PDB file.
 
-    This wrapper is useful when a downstream workflow expects exactly one
-    monomeric unit. It still performs the full chain comparison first, so it does
-    not blindly select chain A. If the structure contains multiple non-equivalent
-    chain groups, the function raises ``ValueError`` and reports the detected
-    groups.
+    The output contains one representative chain from each detected chain group.
+    For a homomeric structure such as A/B, this normally writes only A. For a
+    heteromeric repeated unit such as A/B plus C/D, this writes A and C into the
+    same output file. Non-protein HETATM records are retained only when they are
+    assigned to one of the selected representative chains, so ligands are kept
+    per representative unit instead of copied from discarded duplicate chains.
 
-    Use ``write_representative_monomer_units`` instead when heteromeric inputs
-    should produce one representative output per chain type. This separation
-    keeps strict single-monomer workflows explicit and prevents accidental loss
-    of a binding partner or second protein component.
+    The function does not infer the biological assembly from REMARK records or
+    external assembly metadata. It only removes duplicated equivalent coordinate
+    chains according to sequence identity and coverage. Water retention remains
+    explicit because crystallographic waters are often not intended to define the
+    representative protein unit.
     """
 
     input_path = Path(input_pdb)
@@ -387,22 +412,53 @@ def write_single_representative_monomer_unit(
         coverage_threshold=coverage_threshold,
     )
 
-    if len(analysis.groups) != 1:
-        group_summary = ", ".join(
-            f"{group.representative_chain_id}:{'/'.join(group.chain_ids)}"
-            for group in analysis.groups
-        )
-        raise ValueError(
-            "Cannot write a single representative monomer because multiple "
-            f"non-equivalent chain groups were detected: {group_summary}."
-        )
+    representative_chain_ids = tuple(
+        group.representative_chain_id for group in analysis.groups
+    )
+    represented_chain_groups = tuple(group.chain_ids for group in analysis.groups)
 
-    group = analysis.groups[0]
-    return write_chain_unit(
+    return write_chain_unit_set(
         input_pdb=input_path,
         output_pdb=output_path,
-        chain_id=group.representative_chain_id,
-        represented_chain_ids=group.chain_ids,
+        chain_ids=representative_chain_ids,
+        represented_chain_groups=represented_chain_groups,
+        keep_modified_residues=keep_modified_residues,
+        keep_non_protein_hetero=keep_non_protein_hetero,
+        keep_waters=keep_waters,
+        overwrite=overwrite,
+    )
+
+
+def write_single_representative_monomer_unit(
+    input_pdb: str | Path,
+    output_pdb: str | Path,
+    *,
+    identity_threshold: float = DEFAULT_IDENTITY_THRESHOLD,
+    coverage_threshold: float = DEFAULT_COVERAGE_THRESHOLD,
+    keep_modified_residues: bool = True,
+    keep_non_protein_hetero: bool = True,
+    keep_waters: bool = False,
+    overwrite: bool = True,
+) -> MonomerWriteResult:
+    """Write the single representative unit expected by downstream workflows.
+
+    The historical name is kept for compatibility with the FRUTON runner and
+    earlier tests. The function no longer means "write exactly one chain". It
+    means "write exactly one representative unit file", and that unit can contain
+    multiple chains when the structure has multiple non-equivalent chain groups.
+
+    For example, duplicated heteromeric units grouped as A/A-B and C/C-D are
+    written as one output containing chains A and C. Ligands assigned to A and C
+    are retained by default, while ligands assigned to discarded duplicate chains
+    such as B and D are not written. Use ``write_representative_monomer_units``
+    when separate output files per chain group are wanted instead.
+    """
+
+    return write_representative_monomer_unit(
+        input_pdb=input_pdb,
+        output_pdb=output_pdb,
+        identity_threshold=identity_threshold,
+        coverage_threshold=coverage_threshold,
         keep_modified_residues=keep_modified_residues,
         keep_non_protein_hetero=keep_non_protein_hetero,
         keep_waters=keep_waters,
@@ -431,9 +487,46 @@ def write_chain_unit(
 
     This function does not decide whether the requested chain is biologically
     representative. That decision belongs to ``analyze_monomer_units`` and the
-    representative write wrappers. A ``ValueError`` is raised if no coordinate
-    records are written, because an empty monomer file would hide the real
-    extraction problem.
+    representative write wrappers. The low-level default keeps non-protein HETATM
+    disabled so direct callers remain explicit about ligand/cofactor retention.
+    """
+
+    return write_chain_unit_set(
+        input_pdb=input_pdb,
+        output_pdb=output_pdb,
+        chain_ids=(chain_id,),
+        represented_chain_groups=(represented_chain_ids or (chain_id,),),
+        keep_modified_residues=keep_modified_residues,
+        keep_non_protein_hetero=keep_non_protein_hetero,
+        keep_waters=keep_waters,
+        overwrite=overwrite,
+    )
+
+
+def write_chain_unit_set(
+    input_pdb: str | Path,
+    output_pdb: str | Path,
+    chain_ids: tuple[str, ...],
+    *,
+    represented_chain_groups: tuple[tuple[str, ...], ...] | None = None,
+    keep_modified_residues: bool = True,
+    keep_non_protein_hetero: bool = False,
+    keep_waters: bool = False,
+    overwrite: bool = True,
+) -> MonomerWriteResult:
+    """Write a selected set of chains from the first model to one PDB file.
+
+    This helper is the shared output path for both single-chain and heteromeric
+    representative-unit writing. It keeps all requested chains in one file while
+    applying the same residue-level filtering rules to each chain. Non-protein
+    HETATM records are kept only when their chain belongs to ``chain_ids`` and
+    ``keep_non_protein_hetero`` is enabled.
+
+    The function does not compare chains or choose representatives. Callers must
+    pass already selected chain IDs, usually from ``analyze_monomer_units``. A
+    ``ValueError`` is raised when the output contains no coordinate records,
+    because that would indicate either an invalid selection or overly aggressive
+    residue filtering.
     """
 
     input_path = Path(input_pdb)
@@ -441,10 +534,11 @@ def write_chain_unit(
 
     _validate_input_pdb(input_path)
     _validate_output_pdb(output_path, overwrite=overwrite)
-    _validate_chain_id(chain_id)
+    _validate_chain_ids(chain_ids)
 
     parsed = _parse_first_model(input_path)
-    _validate_chain_exists(parsed.model, chain_id)
+    for chain_id in chain_ids:
+        _validate_chain_exists(parsed.model, chain_id)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -452,9 +546,9 @@ def write_chain_unit(
     io.set_structure(parsed.structure)
     io.save(
         str(output_path),
-        select=_RepresentativeChainSelect(
+        select=_RepresentativeChainsSelect(
             model_id=parsed.model.id,
-            chain_id=chain_id,
+            chain_ids=chain_ids,
             keep_modified_residues=keep_modified_residues,
             keep_non_protein_hetero=keep_non_protein_hetero,
             keep_waters=keep_waters,
@@ -466,16 +560,21 @@ def write_chain_unit(
 
     if atom_count + hetatm_count == 0:
         output_path.unlink(missing_ok=True)
+        chain_text = "/".join(chain_ids)
         raise ValueError(
-            f"No coordinate records were written for chain {chain_id!r} from {input_path}."
+            f"No coordinate records were written for chains {chain_text!r} "
+            f"from {input_path}."
         )
+
+    if represented_chain_groups is None:
+        represented_chain_groups = tuple((chain_id,) for chain_id in chain_ids)
 
     return MonomerWriteResult(
         output_pdb=output_path,
         source_pdb=input_path,
         model_id=parsed.model.id,
-        representative_chain_id=chain_id,
-        represented_chain_ids=represented_chain_ids or (chain_id,),
+        representative_chain_ids=chain_ids,
+        represented_chain_groups=represented_chain_groups,
         atom_records_written=atom_count,
         hetatm_records_written=hetatm_count,
         ter_records_written=ter_count,
@@ -490,20 +589,20 @@ class _ParsedFirstModel:
     model: Any
 
 
-class _RepresentativeChainSelect(Select):
-    """BioPython PDBIO selector for one representative model and chain."""
+class _RepresentativeChainsSelect(Select):
+    """BioPython PDBIO selector for one representative model and chain set."""
 
     def __init__(
         self,
         *,
         model_id: Any,
-        chain_id: str,
+        chain_ids: tuple[str, ...],
         keep_modified_residues: bool,
         keep_non_protein_hetero: bool,
         keep_waters: bool,
     ) -> None:
         self._model_id = model_id
-        self._chain_id = chain_id
+        self._chain_ids = set(chain_ids)
         self._keep_modified_residues = keep_modified_residues
         self._keep_non_protein_hetero = keep_non_protein_hetero
         self._keep_waters = keep_waters
@@ -512,7 +611,7 @@ class _RepresentativeChainSelect(Select):
         return model.id == self._model_id
 
     def accept_chain(self, chain: Any) -> bool:
-        return chain.id == self._chain_id
+        return str(chain.id) in self._chain_ids
 
     def accept_residue(self, residue: Any) -> bool:
         hetero_flag = residue.id[0]
@@ -650,7 +749,11 @@ def _group_equivalent_chains(
     for group in raw_groups:
         representative = sorted(
             group,
-            key=lambda item: (-item.residue_count, item.unknown_residue_count, item.chain_id),
+            key=lambda item: (
+                -item.residue_count,
+                item.unknown_residue_count,
+                item.chain_id,
+            ),
         )[0]
 
         groups.append(
@@ -705,6 +808,18 @@ def _validate_chain_id(chain_id: str) -> None:
         raise ValueError(f"chain_id must be exactly one character, got {chain_id!r}.")
     if chain_id.isspace():
         raise ValueError("chain_id must not be blank.")
+
+
+def _validate_chain_ids(chain_ids: tuple[str, ...]) -> None:
+    if not chain_ids:
+        raise ValueError("At least one chain ID must be selected.")
+
+    seen_chain_ids: set[str] = set()
+    for chain_id in chain_ids:
+        _validate_chain_id(chain_id)
+        if chain_id in seen_chain_ids:
+            raise ValueError(f"Duplicate selected chain ID: {chain_id!r}.")
+        seen_chain_ids.add(chain_id)
 
 
 def _validate_chain_exists(model: Any, chain_id: str) -> None:
