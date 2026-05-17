@@ -1,0 +1,51 @@
+{
+  "metadata": {
+    "purpose": "Reference geometry labels and preferred geometries used by FRUTON metalls_check.py for first-pass transition-metal coordination classification.",
+    "scope": "This file is a conservative decision table, not a replacement for bonded metal parameterization. It is meant to flag transition-metal sites for Gaussian/RESP/CESGA parameter work and to color workbook geometry fields.",
+    "references": [
+      {
+        "key": "Chakrabarti_1999",
+        "title": "Geometry of metal-ligand interactions in proteins",
+        "note": "Protein metal-site geometry and coordination-number reference; covers Ca, Mg, Mn, Fe, Cu, Zn and donor distances/geometries."
+      },
+      {
+        "key": "Barber_Zucker_2017",
+        "title": "Transition metal binding selectivity in proteins and its correlation with the phylogenomic classification of the cation diffusion facilitator protein family",
+        "note": "Useful biological context for common transition-metal donor preferences and octahedral geometries in proteins."
+      },
+      {
+        "key": "MESPEUS_2024",
+        "title": "MESPEUS: a database of metal coordination groups in proteins",
+        "note": "Database reference for curated metalloprotein coordination groups and geometry descriptors across 40 metal types."
+      },
+      {
+        "key": "MetalHawk_2023",
+        "title": "MetalHawk: Enhanced Classification of Metal Coordination Sites in Proteins",
+        "note": "Modern metal coordination-number and geometry classification reference."
+      }
+    ]
+  },
+  "ideal_geometries": {
+    "linear": {"coordination_number": 2, "ideal_angles_degrees": [180]},
+    "trigonal_planar": {"coordination_number": 3, "ideal_angles_degrees": [120, 120, 120]},
+    "tetrahedral": {"coordination_number": 4, "ideal_angles_degrees": [109.5]},
+    "square_planar": {"coordination_number": 4, "ideal_angles_degrees": [90, 180]},
+    "trigonal_bipyramidal": {"coordination_number": 5, "ideal_angles_degrees": [90, 120, 180]},
+    "square_pyramidal": {"coordination_number": 5, "ideal_angles_degrees": [90, 180]},
+    "octahedral": {"coordination_number": 6, "ideal_angles_degrees": [90, 180]}
+  },
+  "transition_ion_preferences": {
+    "ZN": ["tetrahedral", "trigonal_bipyramidal", "octahedral"],
+    "CU": ["square_planar", "square_pyramidal", "octahedral"],
+    "FE": ["octahedral", "tetrahedral"],
+    "MN": ["octahedral"],
+    "CO": ["octahedral", "tetrahedral"],
+    "NI": ["octahedral", "square_planar"],
+    "CR": ["octahedral"],
+    "V": ["octahedral", "tetrahedral"],
+    "MO": ["octahedral"],
+    "W": ["octahedral"],
+    "CD": ["tetrahedral", "octahedral"],
+    "HG": ["linear", "tetrahedral"]
+  }
+}
