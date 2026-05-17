@@ -1,0 +1,25 @@
+{
+  "pdb_id": "3OLL",
+  "status": "success",
+  "message": "1 non-standard residue(s): 1 in known database, 1 RESP scaffold(s) generated.",
+  "n_residues": 1,
+  "n_in_database": 1,
+  "n_resp_scaffold": 1,
+  "residues": [
+    {
+      "resname": "PTR",
+      "chain_id": "A",
+      "resseq": 488,
+      "label": "A_PTR_488",
+      "in_database": true,
+      "database": "phosaa14SB",
+      "formal_charge": -2,
+      "charge_source": "hardcoded_table",
+      "capped_model_built": true,
+      "resp_scaffold_generated": true,
+      "status": "found_in_database",
+      "message": "PTR found in phosaa14SB \u2014 no Gaussian needed."
+    }
+  ],
+  "manifest_path": "data/proteins/3OLL/nonstandard_params/nonstd_params_manifest.json"
+}

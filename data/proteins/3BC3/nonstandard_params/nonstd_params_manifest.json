@@ -1,0 +1,25 @@
+{
+  "pdb_id": "3BC3",
+  "status": "success",
+  "message": "1 non-standard residue(s): 0 in known database, 1 RESP scaffold(s) generated.",
+  "n_residues": 1,
+  "n_in_database": 0,
+  "n_resp_scaffold": 1,
+  "residues": [
+    {
+      "resname": "CSD",
+      "chain_id": "A",
+      "resseq": 25,
+      "label": "A_CSD_25",
+      "in_database": false,
+      "database": null,
+      "formal_charge": -1,
+      "charge_source": "hardcoded_table",
+      "capped_model_built": true,
+      "resp_scaffold_generated": true,
+      "status": "resp_scaffold_ready",
+      "message": "CSD: capped model built, RESP scaffold generated (charge=-1, source=hardcoded_table)."
+    }
+  ],
+  "manifest_path": "data/proteins/3BC3/nonstandard_params/nonstd_params_manifest.json"
+}
