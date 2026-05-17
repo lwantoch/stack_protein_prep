@@ -1,0 +1,102 @@
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:11] download_and_prepare_pdb_file:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id                 : 3L3M
+residue_range          : '2-349'
+temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.raw.pdb
+target_pdb_file_path   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+download_url           : https://files.rcsb.org/download/3L3M.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:12] download_and_prepare_pdb_file:downloaded_raw
+────────────────────────────────────────────────────────────────────────────────────────────────────
+temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.raw.pdb
+exists                 : True
+size_bytes             : 270459
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:12] trim_pdb_to_residue_range
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.raw.pdb
+output_pdb_path       : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+residue_range         : '2-349'
+parsed_start          : 2
+parsed_end            : 349
+total_atom_lines      : 2735
+kept_atom_lines       : 2735
+total_water_hetatm    : 116
+kept_water_hetatm     : 116
+total_other_hetatm    : 25
+kept_other_hetatm     : 25
+requested_start       : 2
+requested_end         : 349
+observed_start        : 2
+observed_end          : 349
+start_missing         : False
+end_missing           : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:12] download_and_prepare_pdb_file:done
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id          : 3L3M
+residue_range   : '2-349'
+requested_start : 2
+requested_end   : 349
+observed_start  : 2
+observed_end    : 349
+start_missing   : False
+end_missing     : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:12] download_and_prepare_pdb_file:cleanup
+────────────────────────────────────────────────────────────────────────────────────────────────────
+removed_temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.raw.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:12] download_missing_pdb_files:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id          : 3L3M
+residue_range   : '2-349'
+pdb_file_path   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+requested_start : 2
+requested_end   : 349
+observed_start  : 2
+observed_end    : 349
+start_missing   : False
+end_missing     : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:36:36] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3L3M
+residue_range : '2-349'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:45:17] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3L3M
+residue_range : '2-349'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:17:24] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3L3M
+residue_range : '2-349'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:42:33] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3L3M
+residue_range : '2-349'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:44:44] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3L3M
+residue_range : '2-349'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+

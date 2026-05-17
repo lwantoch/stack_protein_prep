@@ -4,9 +4,9 @@
   "force_field": "amber99sb-ildn",
   "water_model": "tip3p",
   "gromacs_executable": "gmx",
-  "status": "failed",
-  "gromacs_probe_success": false,
-  "can_use_current_force_field": false,
+  "status": "success",
+  "gromacs_probe_success": true,
+  "can_use_current_force_field": true,
   "requires_repair": false,
   "requires_external_parameters": false,
   "requires_qm_parameters": false,
@@ -3944,7 +3944,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 420,
       "icode": "",
@@ -3965,7 +3965,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 421,
       "icode": "",
@@ -3986,7 +3986,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 422,
       "icode": "",
@@ -4006,7 +4006,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 423,
       "icode": "",
@@ -4026,7 +4026,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 424,
       "icode": "",
@@ -4059,7 +4059,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LYS",
       "resseq": 425,
       "icode": "",
@@ -4090,7 +4090,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 426,
       "icode": "",
@@ -4118,7 +4118,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 427,
       "icode": "",
@@ -4137,7 +4137,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 428,
       "icode": "",
@@ -4163,7 +4163,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 429,
       "icode": "",
@@ -4191,7 +4191,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 430,
       "icode": "",
@@ -4219,7 +4219,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 431,
       "icode": "",
@@ -4242,7 +4242,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 432,
       "icode": "",
@@ -4261,7 +4261,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 433,
       "icode": "",
@@ -4286,7 +4286,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "THR",
       "resseq": 434,
       "icode": "",
@@ -4309,7 +4309,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 435,
       "icode": "",
@@ -4330,7 +4330,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 436,
       "icode": "",
@@ -4349,7 +4349,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 437,
       "icode": "",
@@ -4377,7 +4377,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 438,
       "icode": "",
@@ -4402,7 +4402,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TRP",
       "resseq": 439,
       "icode": "",
@@ -4435,7 +4435,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 440,
       "icode": "",
@@ -4460,7 +4460,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 441,
       "icode": "",
@@ -4488,7 +4488,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 442,
       "icode": "",
@@ -4507,7 +4507,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LYS",
       "resseq": 443,
       "icode": "",
@@ -4538,7 +4538,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 444,
       "icode": "",
@@ -4558,7 +4558,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 445,
       "icode": "",
@@ -4574,7 +4574,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 446,
       "icode": "",
@@ -4602,7 +4602,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 447,
       "icode": "",
@@ -4622,7 +4622,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 448,
       "icode": "",
@@ -4642,7 +4642,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 449,
       "icode": "",
@@ -4668,7 +4668,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 450,
       "icode": "",
@@ -4694,7 +4694,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 451,
       "icode": "",
@@ -4720,7 +4720,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 452,
       "icode": "",
@@ -4740,7 +4740,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "MET",
       "resseq": 453,
       "icode": "",
@@ -4766,7 +4766,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 454,
       "icode": "",
@@ -4799,7 +4799,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 455,
       "icode": "",
@@ -4827,7 +4827,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 456,
       "icode": "",
@@ -4846,7 +4846,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 457,
       "icode": "",
@@ -4869,7 +4869,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 458,
       "icode": "",
@@ -4897,7 +4897,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 459,
       "icode": "",
@@ -4925,7 +4925,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "MET",
       "resseq": 460,
       "icode": "",
@@ -4951,7 +4951,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 461,
       "icode": "",
@@ -4979,7 +4979,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 462,
       "icode": "",
@@ -5007,7 +5007,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 463,
       "icode": "",
@@ -5027,7 +5027,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 464,
       "icode": "",
@@ -5053,7 +5053,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 465,
       "icode": "",
@@ -5078,7 +5078,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 466,
       "icode": "",
@@ -5111,7 +5111,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 467,
       "icode": "",
@@ -5137,7 +5137,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 468,
       "icode": "",
@@ -5156,7 +5156,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 469,
       "icode": "",
@@ -5176,7 +5176,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 470,
       "icode": "",
@@ -5199,7 +5199,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LYS",
       "resseq": 471,
       "icode": "",
@@ -5230,7 +5230,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 472,
       "icode": "",
@@ -5246,7 +5246,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "MET",
       "resseq": 473,
       "icode": "",
@@ -5272,7 +5272,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 474,
       "icode": "",
@@ -5296,7 +5296,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 475,
       "icode": "",
@@ -5322,7 +5322,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 476,
       "icode": "",
@@ -5350,7 +5350,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 477,
       "icode": "",
@@ -5378,7 +5378,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 478,
       "icode": "",
@@ -5401,7 +5401,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "MET",
       "resseq": 479,
       "icode": "",
@@ -5427,7 +5427,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LYS",
       "resseq": 480,
       "icode": "",
@@ -5458,7 +5458,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "CYS",
       "resseq": 481,
       "icode": "",
@@ -5478,7 +5478,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LYS",
       "resseq": 482,
       "icode": "",
@@ -5509,7 +5509,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 483,
       "icode": "",
@@ -5532,7 +5532,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 484,
       "icode": "",
@@ -5557,7 +5557,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 485,
       "icode": "",
@@ -5582,7 +5582,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 486,
       "icode": "",
@@ -5605,7 +5605,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 487,
       "icode": "",
@@ -5631,7 +5631,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "ASP",
       "resseq": 489,
       "icode": "",
@@ -5654,7 +5654,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "LEU",
       "resseq": 490,
       "icode": "",
@@ -5682,7 +5682,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "LEU",
       "resseq": 491,
       "icode": "",
@@ -5710,7 +5710,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "LEU",
       "resseq": 492,
       "icode": "",
@@ -5738,7 +5738,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "GLU",
       "resseq": 493,
       "icode": "",
@@ -5762,7 +5762,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "MET",
       "resseq": 494,
       "icode": "",
@@ -5788,7 +5788,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "LEU",
       "resseq": 495,
       "icode": "",
@@ -5816,7 +5816,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "ASN",
       "resseq": 496,
       "icode": "",
@@ -5839,7 +5839,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "ALA",
       "resseq": 497,
       "icode": "",
@@ -5858,7 +5858,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "C",
       "resname": "HIS",
       "resseq": 498,
       "icode": "",
@@ -5889,15 +5889,7 @@
   "metal_sites": [],
   "supported_nonstandard_residue_names": [],
   "unsupported_residue_names": [],
-  "issues": [
-    {
-      "category": "atom_name_mismatch",
-      "resname": null,
-      "residue_number": null,
-      "atom_name": null,
-      "message": "  HIS467 NE21604   0.977\n  MET473  SD1644   2.048   1.440\n  HIS475 NE21663   2.178   1.508   1.240\n  MET479  SD1695   2.623   1.915   1.368   0.462\n  CYS481  SG1711   2.910   2.054   1.142   1.265   1.055\n  MET494  SD1805   2.665   2.283   0.952   2.032   2.049   1.715\n  HIS498 NE21836   2.035   1.394   0.430   1.556   1.698   1.266   1.065\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\n-------------------------------------------------------\nProgram:     gmx pdb2gmx, version 2026.0-conda_forge\nSource file: src/gromacs/gmxpreprocess/pdb2gmx.cpp (line 896)\nFatal error:\nAtom OC1 in residue THR 417 was not found in rtp entry THR with 14 atoms\nwhile sorting atoms.\n.\nFor more information and tips for troubleshooting, please check the GROMACS\nwebsite at https://manual.gromacs.org/current/user-guide/run-time-errors.html\n-------------------------------------------------------"
-    }
-  ],
+  "issues": [],
   "probe": {
     "command": [
       "gmx",
@@ -5920,13 +5912,13 @@
       "no",
       "-ignh"
     ],
-    "cwd": "/tmp/fruton_parameter_audit_eq70jn18",
-    "returncode": 1,
-    "success": false,
-    "stdout": "Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff\n\ngoing to rename amber99sb-ildn.ff/aminoacids.r2b\n\ngoing to rename amber99sb-ildn.ff/dna.r2b\n\ngoing to rename amber99sb-ildn.ff/rna.r2b\nReading /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb...\nRead '', 1840 atoms\n\nAnalyzing pdb file\nSplitting chemical chains based on TER records or chain id changing.\n\nThere are 1 chains and 0 blocks of water and 234 residues with 1840 atoms\n\n  chain  #res #atoms\n\n  1 'A'   234   1840  \n\nAll occupancies are one\n\nReading residue database... (Amber99sb-ildn)\n\nPreserving residues names by default\n\nPreserving residues names by default\n\nPreserving residues names by default\n\nProcessing chain 1 'A' (1840 atoms, 234 residues)\n\nIdentified residue ALA262 as a starting terminus.\n\nIdentified residue HIS498 as a ending terminus.\n",
-    "stderr": "               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:\n\nExecutable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx\nData prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default\nWorking dir:  /tmp/fruton_parameter_audit_eq70jn18\nCommand line:\n  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh\n\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b\nAll occupancies are one\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb\nAnalysing hydrogen-bonding network for automated assignment of histidine\n protonation. 340 donors and 325 acceptors were found.\nThere are 405 hydrogen bonds\nWill use HISE for residue 279\nWill use HISE for residue 308\nWill use HISE for residue 350\nWill use HISE for residue 394\nWill use HISE for residue 428\nWill use HISE for residue 464\nWill use HISE for residue 467\nWill use HISE for residue 475\nWill use HISE for residue 498\n9 out of 9 lines of specbond.dat converted successfully\nSpecial Atom Distance matrix:\n                  HIS279  MET294  MET295  MET296  HIS308  MET309  CYS334\n                  NE2134   SD245   SD253   SD261  NE2355   SD363   SG566\n  MET294   SD245   2.110\n  MET295   SD253   2.265   0.678\n  MET296   SD261   2.384   1.256   1.083\n  HIS308  NE2355   1.283   2.313   2.154   1.911\n  MET309   SD363   1.541   2.185   1.861   2.200   1.173\n  CYS334   SG566   1.914   2.476   2.113   2.622   1.694   0.540\n  MET336   SD587   1.848   1.452   1.054   1.791   1.752   0.956   1.081\n  MET340   SD619   1.791   1.517   1.291   2.140   2.010   1.153   1.158\n  MET341   SD627   1.440   2.190   2.135   2.809   2.037   1.230   1.151\n  MET344   SD647   1.551   1.741   1.769   2.557   2.204   1.480   1.477\n  HIS350  NE2704   1.168   1.938   2.376   2.710   2.345   2.381   2.644\n  CYS369   SG850   2.538   0.472   0.912   1.303   2.688   2.619   2.908\n  MET379   SD929   2.421   1.615   1.484   2.528   2.783   1.936   1.839\n  HIS394 NE21056   0.917   2.815   2.901   3.195   1.825   1.711   1.867\n  CYS399  SG1101   1.846   3.317   3.247   3.746   2.389   1.769   1.604\n  MET403  SD1129   2.123   3.172   3.019   3.655   2.532   1.632   1.298\n  MET410  SD1181   2.835   3.293   2.829   3.350   2.459   1.418   0.957\n  HIS428 NE21303   3.063   4.409   4.138   4.549   3.019   2.357   2.045\n  MET453  SD1488   3.082   3.656   3.684   4.556   3.887   3.007   2.695\n  MET460  SD1544   2.898   3.176   3.104   4.030   3.521   2.522   2.168\n  HIS464 NE21576   2.553   2.513   2.452   3.414   3.143   2.178   1.908\n  HIS467 NE21604   2.828   2.148   1.894   2.934   3.084   2.081   1.838\n  MET473  SD1644   2.379   1.849   1.282   1.963   2.029   1.155   1.139\n  HIS475 NE21663   2.538   0.915   0.509   1.572   2.535   2.025   2.156\n  MET479  SD1695   2.732   1.003   0.474   1.286   2.548   2.181   2.368\n  CYS481  SG1711   3.254   2.002   1.342   1.834   2.742   2.193   2.256\n  MET494  SD1805   2.246   2.381   1.865   2.079   1.467   0.814   0.973\n  HIS498 NE21836   2.683   2.244   1.677   2.371   2.326   1.336   1.147\n                  MET336  MET340  MET341  MET344  HIS350  CYS369  MET379\n                   SD587   SD619   SD627   SD647  NE2704   SG850   SD929\n  MET340   SD619   0.487\n  MET341   SD627   1.285   0.942\n  MET344   SD647   1.136   0.694   0.574\n  HIS350  NE2704   2.249   2.013   1.740   1.533\n  CYS369   SG850   1.857   1.943   2.651   2.181   2.287\n  MET379   SD929   1.142   0.798   1.434   0.997   2.289   1.932\n  HIS394 NE21056   2.207   2.032   1.268   1.638   1.587   3.271   2.620\n  CYS399  SG1101   2.312   2.080   1.200   1.751   2.398   3.787   2.581\n  MET403  SD1129   2.023   1.764   1.014   1.539   2.589   3.630   2.178\n  MET410  SD1181   1.841   1.929   1.935   2.279   3.568   3.689   2.416\n  HIS428 NE21303   3.102   3.031   2.429   2.987   3.859   4.868   3.564\n  MET453  SD1488   2.935   2.485   1.884   2.007   2.882   4.043   2.358\n  MET460  SD1544   2.336   1.903   1.517   1.585   2.807   3.555   1.729\n  HIS464 NE21576   1.788   1.330   1.210   1.063   2.407   2.879   1.053\n  HIS467 NE21604   1.392   1.104   1.635   1.361   2.798   2.443   0.589\n  MET473  SD1644   0.601   0.962   1.723   1.646   2.850   2.176   1.404\n  HIS475 NE21663   1.092   1.211   2.120   1.702   2.534   1.092   1.141\n  MET479  SD1695   1.326   1.567   2.476   2.098   2.809   1.051   1.595\n  CYS481  SG1711   1.543   1.901   2.793   2.578   3.596   2.096   2.020\n  MET494  SD1805   1.166   1.560   1.954   2.103   3.067   2.734   2.232\n  HIS498 NE21836   0.956   1.197   1.851   1.840   3.167   2.559   1.532\n                  HIS394  CYS399  MET403  MET410  HIS428  MET453  MET460\n                 NE21056  SG1101  SD1129  SD1181 NE21303  SD1488  SD1544\n  CYS399  SG1101   1.066\n  MET403  SD1129   1.533   0.648\n  MET410  SD1181   2.639   2.052   1.618\n  HIS428 NE21303   2.401   1.538   1.546   1.780\n  MET453  SD1488   2.534   1.933   1.656   2.974   2.916\n  MET460  SD1544   2.501   1.899   1.422   2.415   2.787   0.765\n  HIS464 NE21576   2.374   2.022   1.565   2.338   3.041   1.320   0.687\n  HIS467 NE21604   2.896   2.638   2.122   2.183   3.419   2.260   1.536\n  MET473  SD1644   2.678   2.625   2.248   1.601   3.136   3.219   2.546\n  HIS475 NE21663   3.065   3.280   2.969   2.787   4.165   3.465   2.845\n  MET479  SD1695   3.334   3.600   3.309   2.967   4.410   3.909   3.281\n  CYS481  SG1711   3.722   3.763   3.379   2.532   4.204   4.183   3.470\n  MET494  SD1805   2.511   2.496   2.265   1.368   2.726   3.623   3.040\n  HIS498 NE21836   2.865   2.650   2.199   1.339   2.995   3.164   2.459\n                  HIS464  HIS467  MET473  HIS475  MET479  CYS481  MET494\n                 NE21576 NE21604  SD1644 NE21663  SD1695  SG1711  SD1805\n  HIS467 NE21604   0.977\n  MET473  SD1644   2.048   1.440\n  HIS475 NE21663   2.178   1.508   1.240\n  MET479  SD1695   2.623   1.915   1.368   0.462\n  CYS481  SG1711   2.910   2.054   1.142   1.265   1.055\n  MET494  SD1805   2.665   2.283   0.952   2.032   2.049   1.715\n  HIS498 NE21836   2.035   1.394   0.430   1.556   1.698   1.266   1.065\n                \n                \nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\n\n-------------------------------------------------------\nProgram:     gmx pdb2gmx, version 2026.0-conda_forge\nSource file: src/gromacs/gmxpreprocess/pdb2gmx.cpp (line 896)\n\nFatal error:\nAtom OC1 in residue THR 417 was not found in rtp entry THR with 14 atoms\nwhile sorting atoms.\n.\n\nFor more information and tips for troubleshooting, please check the GROMACS\nwebsite at https://manual.gromacs.org/current/user-guide/run-time-errors.html\n-------------------------------------------------------\n",
+    "cwd": "/tmp/fruton_parameter_audit_zvvd3rv8",
+    "returncode": 0,
+    "success": true,
+    "stdout": "Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff\n\ngoing to rename amber99sb-ildn.ff/aminoacids.r2b\n\ngoing to rename amber99sb-ildn.ff/dna.r2b\n\ngoing to rename amber99sb-ildn.ff/rna.r2b\nReading /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb...\nRead '', 1840 atoms\n\nAnalyzing pdb file\nSplitting chemical chains based on TER records or chain id changing.\n\nThere are 3 chains and 0 blocks of water and 234 residues with 1840 atoms\n\n  chain  #res #atoms\n\n  1 'A'   156   1238  \n\n  2 'B'    68    521  \n\n  3 'C'    10     81  \n\nAll occupancies are one\n\nReading residue database... (Amber99sb-ildn)\n\nPreserving residues names by default\n\nPreserving residues names by default\n\nPreserving residues names by default\n\nProcessing chain 1 'A' (1238 atoms, 156 residues)\n\nIdentified residue ALA262 as a starting terminus.\n\nIdentified residue THR417 as a ending terminus.\n\nChecking for duplicate atoms....\n\nGenerating any missing hydrogen atoms and/or adding termini.\n\nNow there are 156 residues with 2527 atoms\nChain time...\n\nMaking bonds...\n\nNumber of bonds was 2554, now 2553\n\nGenerating angles, dihedrals and pairs...\n\nMaking cmap torsions...\n\nThere are 6980 dihedrals,  448 impropers, 4665 angles\n          6690 pairs,     2553 bonds and     0 virtual sites\n\nTotal mass 17730.172 a.m.u.\n\nTotal charge -5.000 e\n\nWriting topology\n\nProcessing chain 2 'B' (521 atoms, 68 residues)\n\nIdentified residue ALA420 as a starting terminus.\n\nIdentified residue VAL487 as a ending terminus.\n\nChecking for duplicate atoms....\n\nGenerating any missing hydrogen atoms and/or adding termini.\n\nNow there are 68 residues with 1075 atoms\nChain time...\n\nMaking bonds...\n\nNumber of bonds was 1082, now 1081\n\nGenerating angles, dihedrals and pairs...\n\nMaking cmap torsions...\n\nThere are 2941 dihedrals,  189 impropers, 1965 angles\n          2804 pairs,     1081 bonds and     0 virtual sites\n\nTotal mass 7480.972 a.m.u.\n\nTotal charge 5.000 e\n\nWriting topology\n\nProcessing chain 3 'C' (81 atoms, 10 residues)\n\nIdentified residue ASP489 as a starting terminus.\n\nIdentified residue HIS498 as a ending terminus.\n\nChecking for duplicate atoms....\n\nGenerating any missing hydrogen atoms and/or adding termini.\n\nNow there are 10 residues with 164 atoms\nChain time...\n\nMaking bonds...\n\nNumber of bonds was 165, now 164\n\nGenerating angles, dihedrals and pairs...\n\nMaking cmap torsions...\n\nThere are  458 dihedrals,   27 impropers,  299 angles\n           420 pairs,      164 bonds and     0 virtual sites\n\nTotal mass 1166.364 a.m.u.\n\nTotal charge -2.000 e\n\nWriting topology\n\nIncluding chain 1 in system: 2527 atoms 156 residues\n\nIncluding chain 2 in system: 1075 atoms 68 residues\n\nIncluding chain 3 in system: 164 atoms 10 residues\n\nNow there are 3766 atoms and 234 residues\n\nTotal mass in system 26377.508 a.m.u.\n\nTotal charge in system -2.000 e\n\nWriting coordinate file...\n\n\t\t--------- PLEASE NOTE ------------\n\nYou have successfully generated a topology from: /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb.\n\nThe Amber99sb-ildn force field and the tip3p water model are used.\n\n\t\t--------- ETON ESAELP ------------\n",
+    "stderr": "               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:\n\nExecutable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx\nData prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default\nWorking dir:  /tmp/fruton_parameter_audit_zvvd3rv8\nCommand line:\n  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh\n\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b\nAll occupancies are one\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb\nAnalysing hydrogen-bonding network for automated assignment of histidine\n protonation. 219 donors and 221 acceptors were found.\nThere are 273 hydrogen bonds\nWill use HISE for residue 279\nWill use HISE for residue 308\nWill use HISE for residue 350\nWill use HISE for residue 394\n9 out of 9 lines of specbond.dat converted successfully\nSpecial Atom Distance matrix:\n                  HIS279  MET294  MET295  MET296  HIS308  MET309  CYS334\n                  NE2134   SD245   SD253   SD261  NE2355   SD363   SG566\n  MET294   SD245   2.110\n  MET295   SD253   2.265   0.678\n  MET296   SD261   2.384   1.256   1.083\n  HIS308  NE2355   1.283   2.313   2.154   1.911\n  MET309   SD363   1.541   2.185   1.861   2.200   1.173\n  CYS334   SG566   1.914   2.476   2.113   2.622   1.694   0.540\n  MET336   SD587   1.848   1.452   1.054   1.791   1.752   0.956   1.081\n  MET340   SD619   1.791   1.517   1.291   2.140   2.010   1.153   1.158\n  MET341   SD627   1.440   2.190   2.135   2.809   2.037   1.230   1.151\n  MET344   SD647   1.551   1.741   1.769   2.557   2.204   1.480   1.477\n  HIS350  NE2704   1.168   1.938   2.376   2.710   2.345   2.381   2.644\n  CYS369   SG850   2.538   0.472   0.912   1.303   2.688   2.619   2.908\n  MET379   SD929   2.421   1.615   1.484   2.528   2.783   1.936   1.839\n  HIS394 NE21056   0.917   2.815   2.901   3.195   1.825   1.711   1.867\n  CYS399  SG1101   1.846   3.317   3.247   3.746   2.389   1.769   1.604\n  MET403  SD1129   2.123   3.172   3.019   3.655   2.532   1.632   1.298\n  MET410  SD1181   2.835   3.293   2.829   3.350   2.459   1.418   0.957\n                  MET336  MET340  MET341  MET344  HIS350  CYS369  MET379\n                   SD587   SD619   SD627   SD647  NE2704   SG850   SD929\n  MET340   SD619   0.487\n  MET341   SD627   1.285   0.942\n  MET344   SD647   1.136   0.694   0.574\n  HIS350  NE2704   2.249   2.013   1.740   1.533\n  CYS369   SG850   1.857   1.943   2.651   2.181   2.287\n  MET379   SD929   1.142   0.798   1.434   0.997   2.289   1.932\n  HIS394 NE21056   2.207   2.032   1.268   1.638   1.587   3.271   2.620\n  CYS399  SG1101   2.312   2.080   1.200   1.751   2.398   3.787   2.581\n  MET403  SD1129   2.023   1.764   1.014   1.539   2.589   3.630   2.178\n  MET410  SD1181   1.841   1.929   1.935   2.279   3.568   3.689   2.416\n                  HIS394  CYS399  MET403\n                 NE21056  SG1101  SD1129\n  CYS399  SG1101   1.066\n  MET403  SD1129   1.533   0.648\n  MET410  SD1181   2.639   2.052   1.618\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\nBefore cleaning: 6723 pairs\nBefore cleaning: 6980 dihedrals\nAnalysing hydrogen-bonding network for automated assignment of histidine\n protonation. 108 donors and 91 acceptors were found.\nThere are 112 hydrogen bonds\nWill use HISE for residue 428\nWill use HISE for residue 464\nWill use HISE for residue 467\nWill use HISE for residue 475\n9 out of 9 lines of specbond.dat converted successfully\nSpecial Atom Distance matrix:\n                  HIS428  MET453  MET460  HIS464  HIS467  MET473  HIS475\n                   NE265   SD250   SD306  NE2338  NE2366   SD406  NE2425\n  MET453   SD250   2.916\n  MET460   SD306   2.787   0.765\n  HIS464  NE2338   3.041   1.320   0.687\n  HIS467  NE2366   3.419   2.260   1.536   0.977\n  MET473   SD406   3.136   3.219   2.546   2.048   1.440\n  HIS475  NE2425   4.165   3.465   2.845   2.178   1.508   1.240\n  MET479   SD457   4.410   3.909   3.281   2.623   1.915   1.368   0.462\n  CYS481   SG473   4.204   4.183   3.470   2.910   2.054   1.142   1.265\n                  MET479\n                   SD457\n  CYS481   SG473   1.055\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\nBefore cleaning: 2807 pairs\nBefore cleaning: 2941 dihedrals\nAnalysing hydrogen-bonding network for automated assignment of histidine\n protonation. 13 donors and 15 acceptors were found.\nThere are 16 hydrogen bonds\nWill use HISE for residue 498\n9 out of 9 lines of specbond.dat converted successfully\nSpecial Atom Distance matrix:\n                  MET494\n                    SD46\n  HIS498   NE277   1.065\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\nBefore cleaning: 420 pairs\nBefore cleaning: 458 dihedrals\n\nGROMACS reminds you: \"Performance and power are great targets for tuning, but really you want to tune for money!\" (Erik Lindahl)\n\n",
     "timeout_seconds": 600,
-    "error_message": "  HIS467 NE21604   0.977\n  MET473  SD1644   2.048   1.440\n  HIS475 NE21663   2.178   1.508   1.240\n  MET479  SD1695   2.623   1.915   1.368   0.462\n  CYS481  SG1711   2.910   2.054   1.142   1.265   1.055\n  MET494  SD1805   2.665   2.283   0.952   2.032   2.049   1.715\n  HIS498 NE21836   2.035   1.394   0.430   1.556   1.698   1.266   1.065\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\n-------------------------------------------------------\nProgram:     gmx pdb2gmx, version 2026.0-conda_forge\nSource file: src/gromacs/gmxpreprocess/pdb2gmx.cpp (line 896)\nFatal error:\nAtom OC1 in residue THR 417 was not found in rtp entry THR with 14 atoms\nwhile sorting atoms.\n.\nFor more information and tips for troubleshooting, please check the GROMACS\nwebsite at https://manual.gromacs.org/current/user-guide/run-time-errors.html\n-------------------------------------------------------"
+    "error_message": ""
   },
   "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/parameter_audit_gaps.json",
   "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3OLL/parameter_audit_gaps.log"

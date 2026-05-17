@@ -4,9 +4,9 @@
   "force_field": "amber99sb-ildn",
   "water_model": "tip3p",
   "gromacs_executable": "gmx",
-  "status": "failed",
-  "gromacs_probe_success": false,
-  "can_use_current_force_field": false,
+  "status": "success",
+  "gromacs_probe_success": true,
+  "can_use_current_force_field": true,
   "requires_repair": false,
   "requires_external_parameters": false,
   "requires_qm_parameters": false,
@@ -3760,7 +3760,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 189,
       "icode": "",
@@ -3785,7 +3785,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 190,
       "icode": "",
@@ -3806,7 +3806,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 191,
       "icode": "",
@@ -3834,7 +3834,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 192,
       "icode": "",
@@ -3854,7 +3854,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 193,
       "icode": "",
@@ -3882,7 +3882,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 194,
       "icode": "",
@@ -3908,7 +3908,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 195,
       "icode": "",
@@ -3936,7 +3936,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 196,
       "icode": "",
@@ -3964,7 +3964,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 197,
       "icode": "",
@@ -3993,7 +3993,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 198,
       "icode": "",
@@ -4022,7 +4022,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 199,
       "icode": "",
@@ -4043,7 +4043,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 200,
       "icode": "",
@@ -4059,7 +4059,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 201,
       "icode": "",
@@ -4083,7 +4083,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 202,
       "icode": "",
@@ -4107,7 +4107,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 203,
       "icode": "",
@@ -4126,7 +4126,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 204,
       "icode": "",
@@ -4155,7 +4155,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 205,
       "icode": "",
@@ -4183,7 +4183,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 206,
       "icode": "",
@@ -4209,7 +4209,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TRP",
       "resseq": 207,
       "icode": "",
@@ -4242,7 +4242,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 208,
       "icode": "",
@@ -4262,7 +4262,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 209,
       "icode": "",
@@ -4285,7 +4285,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 210,
       "icode": "",
@@ -4311,7 +4311,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 211,
       "icode": "",
@@ -4332,7 +4332,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 212,
       "icode": "",
@@ -4352,7 +4352,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 213,
       "icode": "",
@@ -4380,7 +4380,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TYR",
       "resseq": 214,
       "icode": "",
@@ -4410,7 +4410,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 215,
       "icode": "",
@@ -4426,7 +4426,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 216,
       "icode": "",
@@ -4446,7 +4446,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 217,
       "icode": "",
@@ -4479,7 +4479,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 218,
       "icode": "",
@@ -4505,7 +4505,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 219,
       "icode": "",
@@ -4533,7 +4533,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 220,
       "icode": "",
@@ -4552,7 +4552,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 221,
       "icode": "",
@@ -4571,7 +4571,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LYS",
       "resseq": 222,
       "icode": "",
@@ -4602,7 +4602,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "MET",
       "resseq": 223,
       "icode": "",
@@ -4628,7 +4628,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 224,
       "icode": "",
@@ -4647,7 +4647,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 225,
       "icode": "",
@@ -4667,7 +4667,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "THR",
       "resseq": 226,
       "icode": "",
@@ -4690,7 +4690,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 227,
       "icode": "",
@@ -4713,7 +4713,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 228,
       "icode": "",
@@ -4739,7 +4739,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 229,
       "icode": "",
@@ -4762,7 +4762,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 230,
       "icode": "",
@@ -4785,7 +4785,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 231,
       "icode": "",
@@ -4801,7 +4801,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 232,
       "icode": "",
@@ -4820,7 +4820,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 233,
       "icode": "",
@@ -4853,7 +4853,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 234,
       "icode": "",
@@ -4869,7 +4869,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "THR",
       "resseq": 235,
       "icode": "",
@@ -4892,7 +4892,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 236,
       "icode": "",
@@ -4912,7 +4912,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 237,
       "icode": "",
@@ -4938,7 +4938,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 238,
       "icode": "",
@@ -4966,7 +4966,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 239,
       "icode": "",
@@ -4992,7 +4992,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 240,
       "icode": "",
@@ -5008,7 +5008,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "MET",
       "resseq": 241,
       "icode": "",
@@ -5034,7 +5034,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 242,
       "icode": "",
@@ -5055,7 +5055,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 243,
       "icode": "",
@@ -5083,7 +5083,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 244,
       "icode": "",
@@ -5111,7 +5111,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 245,
       "icode": "",
@@ -5136,7 +5136,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 246,
       "icode": "",
@@ -5164,7 +5164,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 247,
       "icode": "",
@@ -5192,7 +5192,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 248,
       "icode": "",
@@ -5213,7 +5213,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 249,
       "icode": "",
@@ -5241,7 +5241,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 250,
       "icode": "",
@@ -5269,7 +5269,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 251,
       "icode": "",
@@ -5285,7 +5285,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 252,
       "icode": "",
@@ -5304,7 +5304,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 253,
       "icode": "",
@@ -5327,7 +5327,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 254,
       "icode": "",
@@ -5350,7 +5350,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 255,
       "icode": "",
@@ -5373,7 +5373,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "THR",
       "resseq": 256,
       "icode": "",
@@ -5396,7 +5396,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 257,
       "icode": "",
@@ -5425,7 +5425,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 258,
       "icode": "",
@@ -5448,7 +5448,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 259,
       "icode": "",
@@ -5471,7 +5471,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 260,
       "icode": "",
@@ -5500,7 +5500,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 261,
       "icode": "",
@@ -5529,7 +5529,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 262,
       "icode": "",
@@ -5552,7 +5552,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 263,
       "icode": "",
@@ -5575,7 +5575,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 264,
       "icode": "",
@@ -5595,7 +5595,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 265,
       "icode": "",
@@ -5614,7 +5614,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 266,
       "icode": "",
@@ -5647,7 +5647,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TRP",
       "resseq": 267,
       "icode": "",
@@ -5680,7 +5680,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 268,
       "icode": "",
@@ -5709,7 +5709,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 269,
       "icode": "",
@@ -5733,7 +5733,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 270,
       "icode": "",
@@ -5766,7 +5766,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 271,
       "icode": "",
@@ -5794,7 +5794,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 272,
       "icode": "",
@@ -5820,7 +5820,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ALA",
       "resseq": 273,
       "icode": "",
@@ -5839,7 +5839,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 274,
       "icode": "",
@@ -5867,7 +5867,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 275,
       "icode": "",
@@ -5891,7 +5891,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 276,
       "icode": "",
@@ -5917,7 +5917,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 277,
       "icode": "",
@@ -5941,7 +5941,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 278,
       "icode": "",
@@ -5969,7 +5969,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 279,
       "icode": "",
@@ -5995,7 +5995,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 280,
       "icode": "",
@@ -6019,7 +6019,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 281,
       "icode": "",
@@ -6047,7 +6047,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 282,
       "icode": "",
@@ -6063,7 +6063,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 283,
       "icode": "",
@@ -6091,7 +6091,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 284,
       "icode": "",
@@ -6119,7 +6119,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LYS",
       "resseq": 285,
       "icode": "",
@@ -6150,7 +6150,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 286,
       "icode": "",
@@ -6171,7 +6171,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 287,
       "icode": "",
@@ -6197,7 +6197,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 288,
       "icode": "",
@@ -6217,7 +6217,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 289,
       "icode": "",
@@ -6245,7 +6245,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 290,
       "icode": "",
@@ -6269,7 +6269,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 291,
       "icode": "",
@@ -6285,7 +6285,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 292,
       "icode": "",
@@ -6318,7 +6318,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TYR",
       "resseq": 293,
       "icode": "",
@@ -6348,7 +6348,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 294,
       "icode": "",
@@ -6377,7 +6377,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 295,
       "icode": "",
@@ -6403,7 +6403,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 296,
       "icode": "",
@@ -6426,7 +6426,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TYR",
       "resseq": 297,
       "icode": "",
@@ -6456,7 +6456,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 298,
       "icode": "",
@@ -6476,7 +6476,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TYR",
       "resseq": 299,
       "icode": "",
@@ -6506,7 +6506,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 300,
       "icode": "",
@@ -6522,7 +6522,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 301,
       "icode": "",
@@ -6538,7 +6538,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 302,
       "icode": "",
@@ -6563,7 +6563,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 303,
       "icode": "",
@@ -6591,7 +6591,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 304,
       "icode": "",
@@ -6617,7 +6617,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 305,
       "icode": "",
@@ -6638,7 +6638,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 306,
       "icode": "",
@@ -6659,7 +6659,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 307,
       "icode": "",
@@ -6685,7 +6685,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 308,
       "icode": "",
@@ -6713,7 +6713,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 309,
       "icode": "",
@@ -6736,7 +6736,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 310,
       "icode": "",
@@ -6765,7 +6765,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 311,
       "icode": "",
@@ -6793,7 +6793,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 312,
       "icode": "",
@@ -6826,7 +6826,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ARG",
       "resseq": 313,
       "icode": "",
@@ -6859,7 +6859,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLY",
       "resseq": 314,
       "icode": "",
@@ -6875,7 +6875,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 315,
       "icode": "",
@@ -6900,7 +6900,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 316,
       "icode": "",
@@ -6923,7 +6923,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 317,
       "icode": "",
@@ -6948,7 +6948,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 318,
       "icode": "",
@@ -6976,7 +6976,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 319,
       "icode": "",
@@ -7002,7 +7002,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 320,
       "icode": "",
@@ -7030,7 +7030,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 321,
       "icode": "",
@@ -7058,7 +7058,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 322,
       "icode": "",
@@ -7081,7 +7081,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 323,
       "icode": "",
@@ -7101,7 +7101,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 324,
       "icode": "",
@@ -7124,7 +7124,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 325,
       "icode": "",
@@ -7153,7 +7153,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PRO",
       "resseq": 326,
       "icode": "",
@@ -7176,7 +7176,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 327,
       "icode": "",
@@ -7200,7 +7200,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 328,
       "icode": "",
@@ -7225,7 +7225,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TRP",
       "resseq": 329,
       "icode": "",
@@ -7258,7 +7258,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 330,
       "icode": "",
@@ -7284,7 +7284,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "THR",
       "resseq": 331,
       "icode": "",
@@ -7307,7 +7307,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "MET",
       "resseq": 332,
       "icode": "",
@@ -7333,7 +7333,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 333,
       "icode": "",
@@ -7354,7 +7354,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 334,
       "icode": "",
@@ -7375,7 +7375,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 335,
       "icode": "",
@@ -7398,7 +7398,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 336,
       "icode": "",
@@ -7422,7 +7422,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 337,
       "icode": "",
@@ -7446,7 +7446,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 338,
       "icode": "",
@@ -7469,7 +7469,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 339,
       "icode": "",
@@ -7497,7 +7497,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 340,
       "icode": "",
@@ -7518,7 +7518,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 341,
       "icode": "",
@@ -7542,7 +7542,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "SER",
       "resseq": 342,
       "icode": "",
@@ -7562,7 +7562,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "THR",
       "resseq": 343,
       "icode": "",
@@ -7585,7 +7585,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 344,
       "icode": "",
@@ -7613,7 +7613,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASP",
       "resseq": 345,
       "icode": "",
@@ -7634,7 +7634,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 346,
       "icode": "",
@@ -7657,7 +7657,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 347,
       "icode": "",
@@ -7685,7 +7685,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ASN",
       "resseq": 348,
       "icode": "",
@@ -7708,7 +7708,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LYS",
       "resseq": 349,
       "icode": "",
@@ -7739,7 +7739,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "ILE",
       "resseq": 350,
       "icode": "",
@@ -7767,7 +7767,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 351,
       "icode": "",
@@ -7795,7 +7795,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLN",
       "resseq": 352,
       "icode": "",
@@ -7821,7 +7821,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 353,
       "icode": "",
@@ -7846,7 +7846,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "PHE",
       "resseq": 354,
       "icode": "",
@@ -7875,7 +7875,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "VAL",
       "resseq": 355,
       "icode": "",
@@ -7900,7 +7900,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 356,
       "icode": "",
@@ -7928,7 +7928,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "GLU",
       "resseq": 357,
       "icode": "",
@@ -7952,7 +7952,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "TYR",
       "resseq": 358,
       "icode": "",
@@ -7982,7 +7982,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 359,
       "icode": "",
@@ -8010,7 +8010,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "HIS",
       "resseq": 360,
       "icode": "",
@@ -8036,7 +8036,7 @@
       ]
     },
     {
-      "chain_id": "A",
+      "chain_id": "B",
       "resname": "LEU",
       "resseq": 361,
       "icode": "",
@@ -8069,15 +8069,7 @@
   "metal_sites": [],
   "supported_nonstandard_residue_names": [],
   "unsupported_residue_names": [],
-  "issues": [
-    {
-      "category": "atom_name_mismatch",
-      "resname": null,
-      "residue_number": null,
-      "atom_name": null,
-      "message": "  MET332  SD2365   4.043   4.120   3.258   4.046   3.530   3.047   2.590\n  HIS360 NE22599   1.840   2.297   2.015   2.269   2.767   2.542   2.659\n                  HIS319  HIS330  MET332\n                 NE22256 NE22350  SD2365\n  HIS330 NE22350   1.204\n  MET332  SD2365   2.244   1.127\n  HIS360 NE22599   2.621   3.703   4.486\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\n-------------------------------------------------------\nProgram:     gmx pdb2gmx, version 2026.0-conda_forge\nSource file: src/gromacs/gmxpreprocess/pdb2gmx.cpp (line 896)\nFatal error:\nAtom OC1 in residue LYS 182 was not found in rtp entry LYS with 22 atoms\nwhile sorting atoms.\n.\nFor more information and tips for troubleshooting, please check the GROMACS\nwebsite at https://manual.gromacs.org/current/user-guide/run-time-errors.html\n-------------------------------------------------------"
-    }
-  ],
+  "issues": [],
   "probe": {
     "command": [
       "gmx",
@@ -8100,13 +8092,13 @@
       "no",
       "-ignh"
     ],
-    "cwd": "/tmp/fruton_parameter_audit_yh63jlcc",
-    "returncode": 1,
-    "success": false,
-    "stdout": "Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff\n\ngoing to rename amber99sb-ildn.ff/aminoacids.r2b\n\ngoing to rename amber99sb-ildn.ff/dna.r2b\n\ngoing to rename amber99sb-ildn.ff/rna.r2b\nReading /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_sanitized_variant_audit/2AFX_gaps_prepared_sanitized.pdb...\nRead '', 2611 atoms\n\nAnalyzing pdb file\nSplitting chemical chains based on TER records or chain id changing.\n\nThere are 1 chains and 0 blocks of water and 323 residues with 2611 atoms\n\n  chain  #res #atoms\n\n  1 'A'   323   2611  \n\nAll occupancies are one\n\nReading residue database... (Amber99sb-ildn)\n\nPreserving residues names by default\n\nPreserving residues names by default\n\nPreserving residues names by default\n\nProcessing chain 1 'A' (2611 atoms, 323 residues)\n\nIdentified residue ALA33 as a starting terminus.\n\nIdentified residue LEU361 as a ending terminus.\n",
-    "stderr": "               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:\n\nExecutable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx\nData prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default\nWorking dir:  /tmp/fruton_parameter_audit_yh63jlcc\nCommand line:\n  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_sanitized_variant_audit/2AFX_gaps_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh\n\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b\nAll occupancies are one\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb\nAnalysing hydrogen-bonding network for automated assignment of histidine\n protonation. 499 donors and 476 acceptors were found.\nThere are 705 hydrogen bonds\nWill use HISE for residue 43\nWill use HISE for residue 90\nWill use HISE for residue 134\nWill use HISE for residue 140\nWill use HISE for residue 148\nWill use HISE for residue 206\nWill use HISE for residue 218\nWill use HISE for residue 228\nWill use HISE for residue 239\nWill use HISE for residue 276\nWill use HISE for residue 279\nWill use HISE for residue 287\nWill use HISE for residue 307\nWill use HISE for residue 319\nWill use HISE for residue 330\nWill use HISE for residue 360\n9 out of 9 lines of specbond.dat converted successfully\nSpecial Atom Distance matrix:\n                   HIS43   MET65   HIS90   MET92  HIS134  CYS139  HIS140\n                   NE291   SD251  NE2456   SD472  NE2823   SG858  NE2867\n   MET65   SD251   2.547\n   HIS90  NE2456   2.951   0.966\n   MET92   SD472   2.891   1.929   1.146\n  HIS134  NE2823   1.274   2.318   2.274   1.807\n  CYS139   SG858   2.307   1.106   1.099   1.407   1.789\n  HIS140  NE2867   2.840   1.564   1.537   1.844   2.385   0.729\n  HIS148  NE2941   4.539   2.512   1.995   2.384   3.832   2.233   1.859\n  CYS164  SG1063   2.595   1.035   0.814   1.265   1.999   0.345   0.777\n  MET166  SD1075   2.269   0.602   1.327   2.075   2.176   0.861   1.232\n  MET167  SD1083   1.990   1.042   1.166   1.443   1.523   0.352   1.053\n  HIS206 NE21351   4.153   2.898   2.846   3.105   3.774   2.242   1.514\n  HIS218 NE21452   2.923   2.879   2.419   1.619   1.930   1.826   1.871\n  MET223  SD1487   1.890   2.424   2.265   1.699   1.046   1.474   1.790\n  HIS228 NE21522   1.489   2.846   2.752   2.124   0.601   2.161   2.646\n  HIS239 NE21600   1.881   3.355   3.367   2.822   1.592   2.475   2.691\n  MET241  SD1612   1.587   2.383   2.395   2.001   1.052   1.495   1.808\n  HIS276 NE21900   2.374   2.527   3.453   4.110   3.294   2.939   3.205\n  HIS279 NE21927   2.828   2.124   3.089   3.931   3.494   2.745   2.953\n  HIS287 NE21991   2.521   1.686   2.628   3.430   3.059   2.188   2.377\n  HIS307 NE22157   2.282   2.313   2.561   2.611   2.217   1.467   1.282\n  HIS319 NE22256   2.282   1.864   2.176   2.403   2.198   1.110   0.937\n  HIS330 NE22350   3.383   2.020   2.050   2.431   3.024   1.384   0.670\n  MET332  SD2365   4.215   2.202   2.039   2.646   3.739   1.978   1.463\n  HIS360 NE22599   0.439   2.672   3.141   3.159   1.581   2.598   3.161\n                  HIS148  CYS164  MET166  MET167  HIS206  HIS218  MET223\n                  NE2941  SG1063  SD1075  SD1083 NE21351 NE21452  SD1487\n  CYS164  SG1063   1.958\n  MET166  SD1075   2.591   0.960\n  MET167  SD1083   2.557   0.607   0.800\n  HIS206 NE21351   1.887   2.232   2.563   2.561\n  HIS218 NE21452   2.871   1.916   2.664   1.927   2.676\n  MET223  SD1487   3.292   1.710   2.136   1.393   2.955   1.036\n  HIS228 NE21522   4.120   2.389   2.639   1.948   3.904   1.799   0.967\n  HIS239 NE21600   4.324   2.765   2.966   2.356   3.604   1.819   1.148\n  MET241  SD1612   3.470   1.787   2.021   1.369   2.972   1.401   0.422\n  HIS276 NE21900   4.696   3.150   2.227   2.744   4.156   4.420   3.561\n  HIS279 NE21927   4.195   2.879   1.920   2.610   3.842   4.426   3.689\n  HIS287 NE21991   3.705   2.337   1.386   2.073   3.314   3.862   3.162\n  HIS307 NE22157   3.080   1.761   1.762   1.529   2.013   1.977   1.526\n  HIS319 NE22256   2.772   1.391   1.306   1.197   1.897   2.086   1.632\n  HIS330 NE22350   1.731   1.389   1.674   1.697   0.897   2.292   2.346\n  MET332  SD2365   0.885   1.782   2.141   2.303   1.348   2.970   3.185\n  HIS360 NE22599   4.820   2.866   2.450   2.265   4.498   3.328   2.301\n                  HIS228  HIS239  MET241  HIS276  HIS279  HIS287  HIS307\n                 NE21522 NE21600  SD1612 NE21900 NE21927 NE21991 NE22157\n  HIS239 NE21600   1.148\n  MET241  SD1612   0.999   0.990\n  HIS276 NE21900   3.669   3.774   3.223\n  HIS279 NE21927   3.938   4.121   3.412   0.833\n  HIS287 NE21991   3.492   3.649   2.897   1.036   0.583\n  HIS307 NE22157   2.282   1.862   1.292   2.860   2.927   2.378\n  HIS319 NE22256   2.387   2.186   1.434   2.630   2.587   2.016   0.486\n  HIS330 NE22350   3.244   3.126   2.339   3.438   3.122   2.568   1.487\n  MET332  SD2365   4.043   4.120   3.258   4.046   3.530   3.047   2.590\n  HIS360 NE22599   1.840   2.297   2.015   2.269   2.767   2.542   2.659\n                  HIS319  HIS330  MET332\n                 NE22256 NE22350  SD2365\n  HIS330 NE22350   1.204\n  MET332  SD2365   2.244   1.127\n  HIS360 NE22599   2.621   3.703   4.486\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\n\n-------------------------------------------------------\nProgram:     gmx pdb2gmx, version 2026.0-conda_forge\nSource file: src/gromacs/gmxpreprocess/pdb2gmx.cpp (line 896)\n\nFatal error:\nAtom OC1 in residue LYS 182 was not found in rtp entry LYS with 22 atoms\nwhile sorting atoms.\n.\n\nFor more information and tips for troubleshooting, please check the GROMACS\nwebsite at https://manual.gromacs.org/current/user-guide/run-time-errors.html\n-------------------------------------------------------\n",
+    "cwd": "/tmp/fruton_parameter_audit_hi88_vk0",
+    "returncode": 0,
+    "success": true,
+    "stdout": "Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff\n\ngoing to rename amber99sb-ildn.ff/aminoacids.r2b\n\ngoing to rename amber99sb-ildn.ff/dna.r2b\n\ngoing to rename amber99sb-ildn.ff/rna.r2b\nReading /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_sanitized_variant_audit/2AFX_gaps_prepared_sanitized.pdb...\nRead '', 2611 atoms\n\nAnalyzing pdb file\nSplitting chemical chains based on TER records or chain id changing.\n\nThere are 2 chains and 0 blocks of water and 323 residues with 2611 atoms\n\n  chain  #res #atoms\n\n  1 'A'   150   1206  \n\n  2 'B'   173   1405  \n\nAll occupancies are one\n\nReading residue database... (Amber99sb-ildn)\n\nPreserving residues names by default\n\nPreserving residues names by default\n\nPreserving residues names by default\n\nProcessing chain 1 'A' (1206 atoms, 150 residues)\n\nIdentified residue ALA33 as a starting terminus.\n\nIdentified residue LYS182 as a ending terminus.\n\nChecking for duplicate atoms....\n\nGenerating any missing hydrogen atoms and/or adding termini.\n\nNow there are 150 residues with 2397 atoms\nChain time...\n\nMaking bonds...\n\nNumber of bonds was 2429, now 2428\n\nGenerating angles, dihedrals and pairs...\n\nMaking cmap torsions...\n\nThere are 6634 dihedrals,  494 impropers, 4377 angles\n          6301 pairs,     2428 bonds and     0 virtual sites\n\nTotal mass 17112.678 a.m.u.\n\nTotal charge 2.000 e\n\nWriting topology\n\nProcessing chain 2 'B' (1405 atoms, 173 residues)\n\nIdentified residue PRO189 as a starting terminus.\n\nIdentified residue LEU361 as a ending terminus.\n\nChecking for duplicate atoms....\n\nGenerating any missing hydrogen atoms and/or adding termini.\n\nNow there are 173 residues with 2748 atoms\nChain time...\n\nMaking bonds...\n\nNumber of bonds was 2795, now 2794\n\nGenerating angles, dihedrals and pairs...\n\nMaking cmap torsions...\n\nThere are 7790 dihedrals,  588 impropers, 5051 angles\n          7271 pairs,     2794 bonds and     0 virtual sites\n\nTotal mass 19791.364 a.m.u.\n\nTotal charge -14.000 e\n\nWriting topology\n\nIncluding chain 1 in system: 2397 atoms 150 residues\n\nIncluding chain 2 in system: 2748 atoms 173 residues\n\nNow there are 5145 atoms and 323 residues\n\nTotal mass in system 36904.043 a.m.u.\n\nTotal charge in system -12.000 e\n\nWriting coordinate file...\n\n\t\t--------- PLEASE NOTE ------------\n\nYou have successfully generated a topology from: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_sanitized_variant_audit/2AFX_gaps_prepared_sanitized.pdb.\n\nThe Amber99sb-ildn force field and the tip3p water model are used.\n\n\t\t--------- ETON ESAELP ------------\n",
+    "stderr": "               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:\n\nExecutable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx\nData prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default\nWorking dir:  /tmp/fruton_parameter_audit_hi88_vk0\nCommand line:\n  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_sanitized_variant_audit/2AFX_gaps_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh\n\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b\nAll occupancies are one\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb\nAnalysing hydrogen-bonding network for automated assignment of histidine\n protonation. 241 donors and 220 acceptors were found.\nThere are 316 hydrogen bonds\nWill use HISE for residue 43\nWill use HISE for residue 90\nWill use HISE for residue 134\nWill use HISE for residue 140\nWill use HISE for residue 148\n9 out of 9 lines of specbond.dat converted successfully\nSpecial Atom Distance matrix:\n                   HIS43   MET65   HIS90   MET92  HIS134  CYS139  HIS140\n                   NE291   SD251  NE2456   SD472  NE2823   SG858  NE2867\n   MET65   SD251   2.547\n   HIS90  NE2456   2.951   0.966\n   MET92   SD472   2.891   1.929   1.146\n  HIS134  NE2823   1.274   2.318   2.274   1.807\n  CYS139   SG858   2.307   1.106   1.099   1.407   1.789\n  HIS140  NE2867   2.840   1.564   1.537   1.844   2.385   0.729\n  HIS148  NE2941   4.539   2.512   1.995   2.384   3.832   2.233   1.859\n  CYS164  SG1063   2.595   1.035   0.814   1.265   1.999   0.345   0.777\n  MET166  SD1075   2.269   0.602   1.327   2.075   2.176   0.861   1.232\n  MET167  SD1083   1.990   1.042   1.166   1.443   1.523   0.352   1.053\n                  HIS148  CYS164  MET166\n                  NE2941  SG1063  SD1075\n  CYS164  SG1063   1.958\n  MET166  SD1075   2.591   0.960\n  MET167  SD1083   2.557   0.607   0.800\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\nBefore cleaning: 6346 pairs\nBefore cleaning: 6634 dihedrals\nAnalysing hydrogen-bonding network for automated assignment of histidine\n protonation. 258 donors and 257 acceptors were found.\nThere are 351 hydrogen bonds\nWill use HISE for residue 206\nWill use HISE for residue 218\nWill use HISE for residue 228\nWill use HISE for residue 239\nWill use HISE for residue 276\nWill use HISE for residue 279\nWill use HISE for residue 287\nWill use HISE for residue 307\nWill use HISE for residue 319\nWill use HISE for residue 330\nWill use HISE for residue 360\n9 out of 9 lines of specbond.dat converted successfully\nSpecial Atom Distance matrix:\n                  HIS206  HIS218  MET223  HIS228  HIS239  MET241  HIS276\n                  NE2145  NE2246   SD281  NE2316  NE2394   SD406  NE2694\n  HIS218  NE2246   2.676\n  MET223   SD281   2.955   1.036\n  HIS228  NE2316   3.904   1.799   0.967\n  HIS239  NE2394   3.604   1.819   1.148   1.148\n  MET241   SD406   2.972   1.401   0.422   0.999   0.990\n  HIS276  NE2694   4.156   4.420   3.561   3.669   3.774   3.223\n  HIS279  NE2721   3.842   4.426   3.689   3.938   4.121   3.412   0.833\n  HIS287  NE2785   3.314   3.862   3.162   3.492   3.649   2.897   1.036\n  HIS307  NE2951   2.013   1.977   1.526   2.282   1.862   1.292   2.860\n  HIS319 NE21050   1.897   2.086   1.632   2.387   2.186   1.434   2.630\n  HIS330 NE21144   0.897   2.292   2.346   3.244   3.126   2.339   3.438\n  MET332  SD1159   1.348   2.970   3.185   4.043   4.120   3.258   4.046\n  HIS360 NE21393   4.498   3.328   2.301   1.840   2.297   2.015   2.269\n                  HIS279  HIS287  HIS307  HIS319  HIS330  MET332\n                  NE2721  NE2785  NE2951 NE21050 NE21144  SD1159\n  HIS287  NE2785   0.583\n  HIS307  NE2951   2.927   2.378\n  HIS319 NE21050   2.587   2.016   0.486\n  HIS330 NE21144   3.122   2.568   1.487   1.204\n  MET332  SD1159   3.530   3.047   2.590   2.244   1.127\n  HIS360 NE21393   2.767   2.542   2.659   2.621   3.703   4.486\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\nBefore cleaning: 7328 pairs\nBefore cleaning: 7790 dihedrals\n\nGROMACS reminds you: \"Everything is theoretically impossible, until it is done.\" (Robert Heinlein)\n\n",
     "timeout_seconds": 600,
-    "error_message": "  MET332  SD2365   4.043   4.120   3.258   4.046   3.530   3.047   2.590\n  HIS360 NE22599   1.840   2.297   2.015   2.269   2.767   2.542   2.659\n                  HIS319  HIS330  MET332\n                 NE22256 NE22350  SD2365\n  HIS330 NE22350   1.204\n  MET332  SD2365   2.244   1.127\n  HIS360 NE22599   2.621   3.703   4.486\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn\nOpening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn\n-------------------------------------------------------\nProgram:     gmx pdb2gmx, version 2026.0-conda_forge\nSource file: src/gromacs/gmxpreprocess/pdb2gmx.cpp (line 896)\nFatal error:\nAtom OC1 in residue LYS 182 was not found in rtp entry LYS with 22 atoms\nwhile sorting atoms.\n.\nFor more information and tips for troubleshooting, please check the GROMACS\nwebsite at https://manual.gromacs.org/current/user-guide/run-time-errors.html\n-------------------------------------------------------"
+    "error_message": ""
   },
   "manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/parameter_audit_gaps.json",
   "log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/2AFX/parameter_audit_gaps.log"

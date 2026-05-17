@@ -37,9 +37,9 @@
         {
           "distance_angstrom": 2.16,
           "donor_atom_name": "OG1",
-          "donor_chain_id": "A",
+          "donor_chain_id": "B",
           "donor_element": "O",
-          "donor_label": "THR A 112 OG1",
+          "donor_label": "THR B 112 OG1",
           "donor_residue_name": "THR",
           "donor_residue_number": 112,
           "donor_source_role": "analysis",

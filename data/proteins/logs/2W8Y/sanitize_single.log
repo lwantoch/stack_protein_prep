@@ -1,0 +1,43 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 2W8Y
+variant_label                : single
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/components/2W8Y_protein_monomer.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/components/.tmp_sanitized_protonation/2W8Y_single_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 2023
+atom_count_out               : 2069
+residue_count_out            : 251
+selected_altloc_count        : 46
+dropped_altloc_atom_count    : 46
+normalized_occupancy_count   : 50
+dropped_heterogen_atom_count : 0
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 18
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] altloc_selected: Selected one alternate location for 46 disordered atoms; dropped 46 duplicate positions.
+[warning] occupancy_normalized: 50 selected atoms had occupancy other than 1.00 and will be written as 1.00.
+[warning] missing_standard_heavy_atoms: Residue ILE A 684 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 688 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 694 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 699 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 744 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 748 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 751 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 783 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 804 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 830 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 849 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 853 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 856 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 896 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 913 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 920 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue LYS A 932 is missing expected heavy atoms: CD, CE, CG, NZ
+[warning] missing_standard_heavy_atoms: Residue LYS A 933 is missing expected heavy atoms: C, CA, CB, CD, CE, CG, NZ, O

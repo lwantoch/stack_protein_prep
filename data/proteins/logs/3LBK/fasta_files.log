@@ -1,0 +1,156 @@
+================================================================================
+[2026-05-17 14:44:21] module=fasta_files pdb_id=3LBK
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/3LBK.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta
+residue_range=26-110
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3LBK
+query: xref:pdb-3LBK
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3LBK&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q00987 header=sp|Q00987|MDM2_HUMAN E3 ubiquitin-protein ligase Mdm2 OS=Homo sapiens OX=9606 GN=MDM2 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q00987
+================================================================================
+[2026-05-17 15:36:39] module=fasta_files pdb_id=3LBK
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/3LBK.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta
+residue_range=26-110
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3LBK
+query: xref:pdb-3LBK
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3LBK&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q00987 header=sp|Q00987|MDM2_HUMAN E3 ubiquitin-protein ligase Mdm2 OS=Homo sapiens OX=9606 GN=MDM2 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q00987
+================================================================================
+[2026-05-17 15:45:21] module=fasta_files pdb_id=3LBK
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/3LBK.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta
+residue_range=26-110
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3LBK
+query: xref:pdb-3LBK
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3LBK&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q00987 header=sp|Q00987|MDM2_HUMAN E3 ubiquitin-protein ligase Mdm2 OS=Homo sapiens OX=9606 GN=MDM2 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q00987
+================================================================================
+[2026-05-17 17:17:28] module=fasta_files pdb_id=3LBK
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/3LBK.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta
+residue_range=26-110
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3LBK
+query: xref:pdb-3LBK
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3LBK&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q00987 header=sp|Q00987|MDM2_HUMAN E3 ubiquitin-protein ligase Mdm2 OS=Homo sapiens OX=9606 GN=MDM2 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q00987
+================================================================================
+[2026-05-17 17:42:37] module=fasta_files pdb_id=3LBK
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/3LBK.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta
+residue_range=26-110
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3LBK
+query: xref:pdb-3LBK
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3LBK&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q00987 header=sp|Q00987|MDM2_HUMAN E3 ubiquitin-protein ligase Mdm2 OS=Homo sapiens OX=9606 GN=MDM2 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q00987
+================================================================================
+[2026-05-17 17:44:48] module=fasta_files pdb_id=3LBK
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/3LBK.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta
+residue_range=26-110
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/fasta/PDB-3LBK-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3LBK
+query: xref:pdb-3LBK
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3LBK&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q00987 header=sp|Q00987|MDM2_HUMAN E3 ubiquitin-protein ligase Mdm2 OS=Homo sapiens OX=9606 GN=MDM2 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q00987

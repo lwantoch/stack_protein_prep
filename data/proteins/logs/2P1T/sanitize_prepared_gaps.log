@@ -1,0 +1,26 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 2P1T
+variant_label                : prepared_gaps
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/prepared/gaps/2P1T.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/.tmp_sanitized_variant_audit/2P1T_gaps_prepared_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 3403
+atom_count_out               : 3375
+residue_count_out            : 211
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 28
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 2
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] missing_standard_heavy_atoms: Residue GLU A 243 is missing expected heavy atoms: O
+[warning] missing_standard_heavy_atoms: Residue PRO B 458 is missing expected heavy atoms: O
+[info] heterogens_dropped: Dropped 28 non-polymer HETATM atoms from the protein-only route.

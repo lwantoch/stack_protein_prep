@@ -1,0 +1,30 @@
+standard_residue_repair
+=======================
+
+input_pdb_path                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/final_filled_model.pdb
+output_pdb_path                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_standard_residue_repair/3BC3_best_complete_standard_repaired.pdb
+used_output_path                 : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/final_filled_model.pdb
+repair_attempted                 : True
+repair_success                   : False
+can_continue                     : True
+missing_heavy_atom_count_before  : 9
+missing_heavy_atom_count_after   : 9
+nonstandard_residue_names        : <none>
+status                           : failed
+message                          : MODELLER complete_pdb repair failed: ImportError('MODELLER is required for minimal standard-heavy-atom repair.'); original input retained.
+
+missing_before
+--------------
+Residue ILE A 6 is missing expected heavy atoms: CD
+Residue ILE A 14 is missing expected heavy atoms: CD
+Residue ILE A 59 is missing expected heavy atoms: CD
+Residue ILE A 159 is missing expected heavy atoms: CD
+Residue ILE A 228 is missing expected heavy atoms: CD
+Residue ILE A 245 is missing expected heavy atoms: CD
+Residue ILE A 249 is missing expected heavy atoms: CD
+Residue ILE A 263 is missing expected heavy atoms: CD
+Residue ILE A 324 is missing expected heavy atoms: CD
+
+missing_after
+-------------
+<none>

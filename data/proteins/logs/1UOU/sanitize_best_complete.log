@@ -1,0 +1,34 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 1UOU
+variant_label                : best_complete
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/1UOU/fasta/alignments/filler/A/final_filled_model.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/1UOU/components/.tmp_sanitized_protonation/1UOU_best_complete_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 3272
+atom_count_out               : 3272
+residue_count_out            : 448
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 0
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 11
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] missing_standard_heavy_atoms: Residue ILE A 40 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 54 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 71 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 78 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 143 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 161 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 167 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 184 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 197 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 214 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 218 is missing expected heavy atoms: CD

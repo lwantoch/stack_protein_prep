@@ -1,4 +1,4 @@
 metal_label	metal_element	donor_label	donor_element	donor_residue_name	donor_chain_id	donor_residue_number	donor_atom_name	distance_angstrom	donor_source_role	vector_x	vector_y	vector_z
 MG A 604 MG	MG	ADP A 603 O3B	O	ADP	A	603	O3B	2.107	analysis	0.615	-1.906	0.653
-MG A 604 MG	MG	THR A 112 OG1	O	THR	A	112	OG1	2.160	analysis	1.938	0.321	-0.897
+MG A 604 MG	MG	THR B 112 OG1	O	THR	B	112	OG1	2.160	analysis	1.938	0.321	-0.897
 MG A 604 MG	MG	ADP A 603 O1B	O	ADP	A	603	O1B	3.454	analysis	-1.419	-2.327	2.121

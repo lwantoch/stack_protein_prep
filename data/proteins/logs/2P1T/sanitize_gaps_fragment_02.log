@@ -1,0 +1,34 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 2P1T
+variant_label                : gaps_fragment_02
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/.tmp_gaps_fragments/2P1T_chain_A_fragment_02.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/.tmp_sanitized_protonation/2P1T_gaps_fragment_02_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 1547
+atom_count_out               : 1547
+residue_count_out            : 196
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 0
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 11
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] missing_standard_heavy_atoms: Residue ILE A 268 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 286 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 299 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 310 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 318 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 324 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 345 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 373 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 428 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 442 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 447 is missing expected heavy atoms: CD

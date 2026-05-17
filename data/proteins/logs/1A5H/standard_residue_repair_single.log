@@ -1,0 +1,33 @@
+standard_residue_repair
+=======================
+
+input_pdb_path                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/1A5H_protein_monomer.pdb
+output_pdb_path                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/.tmp_standard_residue_repair/1A5H_single_standard_repaired.pdb
+used_output_path                 : /home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/components/1A5H_protein_monomer.pdb
+repair_attempted                 : True
+repair_success                   : False
+can_continue                     : True
+missing_heavy_atom_count_before  : 12
+missing_heavy_atom_count_after   : 12
+nonstandard_residue_names        : <none>
+status                           : failed
+message                          : MODELLER complete_pdb repair failed: ImportError('MODELLER is required for minimal standard-heavy-atom repair.'); original input retained.
+
+missing_before
+--------------
+Residue ILE A 16 is missing expected heavy atoms: CD
+Residue ILE A 24 is missing expected heavy atoms: CD
+Residue ILE A 33 is missing expected heavy atoms: CD
+Residue ILE A 50 is missing expected heavy atoms: CD
+Residue ILE A 52 is missing expected heavy atoms: CD
+Residue ILE A 57 is missing expected heavy atoms: CD
+Residue ILE A 76 is missing expected heavy atoms: CD
+Residue ILE A 98 is missing expected heavy atoms: CD
+Residue ILE A 112 is missing expected heavy atoms: CD
+Residue ILE A 235 is missing expected heavy atoms: CD
+Residue ILE A 236 is missing expected heavy atoms: CD
+Residue ILE A 262 is missing expected heavy atoms: CD
+
+missing_after
+-------------
+<none>

@@ -1,0 +1,156 @@
+================================================================================
+[2026-05-17 14:44:20] module=fasta_files pdb_id=3FDN
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/3FDN.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta
+residue_range=126-394
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3FDN
+query: xref:pdb-3FDN
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3FDN&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=O14965 header=sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+[UNIPROT FASTA]
+entry_count: 1
+accessions: O14965
+================================================================================
+[2026-05-17 15:36:38] module=fasta_files pdb_id=3FDN
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/3FDN.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta
+residue_range=126-394
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3FDN
+query: xref:pdb-3FDN
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3FDN&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=O14965 header=sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+[UNIPROT FASTA]
+entry_count: 1
+accessions: O14965
+================================================================================
+[2026-05-17 15:45:20] module=fasta_files pdb_id=3FDN
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/3FDN.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta
+residue_range=126-394
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3FDN
+query: xref:pdb-3FDN
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3FDN&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=O14965 header=sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+[UNIPROT FASTA]
+entry_count: 1
+accessions: O14965
+================================================================================
+[2026-05-17 17:17:27] module=fasta_files pdb_id=3FDN
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/3FDN.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta
+residue_range=126-394
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3FDN
+query: xref:pdb-3FDN
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3FDN&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=O14965 header=sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+[UNIPROT FASTA]
+entry_count: 1
+accessions: O14965
+================================================================================
+[2026-05-17 17:42:36] module=fasta_files pdb_id=3FDN
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/3FDN.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta
+residue_range=126-394
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3FDN
+query: xref:pdb-3FDN
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3FDN&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=O14965 header=sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+[UNIPROT FASTA]
+entry_count: 1
+accessions: O14965
+================================================================================
+[2026-05-17 17:44:47] module=fasta_files pdb_id=3FDN
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/3FDN.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta
+residue_range=126-394
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/PDB-3FDN-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3FDN
+query: xref:pdb-3FDN
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3FDN&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=O14965 header=sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+[UNIPROT FASTA]
+entry_count: 1
+accessions: O14965

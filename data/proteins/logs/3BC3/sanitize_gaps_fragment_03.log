@@ -1,0 +1,24 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 3BC3
+variant_label                : gaps_fragment_03
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_gaps_fragments/3BC3_chain_A_fragment_03.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_sanitized_protonation/3BC3_gaps_fragment_03_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 328
+atom_count_out               : 328
+residue_count_out            : 41
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 0
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 1
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] missing_standard_heavy_atoms: Residue ILE A 211 is missing expected heavy atoms: CD

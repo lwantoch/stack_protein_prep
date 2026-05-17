@@ -1,0 +1,156 @@
+================================================================================
+[2026-05-17 14:44:19] module=fasta_files pdb_id=2AFX
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta
+residue_range=33-361
+[CHAIN SELECTION]
+relevant_chain_ids=A,B
+[SEQRES FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 2AFX
+query: xref:pdb-2AFX
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-2AFX&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q16769 header=sp|Q16769|QPCT_HUMAN Glutaminyl-peptide cyclotransferase OS=Homo sapiens OX=9606 GN=QPCT PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q16769
+================================================================================
+[2026-05-17 15:36:37] module=fasta_files pdb_id=2AFX
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta
+residue_range=33-361
+[CHAIN SELECTION]
+relevant_chain_ids=A,B
+[SEQRES FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 2AFX
+query: xref:pdb-2AFX
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-2AFX&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q16769 header=sp|Q16769|QPCT_HUMAN Glutaminyl-peptide cyclotransferase OS=Homo sapiens OX=9606 GN=QPCT PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q16769
+================================================================================
+[2026-05-17 15:45:19] module=fasta_files pdb_id=2AFX
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta
+residue_range=33-361
+[CHAIN SELECTION]
+relevant_chain_ids=A,B
+[SEQRES FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 2AFX
+query: xref:pdb-2AFX
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-2AFX&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q16769 header=sp|Q16769|QPCT_HUMAN Glutaminyl-peptide cyclotransferase OS=Homo sapiens OX=9606 GN=QPCT PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q16769
+================================================================================
+[2026-05-17 17:17:26] module=fasta_files pdb_id=2AFX
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta
+residue_range=33-361
+[CHAIN SELECTION]
+relevant_chain_ids=A,B
+[SEQRES FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 2AFX
+query: xref:pdb-2AFX
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-2AFX&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q16769 header=sp|Q16769|QPCT_HUMAN Glutaminyl-peptide cyclotransferase OS=Homo sapiens OX=9606 GN=QPCT PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q16769
+================================================================================
+[2026-05-17 17:42:34] module=fasta_files pdb_id=2AFX
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta
+residue_range=33-361
+[CHAIN SELECTION]
+relevant_chain_ids=A,B
+[SEQRES FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 2AFX
+query: xref:pdb-2AFX
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-2AFX&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q16769 header=sp|Q16769|QPCT_HUMAN Glutaminyl-peptide cyclotransferase OS=Homo sapiens OX=9606 GN=QPCT PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q16769
+================================================================================
+[2026-05-17 17:44:46] module=fasta_files pdb_id=2AFX
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta
+residue_range=33-361
+[CHAIN SELECTION]
+relevant_chain_ids=A,B
+[SEQRES FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/fasta/PDB-2AFX-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 2AFX
+query: xref:pdb-2AFX
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-2AFX&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=Q16769 header=sp|Q16769|QPCT_HUMAN Glutaminyl-peptide cyclotransferase OS=Homo sapiens OX=9606 GN=QPCT PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 1
+accessions: Q16769

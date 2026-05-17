@@ -1,0 +1,25 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 3K5E
+variant_label                : gaps_fragment_01
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/3K5E/components/.tmp_gaps_fragments/3K5E_chain_A_fragment_01.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/3K5E/components/.tmp_sanitized_protonation/3K5E_gaps_fragment_01_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 301
+atom_count_out               : 301
+residue_count_out            : 39
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 0
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 2
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] missing_standard_heavy_atoms: Residue ILE A 19 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue ILE A 40 is missing expected heavy atoms: CD

@@ -1,0 +1,30 @@
+metalls_check
+============
+
+pdb_id                   : 3K5E
+variant_label            : input_inventory
+input_model_path         : /home/grheco/repositorios/stack_protein_prep/data/proteins/3K5E/components/3K5E_protein_monomer.pdb
+analysis_input_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3K5E/components/metals_check/input_inventory/3K5E_input_inventory_metal_analysis_input.pdb
+contacts_tsv_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/3K5E/components/metals_check/input_inventory/3K5E_input_inventory_metal_contacts.tsv
+manifest_path            : /home/grheco/repositorios/stack_protein_prep/data/proteins/3K5E/components/metals_check/input_inventory/3K5E_input_inventory_metal_check.json
+chimera_status           : skipped
+status                   : success
+metal_class              : standard_nontransition
+ion_type_text            : Mg2+
+parameter_reference_text : Standard AMBER divalent-ion route; not a Joung-Cheatham monovalent ion. Verify selected Mg2+ parameters against the water model.
+found_geometry_text      : not_required_for_standard_ion
+probable_geometry_text   : not_required_for_standard_ion
+geometry_match           : n/a
+model_metal_ready        : True
+message                  : Only supported standard non-transition ions detected.
+
+sites
+-----
+- MG A 604 MG
+  ion_label        : Mg2+
+  metal_class      : standard_nontransition
+  coordination     : 1
+  found_geometry   : not_required_for_standard_ion
+  probable_geometry: not_required_for_standard_ion
+  geometry_match   : n/a
+  contacts         : 1

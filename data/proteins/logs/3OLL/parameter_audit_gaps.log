@@ -1,0 +1,287 @@
+====================================================================================================
+module                  : parameter_audit
+pdb_id                  : 3OLL
+input_pdb_path          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb
+force_field             : amber99sb-ildn
+water_model             : tip3p
+gromacs_executable      : gmx
+status                  : success
+gromacs_probe_success   : True
+requires_repair         : False
+requires_external_params: False
+requires_qm_parameters  : False
+requires_metal_params   : False
+nonstandard_count       : 0
+metal_count             : 0
+issues_count            : 0
+----------------------------------------------------------------------------------------------------
+[COMMAND]
+gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+----------------------------------------------------------------------------------------------------
+[NONSTANDARD RESIDUES]
+<none>
+----------------------------------------------------------------------------------------------------
+[ISSUES]
+<none>
+----------------------------------------------------------------------------------------------------
+[STDOUT]
+Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff
+
+going to rename amber99sb-ildn.ff/aminoacids.r2b
+
+going to rename amber99sb-ildn.ff/dna.r2b
+
+going to rename amber99sb-ildn.ff/rna.r2b
+Reading /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb...
+Read '', 1840 atoms
+
+Analyzing pdb file
+Splitting chemical chains based on TER records or chain id changing.
+
+There are 3 chains and 0 blocks of water and 234 residues with 1840 atoms
+
+  chain  #res #atoms
+
+  1 'A'   156   1238  
+
+  2 'B'    68    521  
+
+  3 'C'    10     81  
+
+All occupancies are one
+
+Reading residue database... (Amber99sb-ildn)
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Processing chain 1 'A' (1238 atoms, 156 residues)
+
+Identified residue ALA262 as a starting terminus.
+
+Identified residue THR417 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Generating any missing hydrogen atoms and/or adding termini.
+
+Now there are 156 residues with 2527 atoms
+Chain time...
+
+Making bonds...
+
+Number of bonds was 2554, now 2553
+
+Generating angles, dihedrals and pairs...
+
+Making cmap torsions...
+
+There are 6980 dihedrals,  448 impropers, 4665 angles
+          6690 pairs,     2553 bonds and     0 virtual sites
+
+Total mass 17730.172 a.m.u.
+
+Total charge -5.000 e
+
+Writing topology
+
+Processing chain 2 'B' (521 atoms, 68 residues)
+
+Identified residue ALA420 as a starting terminus.
+
+Identified residue VAL487 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Generating any missing hydrogen atoms and/or adding termini.
+
+Now there are 68 residues with 1075 atoms
+Chain time...
+
+Making bonds...
+
+Number of bonds was 1082, now 1081
+
+Generating angles, dihedrals and pairs...
+
+Making cmap torsions...
+
+There are 2941 dihedrals,  189 impropers, 1965 angles
+          2804 pairs,     1081 bonds and     0 virtual sites
+
+Total mass 7480.972 a.m.u.
+
+Total charge 5.000 e
+
+Writing topology
+
+Processing chain 3 'C' (81 atoms, 10 residues)
+
+Identified residue ASP489 as a starting terminus.
+
+Identified residue HIS498 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Generating any missing hydrogen atoms and/or adding termini.
+
+Now there are 10 residues with 164 atoms
+Chain time...
+
+Making bonds...
+
+Number of bonds was 165, now 164
+
+Generating angles, dihedrals and pairs...
+
+Making cmap torsions...
+
+There are  458 dihedrals,   27 impropers,  299 angles
+           420 pairs,      164 bonds and     0 virtual sites
+
+Total mass 1166.364 a.m.u.
+
+Total charge -2.000 e
+
+Writing topology
+
+Including chain 1 in system: 2527 atoms 156 residues
+
+Including chain 2 in system: 1075 atoms 68 residues
+
+Including chain 3 in system: 164 atoms 10 residues
+
+Now there are 3766 atoms and 234 residues
+
+Total mass in system 26377.508 a.m.u.
+
+Total charge in system -2.000 e
+
+Writing coordinate file...
+
+		--------- PLEASE NOTE ------------
+
+You have successfully generated a topology from: /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb.
+
+The Amber99sb-ildn force field and the tip3p water model are used.
+
+		--------- ETON ESAELP ------------
+----------------------------------------------------------------------------------------------------
+[STDERR]
+:-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /tmp/fruton_parameter_audit_zvvd3rv8
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_gaps_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 219 donors and 221 acceptors were found.
+There are 273 hydrogen bonds
+Will use HISE for residue 279
+Will use HISE for residue 308
+Will use HISE for residue 350
+Will use HISE for residue 394
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  HIS279  MET294  MET295  MET296  HIS308  MET309  CYS334
+                  NE2134   SD245   SD253   SD261  NE2355   SD363   SG566
+  MET294   SD245   2.110
+  MET295   SD253   2.265   0.678
+  MET296   SD261   2.384   1.256   1.083
+  HIS308  NE2355   1.283   2.313   2.154   1.911
+  MET309   SD363   1.541   2.185   1.861   2.200   1.173
+  CYS334   SG566   1.914   2.476   2.113   2.622   1.694   0.540
+  MET336   SD587   1.848   1.452   1.054   1.791   1.752   0.956   1.081
+  MET340   SD619   1.791   1.517   1.291   2.140   2.010   1.153   1.158
+  MET341   SD627   1.440   2.190   2.135   2.809   2.037   1.230   1.151
+  MET344   SD647   1.551   1.741   1.769   2.557   2.204   1.480   1.477
+  HIS350  NE2704   1.168   1.938   2.376   2.710   2.345   2.381   2.644
+  CYS369   SG850   2.538   0.472   0.912   1.303   2.688   2.619   2.908
+  MET379   SD929   2.421   1.615   1.484   2.528   2.783   1.936   1.839
+  HIS394 NE21056   0.917   2.815   2.901   3.195   1.825   1.711   1.867
+  CYS399  SG1101   1.846   3.317   3.247   3.746   2.389   1.769   1.604
+  MET403  SD1129   2.123   3.172   3.019   3.655   2.532   1.632   1.298
+  MET410  SD1181   2.835   3.293   2.829   3.350   2.459   1.418   0.957
+                  MET336  MET340  MET341  MET344  HIS350  CYS369  MET379
+                   SD587   SD619   SD627   SD647  NE2704   SG850   SD929
+  MET340   SD619   0.487
+  MET341   SD627   1.285   0.942
+  MET344   SD647   1.136   0.694   0.574
+  HIS350  NE2704   2.249   2.013   1.740   1.533
+  CYS369   SG850   1.857   1.943   2.651   2.181   2.287
+  MET379   SD929   1.142   0.798   1.434   0.997   2.289   1.932
+  HIS394 NE21056   2.207   2.032   1.268   1.638   1.587   3.271   2.620
+  CYS399  SG1101   2.312   2.080   1.200   1.751   2.398   3.787   2.581
+  MET403  SD1129   2.023   1.764   1.014   1.539   2.589   3.630   2.178
+  MET410  SD1181   1.841   1.929   1.935   2.279   3.568   3.689   2.416
+                  HIS394  CYS399  MET403
+                 NE21056  SG1101  SD1129
+  CYS399  SG1101   1.066
+  MET403  SD1129   1.533   0.648
+  MET410  SD1181   2.639   2.052   1.618
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 6723 pairs
+Before cleaning: 6980 dihedrals
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 108 donors and 91 acceptors were found.
+There are 112 hydrogen bonds
+Will use HISE for residue 428
+Will use HISE for residue 464
+Will use HISE for residue 467
+Will use HISE for residue 475
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  HIS428  MET453  MET460  HIS464  HIS467  MET473  HIS475
+                   NE265   SD250   SD306  NE2338  NE2366   SD406  NE2425
+  MET453   SD250   2.916
+  MET460   SD306   2.787   0.765
+  HIS464  NE2338   3.041   1.320   0.687
+  HIS467  NE2366   3.419   2.260   1.536   0.977
+  MET473   SD406   3.136   3.219   2.546   2.048   1.440
+  HIS475  NE2425   4.165   3.465   2.845   2.178   1.508   1.240
+  MET479   SD457   4.410   3.909   3.281   2.623   1.915   1.368   0.462
+  CYS481   SG473   4.204   4.183   3.470   2.910   2.054   1.142   1.265
+                  MET479
+                   SD457
+  CYS481   SG473   1.055
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 2807 pairs
+Before cleaning: 2941 dihedrals
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 13 donors and 15 acceptors were found.
+There are 16 hydrogen bonds
+Will use HISE for residue 498
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  MET494
+                    SD46
+  HIS498   NE277   1.065
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 420 pairs
+Before cleaning: 458 dihedrals
+
+GROMACS reminds you: "Performance and power are great targets for tuning, but really you want to tune for money!" (Erik Lindahl)

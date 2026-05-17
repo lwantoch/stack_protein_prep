@@ -1,0 +1,40 @@
+standard_residue_repair
+=======================
+
+input_pdb_path                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/final_filled_model.pdb
+output_pdb_path                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/.tmp_standard_residue_repair/2WCG_best_complete_standard_repaired.pdb
+used_output_path                 : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/final_filled_model.pdb
+repair_attempted                 : True
+repair_success                   : False
+can_continue                     : True
+missing_heavy_atom_count_before  : 19
+missing_heavy_atom_count_after   : 19
+nonstandard_residue_names        : <none>
+status                           : failed
+message                          : MODELLER complete_pdb repair failed: ImportError('MODELLER is required for minimal standard-heavy-atom repair.'); original input retained.
+
+missing_before
+--------------
+Residue ILE A 20 is missing expected heavy atoms: CD
+Residue ILE A 44 is missing expected heavy atoms: CD
+Residue ILE A 95 is missing expected heavy atoms: CD
+Residue ILE A 132 is missing expected heavy atoms: CD
+Residue ILE A 153 is missing expected heavy atoms: CD
+Residue ILE A 157 is missing expected heavy atoms: CD
+Residue ILE A 158 is missing expected heavy atoms: CD
+Residue ILE A 169 is missing expected heavy atoms: CD
+Residue ILE A 197 is missing expected heavy atoms: CD
+Residue ILE A 200 is missing expected heavy atoms: CD
+Residue ILE A 243 is missing expected heavy atoms: CD
+Residue ILE A 299 is missing expected heavy atoms: CD
+Residue ILE A 347 is missing expected heavy atoms: CD
+Residue ILE A 406 is missing expected heavy atoms: CD
+Residue ILE A 407 is missing expected heavy atoms: CD
+Residue ILE A 441 is missing expected heavy atoms: CD
+Residue ILE A 442 is missing expected heavy atoms: CD
+Residue ILE A 445 is missing expected heavy atoms: CD
+Residue ILE A 466 is missing expected heavy atoms: CD
+
+missing_after
+-------------
+<none>

@@ -1,0 +1,26 @@
+standard_residue_repair
+=======================
+
+input_pdb_path                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments/3FDN_chain_A_fragment_02.pdb
+output_pdb_path                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_standard_residue_repair/3FDN_gaps_fragment_02_standard_repaired.pdb
+used_output_path                 : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments/3FDN_chain_A_fragment_02.pdb
+repair_attempted                 : True
+repair_success                   : False
+can_continue                     : True
+missing_heavy_atom_count_before  : 5
+missing_heavy_atom_count_after   : 5
+nonstandard_residue_names        : <none>
+status                           : failed
+message                          : MODELLER complete_pdb repair failed: ImportError('MODELLER is required for minimal standard-heavy-atom repair.'); original input retained.
+
+missing_before
+--------------
+Residue ILE A 301 is missing expected heavy atoms: CD
+Residue ILE A 341 is missing expected heavy atoms: CD
+Residue ILE A 360 is missing expected heavy atoms: CD
+Residue ILE A 383 is missing expected heavy atoms: CD
+Residue GLN A 394 is missing expected heavy atoms: O
+
+missing_after
+-------------
+<none>

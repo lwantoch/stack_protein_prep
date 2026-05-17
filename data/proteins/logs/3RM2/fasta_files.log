@@ -1,0 +1,162 @@
+================================================================================
+[2026-05-17 14:44:21] module=fasta_files pdb_id=3RM2
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta
+residue_range=16-246
+[CHAIN SELECTION]
+relevant_chain_ids=H
+[SEQRES FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3RM2
+query: xref:pdb-3RM2
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3RM2&format=fasta
+[UNIPROT RESULT] entry_count=2
+accession=P00734 header=sp|P00734|THRB_HUMAN Prothrombin OS=Homo sapiens OX=9606 GN=F2 PE=1 SV=2
+accession=P09945 header=sp|P09945|HIRV2_HIRME Hirudin variant-2 (Fragment) OS=Hirudo medicinalis OX=6421 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 2
+accessions: P00734, P09945
+================================================================================
+[2026-05-17 15:36:40] module=fasta_files pdb_id=3RM2
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta
+residue_range=16-246
+[CHAIN SELECTION]
+relevant_chain_ids=H
+[SEQRES FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3RM2
+query: xref:pdb-3RM2
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3RM2&format=fasta
+[UNIPROT RESULT] entry_count=2
+accession=P00734 header=sp|P00734|THRB_HUMAN Prothrombin OS=Homo sapiens OX=9606 GN=F2 PE=1 SV=2
+accession=P09945 header=sp|P09945|HIRV2_HIRME Hirudin variant-2 (Fragment) OS=Hirudo medicinalis OX=6421 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 2
+accessions: P00734, P09945
+================================================================================
+[2026-05-17 15:45:22] module=fasta_files pdb_id=3RM2
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta
+residue_range=16-246
+[CHAIN SELECTION]
+relevant_chain_ids=H
+[SEQRES FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3RM2
+query: xref:pdb-3RM2
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3RM2&format=fasta
+[UNIPROT RESULT] entry_count=2
+accession=P00734 header=sp|P00734|THRB_HUMAN Prothrombin OS=Homo sapiens OX=9606 GN=F2 PE=1 SV=2
+accession=P09945 header=sp|P09945|HIRV2_HIRME Hirudin variant-2 (Fragment) OS=Hirudo medicinalis OX=6421 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 2
+accessions: P00734, P09945
+================================================================================
+[2026-05-17 17:17:28] module=fasta_files pdb_id=3RM2
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta
+residue_range=16-246
+[CHAIN SELECTION]
+relevant_chain_ids=H
+[SEQRES FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3RM2
+query: xref:pdb-3RM2
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3RM2&format=fasta
+[UNIPROT RESULT] entry_count=2
+accession=P00734 header=sp|P00734|THRB_HUMAN Prothrombin OS=Homo sapiens OX=9606 GN=F2 PE=1 SV=2
+accession=P09945 header=sp|P09945|HIRV2_HIRME Hirudin variant-2 (Fragment) OS=Hirudo medicinalis OX=6421 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 2
+accessions: P00734, P09945
+================================================================================
+[2026-05-17 17:42:38] module=fasta_files pdb_id=3RM2
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta
+residue_range=16-246
+[CHAIN SELECTION]
+relevant_chain_ids=H
+[SEQRES FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3RM2
+query: xref:pdb-3RM2
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3RM2&format=fasta
+[UNIPROT RESULT] entry_count=2
+accession=P00734 header=sp|P00734|THRB_HUMAN Prothrombin OS=Homo sapiens OX=9606 GN=F2 PE=1 SV=2
+accession=P09945 header=sp|P09945|HIRV2_HIRME Hirudin variant-2 (Fragment) OS=Hirudo medicinalis OX=6421 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 2
+accessions: P00734, P09945
+================================================================================
+[2026-05-17 17:44:49] module=fasta_files pdb_id=3RM2
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta
+residue_range=16-246
+[CHAIN SELECTION]
+relevant_chain_ids=H
+[SEQRES FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: H
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/fasta/PDB-3RM2-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3RM2
+query: xref:pdb-3RM2
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3RM2&format=fasta
+[UNIPROT RESULT] entry_count=2
+accession=P00734 header=sp|P00734|THRB_HUMAN Prothrombin OS=Homo sapiens OX=9606 GN=F2 PE=1 SV=2
+accession=P09945 header=sp|P09945|HIRV2_HIRME Hirudin variant-2 (Fragment) OS=Hirudo medicinalis OX=6421 PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 2
+accessions: P00734, P09945

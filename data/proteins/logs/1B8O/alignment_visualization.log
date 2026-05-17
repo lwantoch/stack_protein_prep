@@ -1,0 +1,276 @@
+================================================================================
+[2026-05-17 14:44:22] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 14:44:22
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|SEQRES|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 14:44:23] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 14:44:23
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|ATOM|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:36:41] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:36:41
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|SEQRES|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:36:41] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:36:41
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|ATOM|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:45:23] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:45:23
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|SEQRES|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:45:23] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:45:23
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|ATOM|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:17:29] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:17:29
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|SEQRES|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:17:29] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:17:29
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|ATOM|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:42:39] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:42:39
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python
+[RENDER METRICS]
+record_a_header: PDB|1B8O|SEQRES|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:42:39] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:42:39
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python
+[RENDER METRICS]
+record_a_header: PDB|1B8O|ATOM|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:44:50] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:44:50
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|SEQRES|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:44:50] module=alignment_visualization pdb_id=1B8O
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:44:50
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1B8O|ATOM|chain_A
+record_b_header: sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+alignment_length: 289
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png

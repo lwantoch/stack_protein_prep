@@ -1,0 +1,306 @@
+================================================================================
+[2026-05-17 14:44:34] module=filler pdb_id=2P1T
+================================================================================
+template_id=2P1T_protein_monomer
+target_id=2P1T_A
+input_chain_id=A
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P19793
+residue_range=229-458
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+[DEBUG] template_id: 2P1T_protein_monomer
+[DEBUG] target_id: 2P1T_A
+[DEBUG] chain_id (input): A
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P19793
+[DEBUG] residue_range: 229-458
+[DEBUG] effective_residue_range: 229-458
+[DEBUG] Resolved chain_id: A
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2P1T|ATOM|chain_A
+[DEBUG] Target FASTA header selected: sp|P19793|RXRA_HUMAN Retinoic acid receptor RXR-alpha OS=Homo sapiens OX=9606 GN=RXRA PE=1 SV=1
+[FILL DECISION]
+resolved_chain_id: A
+effective_residue_range: 229-458
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 1
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 243
+alignment_end: 261
+gap_length: 19
+is_terminal: False
+classification: alphafold_candidate
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 229-458
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 15:36:58] module=filler pdb_id=2P1T
+================================================================================
+template_id=2P1T_protein_monomer
+target_id=2P1T_A
+input_chain_id=A
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P19793
+residue_range=229-458
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+[DEBUG] template_id: 2P1T_protein_monomer
+[DEBUG] target_id: 2P1T_A
+[DEBUG] chain_id (input): A
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P19793
+[DEBUG] residue_range: 229-458
+[DEBUG] effective_residue_range: 229-458
+[DEBUG] Resolved chain_id: A
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2P1T|ATOM|chain_A
+[DEBUG] Target FASTA header selected: sp|P19793|RXRA_HUMAN Retinoic acid receptor RXR-alpha OS=Homo sapiens OX=9606 GN=RXRA PE=1 SV=1
+[FILL DECISION]
+resolved_chain_id: A
+effective_residue_range: 229-458
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 1
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 243
+alignment_end: 261
+gap_length: 19
+is_terminal: False
+classification: alphafold_candidate
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 229-458
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 15:45:40] module=filler pdb_id=2P1T
+================================================================================
+template_id=2P1T_protein_monomer
+target_id=2P1T_A
+input_chain_id=A
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P19793
+residue_range=229-458
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+[DEBUG] template_id: 2P1T_protein_monomer
+[DEBUG] target_id: 2P1T_A
+[DEBUG] chain_id (input): A
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P19793
+[DEBUG] residue_range: 229-458
+[DEBUG] effective_residue_range: 229-458
+[DEBUG] Resolved chain_id: A
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2P1T|ATOM|chain_A
+[DEBUG] Target FASTA header selected: sp|P19793|RXRA_HUMAN Retinoic acid receptor RXR-alpha OS=Homo sapiens OX=9606 GN=RXRA PE=1 SV=1
+[FILL DECISION]
+resolved_chain_id: A
+effective_residue_range: 229-458
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 1
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 243
+alignment_end: 261
+gap_length: 19
+is_terminal: False
+classification: alphafold_candidate
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 229-458
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 17:17:41] module=filler pdb_id=2P1T
+================================================================================
+template_id=2P1T_protein_monomer
+target_id=2P1T_A
+input_chain_id=A
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P19793
+residue_range=229-458
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+[DEBUG] template_id: 2P1T_protein_monomer
+[DEBUG] target_id: 2P1T_A
+[DEBUG] chain_id (input): A
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P19793
+[DEBUG] residue_range: 229-458
+[DEBUG] effective_residue_range: 229-458
+[DEBUG] Resolved chain_id: A
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2P1T|ATOM|chain_A
+[DEBUG] Target FASTA header selected: sp|P19793|RXRA_HUMAN Retinoic acid receptor RXR-alpha OS=Homo sapiens OX=9606 GN=RXRA PE=1 SV=1
+[FILL DECISION]
+resolved_chain_id: A
+effective_residue_range: 229-458
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 1
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 243
+alignment_end: 261
+gap_length: 19
+is_terminal: False
+classification: alphafold_candidate
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 229-458
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 17:42:53] module=filler pdb_id=2P1T
+================================================================================
+template_id=2P1T_protein_monomer
+target_id=2P1T_A
+input_chain_id=A
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P19793
+residue_range=229-458
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+[DEBUG] template_id: 2P1T_protein_monomer
+[DEBUG] target_id: 2P1T_A
+[DEBUG] chain_id (input): A
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P19793
+[DEBUG] residue_range: 229-458
+[DEBUG] effective_residue_range: 229-458
+[DEBUG] Resolved chain_id: A
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2P1T|ATOM|chain_A
+[DEBUG] Target FASTA header selected: sp|P19793|RXRA_HUMAN Retinoic acid receptor RXR-alpha OS=Homo sapiens OX=9606 GN=RXRA PE=1 SV=1
+[FILL DECISION]
+resolved_chain_id: A
+effective_residue_range: 229-458
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 1
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 243
+alignment_end: 261
+gap_length: 19
+is_terminal: False
+classification: alphafold_candidate
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 229-458
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 17:45:02] module=filler pdb_id=2P1T
+================================================================================
+template_id=2P1T_protein_monomer
+target_id=2P1T_A
+input_chain_id=A
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P19793
+residue_range=229-458
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/2P1T_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A
+[DEBUG] template_id: 2P1T_protein_monomer
+[DEBUG] target_id: 2P1T_A
+[DEBUG] chain_id (input): A
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P19793
+[DEBUG] residue_range: 229-458
+[DEBUG] effective_residue_range: 229-458
+[DEBUG] Resolved chain_id: A
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2P1T|ATOM|chain_A
+[DEBUG] Target FASTA header selected: sp|P19793|RXRA_HUMAN Retinoic acid receptor RXR-alpha OS=Homo sapiens OX=9606 GN=RXRA PE=1 SV=1
+[FILL DECISION]
+resolved_chain_id: A
+effective_residue_range: 229-458
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 1
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 243
+alignment_end: 261
+gap_length: 19
+is_terminal: False
+classification: alphafold_candidate
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 229-458
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/alignments/filler/A/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===

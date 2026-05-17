@@ -1,0 +1,22 @@
+metalls_check
+============
+
+pdb_id                   : 3L3M
+variant_label            : input_inventory
+input_model_path         : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/components/3L3M_protein_monomer.pdb
+analysis_input_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/components/metals_check/input_inventory/3L3M_input_inventory_metal_analysis_input.pdb
+contacts_tsv_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/components/metals_check/input_inventory/3L3M_input_inventory_metal_contacts.tsv
+manifest_path            : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/components/metals_check/input_inventory/3L3M_input_inventory_metal_check.json
+chimera_status           : skipped
+status                   : skipped
+metal_class              : none
+ion_type_text            : none
+parameter_reference_text : none
+found_geometry_text      : none
+probable_geometry_text   : none
+geometry_match           : n/a
+model_metal_ready        : True
+message                  : No metal atoms detected in prepared model.
+
+sites
+-----

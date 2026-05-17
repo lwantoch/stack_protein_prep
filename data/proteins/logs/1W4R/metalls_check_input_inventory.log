@@ -1,0 +1,30 @@
+metalls_check
+============
+
+pdb_id                   : 1W4R
+variant_label            : input_inventory
+input_model_path         : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/components/1W4R_protein_monomer.pdb
+analysis_input_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/components/metals_check/input_inventory/1W4R_input_inventory_metal_analysis_input.pdb
+contacts_tsv_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/components/metals_check/input_inventory/1W4R_input_inventory_metal_contacts.tsv
+manifest_path            : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/components/metals_check/input_inventory/1W4R_input_inventory_metal_check.json
+chimera_status           : skipped
+status                   : required
+metal_class              : transition
+ion_type_text            : Zn2+
+parameter_reference_text : transition-metal parameters required; geometry recorded for Gaussian/RESP/CESGA branch
+found_geometry_text      : tetrahedral
+probable_geometry_text   : tetrahedral|trigonal_bipyramidal|octahedral
+geometry_match           : yes
+model_metal_ready        : False
+message                  : Transition-metal site detected; geometry recorded for metal-parameter branch.
+
+sites
+-----
+- ZN A 400 ZN
+  ion_label        : Zn2+
+  metal_class      : transition
+  coordination     : 4
+  found_geometry   : tetrahedral
+  probable_geometry: tetrahedral|trigonal_bipyramidal|octahedral
+  geometry_match   : yes
+  contacts         : 4

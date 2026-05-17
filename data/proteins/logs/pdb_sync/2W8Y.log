@@ -1,0 +1,102 @@
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:03] download_and_prepare_pdb_file:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id                 : 2W8Y
+residue_range          : '683-933'
+temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.raw.pdb
+target_pdb_file_path   : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+download_url           : https://files.rcsb.org/download/2W8Y.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:04] download_and_prepare_pdb_file:downloaded_raw
+────────────────────────────────────────────────────────────────────────────────────────────────────
+temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.raw.pdb
+exists                 : True
+size_bytes             : 402570
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:04] trim_pdb_to_residue_range
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.raw.pdb
+output_pdb_path       : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+residue_range         : '683-933'
+parsed_start          : 683
+parsed_end            : 933
+total_atom_lines      : 4107
+kept_atom_lines       : 4107
+total_water_hetatm    : 200
+kept_water_hetatm     : 200
+total_other_hetatm    : 63
+kept_other_hetatm     : 63
+requested_start       : 683
+requested_end         : 933
+observed_start        : 683
+observed_end          : 933
+start_missing         : False
+end_missing           : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:04] download_and_prepare_pdb_file:done
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id          : 2W8Y
+residue_range   : '683-933'
+requested_start : 683
+requested_end   : 933
+observed_start  : 683
+observed_end    : 933
+start_missing   : False
+end_missing     : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:04] download_and_prepare_pdb_file:cleanup
+────────────────────────────────────────────────────────────────────────────────────────────────────
+removed_temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.raw.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:04] download_missing_pdb_files:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id          : 2W8Y
+residue_range   : '683-933'
+pdb_file_path   : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+requested_start : 683
+requested_end   : 933
+observed_start  : 683
+observed_end    : 933
+start_missing   : False
+end_missing     : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:36:36] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2W8Y
+residue_range : '683-933'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:45:17] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2W8Y
+residue_range : '683-933'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:17:24] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2W8Y
+residue_range : '683-933'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:42:33] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2W8Y
+residue_range : '683-933'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:44:44] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2W8Y
+residue_range : '683-933'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+

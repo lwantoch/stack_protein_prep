@@ -1,0 +1,46 @@
+standard_residue_repair
+=======================
+
+input_pdb_path                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/components/3L3M_protein_monomer.pdb
+output_pdb_path                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/components/.tmp_standard_residue_repair/3L3M_single_standard_repaired.pdb
+used_output_path                 : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/components/3L3M_protein_monomer.pdb
+repair_attempted                 : True
+repair_success                   : False
+can_continue                     : True
+missing_heavy_atom_count_before  : 25
+missing_heavy_atom_count_after   : 25
+nonstandard_residue_names        : <none>
+status                           : failed
+message                          : MODELLER complete_pdb repair failed: ImportError('MODELLER is required for minimal standard-heavy-atom repair.'); original input retained.
+
+missing_before
+--------------
+Residue ILE A 12 is missing expected heavy atoms: CD
+Residue ILE A 15 is missing expected heavy atoms: CD
+Residue ILE A 30 is missing expected heavy atoms: CD
+Residue ILE A 45 is missing expected heavy atoms: CD
+Residue ILE A 51 is missing expected heavy atoms: CD
+Residue ILE A 68 is missing expected heavy atoms: CD
+Residue ILE A 79 is missing expected heavy atoms: CD
+Residue ILE A 110 is missing expected heavy atoms: CD
+Residue ILE A 129 is missing expected heavy atoms: CD
+Residue ILE A 140 is missing expected heavy atoms: CD
+Residue ILE A 152 is missing expected heavy atoms: CD
+Residue ILE A 153 is missing expected heavy atoms: CD
+Residue ILE A 173 is missing expected heavy atoms: CD
+Residue ILE A 175 is missing expected heavy atoms: CD
+Residue ILE A 178 is missing expected heavy atoms: CD
+Residue ILE A 211 is missing expected heavy atoms: CD
+Residue ILE A 218 is missing expected heavy atoms: CD
+Residue ILE A 234 is missing expected heavy atoms: CD
+Residue ILE A 255 is missing expected heavy atoms: CD
+Residue ILE A 258 is missing expected heavy atoms: CD
+Residue ILE A 277 is missing expected heavy atoms: CD
+Residue ILE A 301 is missing expected heavy atoms: CD
+Residue ILE A 314 is missing expected heavy atoms: CD
+Residue ILE A 329 is missing expected heavy atoms: CD
+Residue ILE A 333 is missing expected heavy atoms: CD
+
+missing_after
+-------------
+<none>

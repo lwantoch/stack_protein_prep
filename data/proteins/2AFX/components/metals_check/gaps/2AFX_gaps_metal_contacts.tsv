@@ -1,7 +1,7 @@
 metal_label	metal_element	donor_label	donor_element	donor_residue_name	donor_chain_id	donor_residue_number	donor_atom_name	distance_angstrom	donor_source_role	vector_x	vector_y	vector_z
 ZN A 996 ZN	ZN	1BN A 1501 N2	N	1BN	A	1501	N2	2.007	analysis	1.615	-1.190	-0.057
-ZN A 996 ZN	ZN	GLU A 202 OE2	O	GLU	A	202	OE2	2.013	analysis	-1.185	-0.301	1.599
+ZN A 996 ZN	ZN	GLU B 202 OE2	O	GLU	B	202	OE2	2.013	analysis	-1.185	-0.301	1.599
 ZN A 996 ZN	ZN	ASP A 159 OD2	O	ASP	A	159	OD2	2.015	analysis	-1.233	-0.092	-1.591
-ZN A 996 ZN	ZN	HIS A 330 NE2	N	HIS	A	330	NE2	2.087	analysis	0.634	1.977	-0.208
+ZN A 996 ZN	ZN	HIS B 330 NE2	N	HIS	B	330	NE2	2.087	analysis	0.634	1.977	-0.208
 ZN A 996 ZN	ZN	ASP A 159 OD1	O	ASP	A	159	OD1	2.821	analysis	-1.605	-2.142	-0.892
-ZN A 996 ZN	ZN	GLU A 202 OE1	O	GLU	A	202	OE1	2.822	analysis	0.518	0.524	2.724
+ZN A 996 ZN	ZN	GLU B 202 OE1	O	GLU	B	202	OE1	2.822	analysis	0.518	0.524	2.724

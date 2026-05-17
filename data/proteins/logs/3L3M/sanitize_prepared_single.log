@@ -1,0 +1,25 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 3L3M
+variant_label                : prepared_single
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/prepared/single/3L3M.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/components/.tmp_sanitized_variant_audit/3L3M_single_prepared_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 5535
+atom_count_out               : 5510
+residue_count_out            : 348
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 25
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 1
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] missing_standard_heavy_atoms: Residue LYS A 349 is missing expected heavy atoms: O
+[info] heterogens_dropped: Dropped 25 non-polymer HETATM atoms from the protein-only route.

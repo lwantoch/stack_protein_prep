@@ -1,0 +1,26 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 3RM2
+variant_label                : gaps_fragment_03
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments/3RM2_chain_I_fragment_01.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_sanitized_protonation/3RM2_gaps_fragment_03_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 62
+atom_count_out               : 62
+residue_count_out            : 8
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 0
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 3
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] missing_standard_heavy_atoms: Residue GLU I 58 is missing expected heavy atoms: CD, CG, OE1, OE2
+[warning] missing_standard_heavy_atoms: Residue ILE I 59 is missing expected heavy atoms: CD
+[warning] missing_standard_heavy_atoms: Residue GLU I 61 is missing expected heavy atoms: CD, CG, OE1, OE2

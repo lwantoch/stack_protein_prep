@@ -1,0 +1,153 @@
+2026-05-17 14:44:30 | INFO    | Searching preferred input PDB for protein_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04
+2026-05-17 14:44:30 | INFO    | Candidate count: 1
+2026-05-17 14:44:30 | INFO    | Candidate 1: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 14:44:30 | INFO    | Chosen input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 14:44:30 | INFO    | ============================================================
+2026-05-17 14:44:30 | INFO    | Starting insertion code processing
+2026-05-17 14:44:30 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 14:44:30 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 14:44:30 | INFO    | Insertion codes detected: False
+2026-05-17 14:44:30 | INFO    | No insertion codes detected; copying input PDB unchanged
+2026-05-17 14:44:30 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 14:44:30 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 14:44:30 | INFO    | copied original pdb (no insertion codes)
+2026-05-17 14:44:30 | INFO    | Final status: none
+2026-05-17 14:44:30 | INFO    | Color: green
+2026-05-17 14:44:30 | INFO    | Success: True
+2026-05-17 14:44:30 | INFO    | Message: copied original pdb (no insertion codes)
+2026-05-17 14:44:30 | INFO    | Finished insertion code processing
+2026-05-17 15:36:49 | INFO    | Searching preferred input PDB for protein_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04
+2026-05-17 15:36:49 | INFO    | Candidate count: 10
+2026-05-17 15:36:49 | INFO    | Candidate 1: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 2: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 3: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_artifact.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 4: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_ligand.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 5: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_metals.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 6: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 7: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_proteinH_single.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 8: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein_monomer.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 9: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_representative_unit.pdb
+2026-05-17 15:36:49 | INFO    | Candidate 10: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_water.pdb
+2026-05-17 15:36:49 | INFO    | Chosen input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 15:36:49 | INFO    | ============================================================
+2026-05-17 15:36:49 | INFO    | Starting insertion code processing
+2026-05-17 15:36:49 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 15:36:49 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 15:36:49 | INFO    | Insertion codes detected: False
+2026-05-17 15:36:49 | INFO    | No insertion codes detected; copying input PDB unchanged
+2026-05-17 15:36:49 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 15:36:49 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 15:36:49 | INFO    | copied original pdb (no insertion codes)
+2026-05-17 15:36:49 | INFO    | Final status: none
+2026-05-17 15:36:49 | INFO    | Color: green
+2026-05-17 15:36:49 | INFO    | Success: True
+2026-05-17 15:36:49 | INFO    | Message: copied original pdb (no insertion codes)
+2026-05-17 15:36:49 | INFO    | Finished insertion code processing
+2026-05-17 15:45:31 | INFO    | Searching preferred input PDB for protein_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04
+2026-05-17 15:45:31 | INFO    | Candidate count: 10
+2026-05-17 15:45:31 | INFO    | Candidate 1: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 2: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 3: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_artifact.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 4: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_ligand.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 5: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_metals.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 6: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 7: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_proteinH_single.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 8: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein_monomer.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 9: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_representative_unit.pdb
+2026-05-17 15:45:31 | INFO    | Candidate 10: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_water.pdb
+2026-05-17 15:45:31 | INFO    | Chosen input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 15:45:31 | INFO    | ============================================================
+2026-05-17 15:45:31 | INFO    | Starting insertion code processing
+2026-05-17 15:45:31 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 15:45:31 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 15:45:31 | INFO    | Insertion codes detected: False
+2026-05-17 15:45:31 | INFO    | No insertion codes detected; copying input PDB unchanged
+2026-05-17 15:45:31 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 15:45:31 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 15:45:31 | INFO    | copied original pdb (no insertion codes)
+2026-05-17 15:45:31 | INFO    | Final status: none
+2026-05-17 15:45:31 | INFO    | Color: green
+2026-05-17 15:45:31 | INFO    | Success: True
+2026-05-17 15:45:31 | INFO    | Message: copied original pdb (no insertion codes)
+2026-05-17 15:45:31 | INFO    | Finished insertion code processing
+2026-05-17 17:17:37 | INFO    | Searching preferred input PDB for protein_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04
+2026-05-17 17:17:37 | INFO    | Candidate count: 10
+2026-05-17 17:17:37 | INFO    | Candidate 1: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 2: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 3: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_artifact.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 4: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_ligand.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 5: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_metals.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 6: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 7: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_proteinH_single.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 8: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein_monomer.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 9: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_representative_unit.pdb
+2026-05-17 17:17:37 | INFO    | Candidate 10: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_water.pdb
+2026-05-17 17:17:37 | INFO    | Chosen input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:17:37 | INFO    | ============================================================
+2026-05-17 17:17:37 | INFO    | Starting insertion code processing
+2026-05-17 17:17:37 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:17:37 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:17:37 | INFO    | Insertion codes detected: False
+2026-05-17 17:17:37 | INFO    | No insertion codes detected; copying input PDB unchanged
+2026-05-17 17:17:37 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:17:37 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:17:37 | INFO    | copied original pdb (no insertion codes)
+2026-05-17 17:17:37 | INFO    | Final status: none
+2026-05-17 17:17:37 | INFO    | Color: green
+2026-05-17 17:17:37 | INFO    | Success: True
+2026-05-17 17:17:37 | INFO    | Message: copied original pdb (no insertion codes)
+2026-05-17 17:17:37 | INFO    | Finished insertion code processing
+2026-05-17 17:42:48 | INFO    | Searching preferred input PDB for protein_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04
+2026-05-17 17:42:48 | INFO    | Candidate count: 10
+2026-05-17 17:42:48 | INFO    | Candidate 1: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 2: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 3: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_artifact.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 4: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_ligand.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 5: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_metals.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 6: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 7: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_proteinH_single.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 8: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein_monomer.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 9: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_representative_unit.pdb
+2026-05-17 17:42:48 | INFO    | Candidate 10: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_water.pdb
+2026-05-17 17:42:48 | INFO    | Chosen input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:42:48 | INFO    | ============================================================
+2026-05-17 17:42:48 | INFO    | Starting insertion code processing
+2026-05-17 17:42:48 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:42:48 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:42:48 | INFO    | Insertion codes detected: False
+2026-05-17 17:42:48 | INFO    | No insertion codes detected; copying input PDB unchanged
+2026-05-17 17:42:48 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:42:48 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:42:48 | INFO    | copied original pdb (no insertion codes)
+2026-05-17 17:42:48 | INFO    | Final status: none
+2026-05-17 17:42:48 | INFO    | Color: green
+2026-05-17 17:42:48 | INFO    | Success: True
+2026-05-17 17:42:48 | INFO    | Message: copied original pdb (no insertion codes)
+2026-05-17 17:42:48 | INFO    | Finished insertion code processing
+2026-05-17 17:44:57 | INFO    | Searching preferred input PDB for protein_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04
+2026-05-17 17:44:57 | INFO    | Candidate count: 10
+2026-05-17 17:44:57 | INFO    | Candidate 1: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 2: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 3: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_artifact.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 4: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_ligand.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 5: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_metals.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 6: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 7: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_proteinH_single.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 8: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_protein_monomer.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 9: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_representative_unit.pdb
+2026-05-17 17:44:57 | INFO    | Candidate 10: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/3R04_water.pdb
+2026-05-17 17:44:57 | INFO    | Chosen input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:44:57 | INFO    | ============================================================
+2026-05-17 17:44:57 | INFO    | Starting insertion code processing
+2026-05-17 17:44:57 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:44:57 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:44:57 | INFO    | Insertion codes detected: False
+2026-05-17 17:44:57 | INFO    | No insertion codes detected; copying input PDB unchanged
+2026-05-17 17:44:57 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+2026-05-17 17:44:57 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04_delins.pdb
+2026-05-17 17:44:57 | INFO    | copied original pdb (no insertion codes)
+2026-05-17 17:44:57 | INFO    | Final status: none
+2026-05-17 17:44:57 | INFO    | Color: green
+2026-05-17 17:44:57 | INFO    | Success: True
+2026-05-17 17:44:57 | INFO    | Message: copied original pdb (no insertion codes)
+2026-05-17 17:44:57 | INFO    | Finished insertion code processing

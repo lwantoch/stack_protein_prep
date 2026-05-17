@@ -1,0 +1,25 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 3OLL
+variant_label                : prepared_best_complete
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/prepared/best_complete/3OLL.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_variant_audit/3OLL_best_complete_prepared_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 3539
+atom_count_out               : 3519
+residue_count_out            : 237
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 20
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 1
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] missing_standard_heavy_atoms: Residue ALA A 498 is missing expected heavy atoms: O
+[info] heterogens_dropped: Dropped 20 non-polymer HETATM atoms from the protein-only route.

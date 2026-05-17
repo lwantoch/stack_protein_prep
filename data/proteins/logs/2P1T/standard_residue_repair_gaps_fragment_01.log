@@ -1,0 +1,22 @@
+standard_residue_repair
+=======================
+
+input_pdb_path                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/.tmp_gaps_fragments/2P1T_chain_A_fragment_01.pdb
+output_pdb_path                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/.tmp_standard_residue_repair/2P1T_gaps_fragment_01_standard_repaired.pdb
+used_output_path                 : /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/components/.tmp_gaps_fragments/2P1T_chain_A_fragment_01.pdb
+repair_attempted                 : True
+repair_success                   : False
+can_continue                     : True
+missing_heavy_atom_count_before  : 1
+missing_heavy_atom_count_after   : 1
+nonstandard_residue_names        : <none>
+status                           : failed
+message                          : MODELLER complete_pdb repair failed: ImportError('MODELLER is required for minimal standard-heavy-atom repair.'); original input retained.
+
+missing_before
+--------------
+Residue ILE A 235 is missing expected heavy atoms: CD
+
+missing_after
+-------------
+<none>

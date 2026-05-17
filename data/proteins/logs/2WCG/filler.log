@@ -1,0 +1,342 @@
+================================================================================
+[2026-05-17 14:44:35] module=filler pdb_id=2WCG
+================================================================================
+template_id=2WCG_protein_monomer
+target_id=2WCG_B
+input_chain_id=B
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P04062
+residue_range=0-497
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+[DEBUG] template_id: 2WCG_protein_monomer
+[DEBUG] target_id: 2WCG_B
+[DEBUG] chain_id (input): B
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P04062
+[DEBUG] residue_range: 0-497
+[DEBUG] effective_residue_range: 0-497
+[DEBUG] Resolved chain_id: B
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/ATOM_chain_B_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2WCG|ATOM|chain_B
+[DEBUG] Target FASTA header selected: sp|P04062|GBA1_HUMAN Lysosomal acid glucosylceramidase OS=Homo sapiens OX=9606 GN=GBA1 PE=1 SV=3
+[FILL DECISION]
+resolved_chain_id: B
+effective_residue_range: 0-497
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 2
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 1
+alignment_end: 38
+gap_length: 38
+is_terminal: False
+classification: alphafold_candidate
+[GAP REGION 2]
+alignment_start: 67
+alignment_end: 69
+gap_length: 3
+is_terminal: False
+classification: green
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 0-497
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 15:36:59] module=filler pdb_id=2WCG
+================================================================================
+template_id=2WCG_protein_monomer
+target_id=2WCG_B
+input_chain_id=B
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P04062
+residue_range=0-497
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+[DEBUG] template_id: 2WCG_protein_monomer
+[DEBUG] target_id: 2WCG_B
+[DEBUG] chain_id (input): B
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P04062
+[DEBUG] residue_range: 0-497
+[DEBUG] effective_residue_range: 0-497
+[DEBUG] Resolved chain_id: B
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/ATOM_chain_B_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2WCG|ATOM|chain_B
+[DEBUG] Target FASTA header selected: sp|P04062|GBA1_HUMAN Lysosomal acid glucosylceramidase OS=Homo sapiens OX=9606 GN=GBA1 PE=1 SV=3
+[FILL DECISION]
+resolved_chain_id: B
+effective_residue_range: 0-497
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 2
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 1
+alignment_end: 38
+gap_length: 38
+is_terminal: False
+classification: alphafold_candidate
+[GAP REGION 2]
+alignment_start: 67
+alignment_end: 69
+gap_length: 3
+is_terminal: False
+classification: green
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 0-497
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 15:45:41] module=filler pdb_id=2WCG
+================================================================================
+template_id=2WCG_protein_monomer
+target_id=2WCG_B
+input_chain_id=B
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P04062
+residue_range=0-497
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+[DEBUG] template_id: 2WCG_protein_monomer
+[DEBUG] target_id: 2WCG_B
+[DEBUG] chain_id (input): B
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P04062
+[DEBUG] residue_range: 0-497
+[DEBUG] effective_residue_range: 0-497
+[DEBUG] Resolved chain_id: B
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/ATOM_chain_B_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2WCG|ATOM|chain_B
+[DEBUG] Target FASTA header selected: sp|P04062|GBA1_HUMAN Lysosomal acid glucosylceramidase OS=Homo sapiens OX=9606 GN=GBA1 PE=1 SV=3
+[FILL DECISION]
+resolved_chain_id: B
+effective_residue_range: 0-497
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 2
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 1
+alignment_end: 38
+gap_length: 38
+is_terminal: False
+classification: alphafold_candidate
+[GAP REGION 2]
+alignment_start: 67
+alignment_end: 69
+gap_length: 3
+is_terminal: False
+classification: green
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 0-497
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 17:17:42] module=filler pdb_id=2WCG
+================================================================================
+template_id=2WCG_protein_monomer
+target_id=2WCG_B
+input_chain_id=B
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P04062
+residue_range=0-497
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+[DEBUG] template_id: 2WCG_protein_monomer
+[DEBUG] target_id: 2WCG_B
+[DEBUG] chain_id (input): B
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P04062
+[DEBUG] residue_range: 0-497
+[DEBUG] effective_residue_range: 0-497
+[DEBUG] Resolved chain_id: B
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/ATOM_chain_B_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2WCG|ATOM|chain_B
+[DEBUG] Target FASTA header selected: sp|P04062|GBA1_HUMAN Lysosomal acid glucosylceramidase OS=Homo sapiens OX=9606 GN=GBA1 PE=1 SV=3
+[FILL DECISION]
+resolved_chain_id: B
+effective_residue_range: 0-497
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 2
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 1
+alignment_end: 38
+gap_length: 38
+is_terminal: False
+classification: alphafold_candidate
+[GAP REGION 2]
+alignment_start: 67
+alignment_end: 69
+gap_length: 3
+is_terminal: False
+classification: green
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 0-497
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 17:42:55] module=filler pdb_id=2WCG
+================================================================================
+template_id=2WCG_protein_monomer
+target_id=2WCG_B
+input_chain_id=B
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P04062
+residue_range=0-497
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+[DEBUG] template_id: 2WCG_protein_monomer
+[DEBUG] target_id: 2WCG_B
+[DEBUG] chain_id (input): B
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P04062
+[DEBUG] residue_range: 0-497
+[DEBUG] effective_residue_range: 0-497
+[DEBUG] Resolved chain_id: B
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/ATOM_chain_B_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2WCG|ATOM|chain_B
+[DEBUG] Target FASTA header selected: sp|P04062|GBA1_HUMAN Lysosomal acid glucosylceramidase OS=Homo sapiens OX=9606 GN=GBA1 PE=1 SV=3
+[FILL DECISION]
+resolved_chain_id: B
+effective_residue_range: 0-497
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 2
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 1
+alignment_end: 38
+gap_length: 38
+is_terminal: False
+classification: alphafold_candidate
+[GAP REGION 2]
+alignment_start: 67
+alignment_end: 69
+gap_length: 3
+is_terminal: False
+classification: green
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 0-497
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===
+================================================================================
+[2026-05-17 17:45:04] module=filler pdb_id=2WCG
+================================================================================
+template_id=2WCG_protein_monomer
+target_id=2WCG_B
+input_chain_id=B
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P04062
+residue_range=0-497
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/2WCG_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B
+[DEBUG] template_id: 2WCG_protein_monomer
+[DEBUG] target_id: 2WCG_B
+[DEBUG] chain_id (input): B
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P04062
+[DEBUG] residue_range: 0-497
+[DEBUG] effective_residue_range: 0-497
+[DEBUG] Resolved chain_id: B
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/ATOM_chain_B_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|2WCG|ATOM|chain_B
+[DEBUG] Target FASTA header selected: sp|P04062|GBA1_HUMAN Lysosomal acid glucosylceramidase OS=Homo sapiens OX=9606 GN=GBA1 PE=1 SV=3
+[FILL DECISION]
+resolved_chain_id: B
+effective_residue_range: 0-497
+should_run_modeller: False
+overall_classification: alphafold_candidate
+alphafold_candidate: True
+n_gap_regions: 2
+skip_reason: At least one internal gap is 8 residues or longer. Using AlphaFold fallback if possible.
+[GAP REGION 1]
+alignment_start: 1
+alignment_end: 38
+gap_length: 38
+is_terminal: False
+classification: alphafold_candidate
+[GAP REGION 2]
+alignment_start: 67
+alignment_end: 69
+gap_length: 3
+is_terminal: False
+classification: green
+[DEBUG] Fill decision: should_run_modeller=False, overall_classification=alphafold_candidate, alphafold_candidate=True
+[ALPHAFOLD OUTPUT]
+effective_residue_range: 0-497
+alphafold_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/final_filled_model.pdb
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/fasta/alignments/filler/B/modeller_stderr.log
+[DEBUG] === run_filler_for_chain END (ALPHAFOLD FALLBACK) ===

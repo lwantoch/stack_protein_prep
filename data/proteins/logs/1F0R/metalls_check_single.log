@@ -1,0 +1,30 @@
+metalls_check
+============
+
+pdb_id                   : 1F0R
+variant_label            : single
+input_model_path         : /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/prepared/single/1F0R.pdb
+analysis_input_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/components/metals_check/single/1F0R_single_metal_analysis_input.pdb
+contacts_tsv_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/components/metals_check/single/1F0R_single_metal_contacts.tsv
+manifest_path            : /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/components/metals_check/single/1F0R_single_metal_check.json
+chimera_status           : missing_executable
+status                   : success
+metal_class              : standard_nontransition
+ion_type_text            : Ca2+
+parameter_reference_text : Standard AMBER divalent-ion route; not a Joung-Cheatham monovalent ion. Verify selected Ca2+ parameters against the water model.
+found_geometry_text      : not_required_for_standard_ion
+probable_geometry_text   : not_required_for_standard_ion
+geometry_match           : n/a
+model_metal_ready        : True
+message                  : Only supported standard non-transition ions detected.
+
+sites
+-----
+- CA A 301 CA
+  ion_label        : Ca2+
+  metal_class      : standard_nontransition
+  coordination     : 0
+  found_geometry   : not_required_for_standard_ion
+  probable_geometry: not_required_for_standard_ion
+  geometry_match   : n/a
+  contacts         : 0

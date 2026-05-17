@@ -1,0 +1,102 @@
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:04] download_and_prepare_pdb_file:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id                 : 2WCG
+residue_range          : '0-497'
+temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.raw.pdb
+target_pdb_file_path   : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+download_url           : https://files.rcsb.org/download/2WCG.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:06] download_and_prepare_pdb_file:downloaded_raw
+────────────────────────────────────────────────────────────────────────────────────────────────────
+temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.raw.pdb
+exists                 : True
+size_bytes             : 781002
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:06] trim_pdb_to_residue_range
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.raw.pdb
+output_pdb_path       : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+residue_range         : '0-497'
+parsed_start          : 0
+parsed_end            : 497
+total_atom_lines      : 7743
+kept_atom_lines       : 7735
+total_water_hetatm    : 741
+kept_water_hetatm     : 741
+total_other_hetatm    : 188
+kept_other_hetatm     : 188
+requested_start       : 0
+requested_end         : 497
+observed_start        : 0
+observed_end          : 497
+start_missing         : False
+end_missing           : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:06] download_and_prepare_pdb_file:done
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id          : 2WCG
+residue_range   : '0-497'
+requested_start : 0
+requested_end   : 497
+observed_start  : 0
+observed_end    : 497
+start_missing   : False
+end_missing     : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:06] download_and_prepare_pdb_file:cleanup
+────────────────────────────────────────────────────────────────────────────────────────────────────
+removed_temporary_raw_pdb_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.raw.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:06] download_missing_pdb_files:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id          : 2WCG
+residue_range   : '0-497'
+pdb_file_path   : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+requested_start : 0
+requested_end   : 497
+observed_start  : 0
+observed_end    : 497
+start_missing   : False
+end_missing     : False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:36:36] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2WCG
+residue_range : '0-497'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:45:17] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2WCG
+residue_range : '0-497'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:17:24] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2WCG
+residue_range : '0-497'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:42:33] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2WCG
+residue_range : '0-497'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:44:44] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2WCG
+residue_range : '0-497'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+

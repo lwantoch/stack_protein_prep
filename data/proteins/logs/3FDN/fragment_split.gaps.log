@@ -1,0 +1,174 @@
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:53] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments
+pdb_id              : 3FDN
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:53] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 261
+n_fragments      : 2
+n_boundaries     : 1
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 14:44:53] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : ALA A 281
+right_residue      : CYS A 290
+left_resseq        : 281
+right_resseq       : 290
+residue_jump       : 9
+cn_distance        : 14.6894764372322
+reason             : cn_distance_exceeds_cutoff(14.689 > 1.800)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:37:19] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments
+pdb_id              : 3FDN
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:37:19] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 261
+n_fragments      : 2
+n_boundaries     : 1
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:37:19] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : ALA A 281
+right_residue      : CYS A 290
+left_resseq        : 281
+right_resseq       : 290
+residue_jump       : 9
+cn_distance        : 14.6894764372322
+reason             : cn_distance_exceeds_cutoff(14.689 > 1.800)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:45:59] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments
+pdb_id              : 3FDN
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:45:59] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 261
+n_fragments      : 2
+n_boundaries     : 1
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 15:45:59] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : ALA A 281
+right_residue      : CYS A 290
+left_resseq        : 281
+right_resseq       : 290
+residue_jump       : 9
+cn_distance        : 14.6894764372322
+reason             : cn_distance_exceeds_cutoff(14.689 > 1.800)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:18:00] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments
+pdb_id              : 3FDN
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:18:00] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 261
+n_fragments      : 2
+n_boundaries     : 1
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:18:00] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : ALA A 281
+right_residue      : CYS A 290
+left_resseq        : 281
+right_resseq       : 290
+residue_jump       : 9
+cn_distance        : 14.6894764372322
+reason             : cn_distance_exceeds_cutoff(14.689 > 1.800)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:43:19] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments
+pdb_id              : 3FDN
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:43:19] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 261
+n_fragments      : 2
+n_boundaries     : 1
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:43:19] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : ALA A 281
+right_residue      : CYS A 290
+left_resseq        : 281
+right_resseq       : 290
+residue_jump       : 9
+cn_distance        : 14.6894764372322
+reason             : cn_distance_exceeds_cutoff(14.689 > 1.800)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:45:25] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments
+pdb_id              : 3FDN
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:45:25] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 261
+n_fragments      : 2
+n_boundaries     : 1
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 17:45:25] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : ALA A 281
+right_residue      : CYS A 290
+left_resseq        : 281
+right_resseq       : 290
+residue_jump       : 9
+cn_distance        : 14.6894764372322
+reason             : cn_distance_exceeds_cutoff(14.689 > 1.800)
+

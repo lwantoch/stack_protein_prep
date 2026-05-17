@@ -1,0 +1,24 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 3OLL
+variant_label                : gaps_fragment_03
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_gaps_fragments/3OLL_chain_A_fragment_03.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/components/.tmp_sanitized_protonation/3OLL_gaps_fragment_03_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : success
+atom_count_in                : 80
+atom_count_out               : 80
+residue_count_out            : 10
+selected_altloc_count        : 0
+dropped_altloc_atom_count    : 0
+normalized_occupancy_count   : 0
+dropped_heterogen_atom_count : 0
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 0
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+<none>

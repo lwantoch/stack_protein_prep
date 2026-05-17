@@ -1,0 +1,276 @@
+================================================================================
+[2026-05-17 14:44:27] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 14:44:27
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|SEQRES|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 14:44:27] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 14:44:27
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|ATOM|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:36:46] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:36:46
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|SEQRES|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:36:46] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:36:46
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|ATOM|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:45:28] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:45:28
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|SEQRES|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:45:28] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:45:28
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|ATOM|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:17:34] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:17:34
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|SEQRES|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:17:34] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:17:34
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|ATOM|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:42:46] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:42:46
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python
+[RENDER METRICS]
+record_a_header: PDB|3FDN|SEQRES|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:42:46] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:42:46
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python
+[RENDER METRICS]
+record_a_header: PDB|3FDN|ATOM|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:44:55] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:44:55
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|SEQRES|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:44:55] module=alignment_visualization pdb_id=3FDN
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:44:55
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|3FDN|ATOM|chain_A
+record_b_header: sp|O14965|AURKA_HUMAN Aurora kinase A OS=Homo sapiens OX=9606 GN=AURKA PE=1 SV=3
+alignment_length: 403
+n_blocks: 7
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 944
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png

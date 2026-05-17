@@ -1,0 +1,24 @@
+standard_residue_repair
+=======================
+
+input_pdb_path                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/.tmp_gaps_fragments/2WCG_chain_B_fragment_01.pdb
+output_pdb_path                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/.tmp_standard_residue_repair/2WCG_gaps_fragment_01_standard_repaired.pdb
+used_output_path                 : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/.tmp_gaps_fragments/2WCG_chain_B_fragment_01.pdb
+repair_attempted                 : True
+repair_success                   : False
+can_continue                     : True
+missing_heavy_atom_count_before  : 3
+missing_heavy_atom_count_after   : 3
+nonstandard_residue_names        : <none>
+status                           : failed
+message                          : MODELLER complete_pdb repair failed: ImportError('MODELLER is required for minimal standard-heavy-atom repair.'); original input retained.
+
+missing_before
+--------------
+Residue PHE B 0 is missing expected heavy atoms: CD1, CD2, CE1, CE2, CG, CZ
+Residue ARG B 2 is missing expected heavy atoms: CZ, NH1, NH2
+Residue ILE B 5 is missing expected heavy atoms: CD
+
+missing_after
+-------------
+<none>

@@ -1,0 +1,22 @@
+metalls_check
+============
+
+pdb_id                   : 2WCG
+variant_label            : best_complete
+input_model_path         : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/prepared/best_complete/2WCG.pdb
+analysis_input_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/metals_check/best_complete/2WCG_best_complete_metal_analysis_input.pdb
+contacts_tsv_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/metals_check/best_complete/2WCG_best_complete_metal_contacts.tsv
+manifest_path            : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/metals_check/best_complete/2WCG_best_complete_metal_check.json
+chimera_status           : skipped
+status                   : skipped
+metal_class              : none
+ion_type_text            : none
+parameter_reference_text : none
+found_geometry_text      : none
+probable_geometry_text   : none
+geometry_match           : n/a
+model_metal_ready        : True
+message                  : No metal atoms detected in prepared model.
+
+sites
+-----

@@ -1,0 +1,276 @@
+================================================================================
+[2026-05-17 14:44:24] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 14:44:24
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|SEQRES|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 244
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 14:44:24] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 14:44:24
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|ATOM|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 234
+n_blocks: 4
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 575
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:36:43] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:36:43
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|SEQRES|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 244
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:36:43] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:36:43
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|ATOM|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 234
+n_blocks: 4
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 575
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:45:25] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:45:25
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|SEQRES|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 244
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 15:45:25] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 15:45:25
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|ATOM|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 234
+n_blocks: 4
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 575
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:17:31] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:17:31
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|SEQRES|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 244
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:17:31] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:17:31
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|ATOM|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 234
+n_blocks: 4
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 575
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:42:41] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:42:41
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python
+[RENDER METRICS]
+record_a_header: PDB|1W4R|SEQRES|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 244
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:42:41] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:42:41
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python
+[RENDER METRICS]
+record_a_header: PDB|1W4R|ATOM|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 234
+n_blocks: 4
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 575
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:44:52] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:44:52
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|SEQRES|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 244
+n_blocks: 5
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 698
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 17:44:52] module=alignment_visualization pdb_id=1W4R
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 17:44:52
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python3
+[RENDER METRICS]
+record_a_header: PDB|1W4R|ATOM|chain_A
+record_b_header: sp|P04183|KITH_HUMAN Thymidine kinase, cytosolic OS=Homo sapiens OX=9606 GN=TK1 PE=1 SV=2
+alignment_length: 234
+n_blocks: 4
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 575
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png

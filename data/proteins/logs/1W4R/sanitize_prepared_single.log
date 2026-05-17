@@ -1,0 +1,27 @@
+sanitize_pdb_for_gromacs
+========================
+
+pdb_id                       : 1W4R
+variant_label                : prepared_single
+input_pdb_path               : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/prepared/single/1W4R.pdb
+output_pdb_path              : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/components/.tmp_sanitized_variant_audit/1W4R_single_prepared_sanitized.pdb
+output_written               : True
+can_run_gromacs              : True
+status                       : warning
+atom_count_in                : 2770
+atom_count_out               : 2740
+residue_count_out            : 174
+selected_altloc_count        : 29
+dropped_altloc_atom_count    : 29
+normalized_occupancy_count   : 29
+dropped_heterogen_atom_count : 30
+nonstandard_residue_names    : <none>
+missing_heavy_atom_count     : 1
+force_field_template_path    : /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+
+issues
+------
+[warning] altloc_selected: Selected one alternate location for 29 disordered atoms; dropped 29 duplicate positions.
+[warning] occupancy_normalized: 29 selected atoms had occupancy other than 1.00 and will be written as 1.00.
+[warning] missing_standard_heavy_atoms: Residue LYS A 191 is missing expected heavy atoms: O
+[info] heterogens_dropped: Dropped 30 non-polymer HETATM atoms from the protein-only route.
