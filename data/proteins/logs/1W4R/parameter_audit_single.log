@@ -98,7 +98,7 @@ The Amber99sb-ildn force field and the tip3p water model are used.
 
 Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
 Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
-Working dir:  /tmp/fruton_parameter_audit_5xl2pvg1
+Working dir:  /tmp/fruton_parameter_audit__wsrtyde
 Command line:
   gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/components/.tmp_sanitized_variant_audit/1W4R_single_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
 
@@ -155,4 +155,4 @@ Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs
 Before cleaning: 7239 pairs
 Before cleaning: 7447 dihedrals
 
-GROMACS reminds you: "Everything is theoretically impossible, until it is done." (Robert Heinlein)
+GROMACS reminds you: "FORTRAN. Input: reason, output: pleasure" (ORDA, FORTRAN board game)

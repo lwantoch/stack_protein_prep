@@ -1,0 +1,5 @@
+open /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/metall_params/site_001_ZN_A_400/00_input/prepared_variant.pdb
+delete solvent false
+contacts @AG,AU,CD,CO,CR,CU,FE,HF,HG,IR,MN,MO,NB,NI,OS,PD,PT,RE,RH,RU,SC,TA,TC,TI,V,W,Y,ZN,ZR restrict @N*,O*,S*,SE* distance 3.50 reveal true name metal_contacts color gold
+# site: site_001_ZN_A_400  pdb_id: 1W4R
+exit

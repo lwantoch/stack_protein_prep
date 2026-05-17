@@ -364,3 +364,64 @@ n_raw_models: 1
 final_modeller_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/final_filled_model.pdb
 [DEBUG] Final MODELLER model path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/final_filled_model.pdb
 [DEBUG] === run_filler_for_chain END (MODELLER) ===
+================================================================================
+[2026-05-17 18:12:16] module=filler pdb_id=3BC3
+================================================================================
+template_id=3BC3_protein_monomer
+target_id=3BC3_A
+input_chain_id=A
+alignment_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments
+template_pdb_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/3BC3_protein_monomer.pdb
+output_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A
+starting_model=1
+ending_model=1
+skip_if_no_internal_gaps=True
+uniprot_id=P07711
+residue_range=1-220
+[DEBUG] === run_filler_for_chain START ===
+[DEBUG] alignment_directory: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments
+[DEBUG] template_pdb_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/3BC3_protein_monomer.pdb
+[DEBUG] output_dir: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A
+[DEBUG] template_id: 3BC3_protein_monomer
+[DEBUG] target_id: 3BC3_A
+[DEBUG] chain_id (input): A
+[DEBUG] starting_model: 1
+[DEBUG] ending_model: 1
+[DEBUG] uniprot_id: P07711
+[DEBUG] residue_range: 1-220
+[DEBUG] effective_residue_range: 1-220
+[DEBUG] Resolved chain_id: A
+[DEBUG] Alignment FASTA selected for filler: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+[DEBUG] Template FASTA header selected: PDB|3BC3|ATOM|chain_A
+[DEBUG] Target FASTA header selected: sp|P07711|CATL1_HUMAN Procathepsin L OS=Homo sapiens OX=9606 GN=CTSL PE=1 SV=2
+[FILL DECISION]
+resolved_chain_id: A
+effective_residue_range: 1-220
+should_run_modeller: True
+overall_classification: green
+alphafold_candidate: False
+n_gap_regions: 2
+skip_reason: (none)
+[GAP REGION 1]
+alignment_start: 137
+alignment_end: 137
+gap_length: 1
+is_terminal: False
+classification: green
+[GAP REGION 2]
+alignment_start: 287
+alignment_end: 291
+gap_length: 5
+is_terminal: False
+classification: green
+[DEBUG] Fill decision: should_run_modeller=True, overall_classification=green, alphafold_candidate=False
+[MODELLER OUTPUT]
+effective_residue_range: 1-220
+alignment_file: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/chain_alignment.ali
+script_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/run_modeller.py
+stdout_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/modeller_stdout.log
+stderr_log: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/modeller_stderr.log
+n_raw_models: 1
+final_modeller_model_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/final_filled_model.pdb
+[DEBUG] Final MODELLER model path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/fasta/alignments/filler/A/final_filled_model.pdb
+[DEBUG] === run_filler_for_chain END (MODELLER) ===

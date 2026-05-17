@@ -244,3 +244,44 @@ residue_jump       : 2
 cn_distance        : 3.258078267936485
 reason             : cn_distance_exceeds_cutoff(3.258 > 1.800)
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:36] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/3RM2_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments
+pdb_id              : 3RM2
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:36] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 261
+n_fragments      : 4
+n_boundaries     : 2
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:36] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : H
+left_residue       : THR H 162
+right_residue      : GLY H 165
+left_resseq        : 162
+right_resseq       : 165
+residue_jump       : 3
+cn_distance        : 7.301924746256977
+reason             : cn_distance_exceeds_cutoff(7.302 > 1.800)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:36] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : I
+left_residue       : GLU I 62
+right_residue      : LEU I 64
+left_resseq        : 62
+right_resseq       : 64
+residue_jump       : 2
+cn_distance        : 3.258078267936485
+reason             : cn_distance_exceeds_cutoff(3.258 > 1.800)
+

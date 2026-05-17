@@ -154,3 +154,29 @@ accession=P11309 header=sp|P11309|PIM1_HUMAN Serine/threonine-protein kinase pim
 [UNIPROT FASTA]
 entry_count: 1
 accessions: P11309
+================================================================================
+[2026-05-17 18:12:01] module=fasta_files pdb_id=3R04
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/fasta
+residue_range=35-305
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/fasta/PDB-3R04-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/fasta/PDB-3R04-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3R04
+query: xref:pdb-3R04
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3R04&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=P11309 header=sp|P11309|PIM1_HUMAN Serine/threonine-protein kinase pim-1 OS=Homo sapiens OX=9606 GN=PIM1 PE=1 SV=4
+[UNIPROT FASTA]
+entry_count: 1
+accessions: P11309

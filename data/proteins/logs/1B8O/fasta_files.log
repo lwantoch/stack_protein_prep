@@ -154,3 +154,29 @@ accession=P55859 header=sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=
 [UNIPROT FASTA]
 entry_count: 1
 accessions: P55859
+================================================================================
+[2026-05-17 18:11:57] module=fasta_files pdb_id=1B8O
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/1B8O.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta
+residue_range=3-283
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/PDB-1B8O-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/fasta/PDB-1B8O-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 1B8O
+query: xref:pdb-1B8O
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-1B8O&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=P55859 header=sp|P55859|PNPH_BOVIN Purine nucleoside phosphorylase OS=Bos taurus OX=9913 GN=PNP PE=1 SV=3
+[UNIPROT FASTA]
+entry_count: 1
+accessions: P55859

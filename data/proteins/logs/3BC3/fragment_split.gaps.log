@@ -244,3 +244,44 @@ residue_jump       : 6
 cn_distance        : 8.086697348114372
 reason             : cn_distance_exceeds_cutoff(8.087 > 1.800)
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/3BC3_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_gaps_fragments
+pdb_id              : 3BC3
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 214
+n_fragments      : 3
+n_boundaries     : 2
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : SER A 24
+right_residue      : TRP A 26
+left_resseq        : 24
+right_resseq       : 26
+residue_jump       : 2
+cn_distance        : 3.1009561428694874
+reason             : cn_distance_exceeds_cutoff(3.101 > 1.800)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : SER A 174
+right_residue      : ASN A 180
+left_resseq        : 174
+right_resseq       : 180
+residue_jump       : 6
+cn_distance        : 8.086697348114372
+reason             : cn_distance_exceeds_cutoff(8.087 > 1.800)
+

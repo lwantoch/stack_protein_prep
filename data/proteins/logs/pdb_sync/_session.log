@@ -2221,3 +2221,174 @@ missing_csv_pdb_ids          : []
 merged_record_count          : 20
 downloaded_file_count        : 0
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] sync_pdb_csv_and_directories:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protein_data_dir            : /home/grheco/repositorios/stack_protein_prep/data/proteins
+pdb_id_csv_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/pdb_ids.csv
+logs_root                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/logs/pdb_sync
+csv_file_exists             : True
+any_protein_subdirs_exist   : True
+valid_protein_subdir_names  : ['1A5H', '1B8O', '1F0R', '1I00', '1UOU', '1W4R', '2AFX', '2P1T', '2W8Y', '2WCG', '3BC3', '3EWJ', '3FDN', '3FRG', '3K5E', '3L3M', '3LBK', '3OLL', '3R04', '3RM2']
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+record_count      : 20
+protein_data_dir  : /home/grheco/repositorios/stack_protein_prep/data/proteins
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 1A5H
+residue_range : '16-243'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/1A5H/1A5H.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 1B8O
+residue_range : '3-283'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/1B8O/1B8O.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 1F0R
+residue_range : '16-50'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/1F0R.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 1I00
+residue_range : '6-306'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/1I00/1I00.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 1UOU
+residue_range : '33-480'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/1UOU/1UOU.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 1W4R
+residue_range : '18-191'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/1W4R.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2AFX
+residue_range : '33-361'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2P1T
+residue_range : '229-458'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/2P1T.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2W8Y
+residue_range : '683-933'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2W8Y/2W8Y.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 2WCG
+residue_range : '0-497'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/2WCG.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3BC3
+residue_range : '1-220'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3BC3/3BC3.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3EWJ
+residue_range : '220-474'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/3EWJ.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3FDN
+residue_range : '126-394'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/3FDN.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3FRG
+residue_range : '153-505'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FRG/3FRG.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3K5E
+residue_range : '18-363'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3K5E/3K5E.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3L3M
+residue_range : '2-349'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3LBK
+residue_range : '26-110'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3LBK/3LBK.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3OLL
+residue_range : '262-498'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/3OLL.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3R04
+residue_range : '35-305'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/3R04.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3RM2
+residue_range : '16-246'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:done
+────────────────────────────────────────────────────────────────────────────────────────────────────
+downloaded_count : 0
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] sync_pdb_csv_and_directories:case3
+────────────────────────────────────────────────────────────────────────────────────────────────────
+csv_record_count             : 20
+directory_record_count       : 20
+missing_subdirectory_pdb_ids : []
+missing_csv_pdb_ids          : []
+merged_record_count          : 20
+downloaded_file_count        : 0
+

@@ -23,7 +23,7 @@
 Kind, OS, HostName, Kernel, Processor: 4, Linux grheco 6.8.0-111-generic x86_64
 Date and time of compilation         : 2025/11/04 18:30:22
 MODELLER executable type             : x86_64-intel8
-Job starting time (YY/MM/DD HH:MM:SS): 2026/05/17 17:45:06
+Job starting time (YY/MM/DD HH:MM:SS): 2026/05/17 18:12:16
 
 environ____W> The class 'environ' is deprecated; use 'Environ' instead
 openf___224_> Open           $(LIB)/restyp.lib

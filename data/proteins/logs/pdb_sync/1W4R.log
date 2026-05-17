@@ -100,3 +100,10 @@ pdb_id        : 1W4R
 residue_range : '18-191'
 pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/1W4R.pdb
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 1W4R
+residue_range : '18-191'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/1W4R.pdb
+

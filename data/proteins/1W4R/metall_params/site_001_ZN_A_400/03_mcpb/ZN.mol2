@@ -1,0 +1,10 @@
+@<TRIPOS>MOLECULE
+ZN
+ 1 0 0 0 0
+SMALL
+NO_CHARGES
+
+
+@<TRIPOS>ATOM
+      1 ZN         48.5610   88.4890   13.9480 Zn        1  ZN2+        2.0000
+@<TRIPOS>BOND

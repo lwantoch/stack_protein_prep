@@ -3670,3 +3670,615 @@ position_restraints_exists  : True
 position_restraints_nonempty: True
 protonation_error_message   : <none>
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_variant_structure
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3FDN
+protein_dir   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+variant_label : gaps_fragment_01
+input_pdb     : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_01_sanitized.pdb
+output_pdb    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_gaps_fragment_01.pdb
+input_source  : protein
+ph_compat     : 7.4
+ph_applied    : False
+ff            : amber99sb-ildn
+water_model   : tip3p
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protonation_method          : gmx pdb2gmx -ignh
+protonation_intent          : approximate previous AMBER-oriented behavior
+input_source                : protein
+input_pdb                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_01_sanitized.pdb
+output_pdb                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_gaps_fragment_01.pdb
+topology_output_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_gaps_fragment_01.top
+position_restraints_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_gaps_fragment_01_posre.itp
+variant_label               : 'gaps_fragment_01'
+ph_compatibility_value      : 7.4
+ph_applied_by_gromacs       : False
+ff                          : amber99sb-ildn
+water_model                 : tip3p
+chain_separation            : id_or_ter
+merge                       : no
+ignore_input_hydrogens      : True
+timeout_seconds             : 600
+input_atom_count            : 1277
+input_hetatm_count          : 0
+input_ter_count             : 1
+input_end_count             : 1
+input_has_any_atoms         : True
+protonation_stdout_log_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stdout_gaps_fragment_01.log
+protonation_stderr_log_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stderr_gaps_fragment_01.log
+command                     : gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_01_sanitized.pdb -o 3FDN_proteinH_gaps_fragment_01.pdb -p 3FDN_proteinH_gaps_fragment_01.top -i 3FDN_proteinH_gaps_fragment_01_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+cwd                         : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:subprocess_result
+────────────────────────────────────────────────────────────────────────────────────────────────────
+returncode                  : 1
+stdout_length               : 1015
+stderr_length               : 4356
+stdout_log_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stdout_gaps_fragment_01.log
+stderr_log_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stderr_gaps_fragment_01.log
+output_exists               : False
+output_nonempty             : False
+topology_exists             : True
+topology_nonempty           : False
+position_restraints_exists  : False
+position_restraints_nonempty: False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:stdout
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff
+
+going to rename amber99sb-ildn.ff/aminoacids.r2b
+
+going to rename amber99sb-ildn.ff/dna.r2b
+
+going to rename amber99sb-ildn.ff/rna.r2b
+Reading /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_01_sanitized.pdb...
+Read '', 1277 atoms
+
+Analyzing pdb file
+Splitting chemical chains based on TER records or chain id changing.
+
+There are 1 chains and 0 blocks of water and 156 residues with 1277 atoms
+
+  chain  #res #atoms
+
+  1 'A'   156   1277  
+
+All occupancies are one
+
+Reading residue database... (Amber99sb-ildn)
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Processing chain 1 'A' (1277 atoms, 156 residues)
+
+Identified residue ARG126 as a starting terminus.
+
+Identified residue ALA281 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Generating any missing hydrogen atoms and/or adding termini.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:stderr
+────────────────────────────────────────────────────────────────────────────────────────────────────
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_01_sanitized.pdb -o 3FDN_proteinH_gaps_fragment_01.pdb -p 3FDN_proteinH_gaps_fragment_01.top -i 3FDN_proteinH_gaps_fragment_01_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 248 donors and 223 acceptors were found.
+There are 351 hydrogen bonds
+Will use HISE for residue 176
+Will use HISE for residue 187
+Will use HISE for residue 190
+Will use HISE for residue 201
+Will use HISE for residue 248
+Will use HISE for residue 254
+Will use HISE for residue 280
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  HIS176  HIS187  HIS190  HIS201  CYS247  HIS248  HIS254
+                  NE2409  NE2506  NE2535  NE2634  SG1009 NE21019 NE21070
+  HIS187  NE2506   1.385
+  HIS190  NE2535   2.680   1.677
+  HIS201  NE2634   1.682   2.005   3.236
+  CYS247  SG1009   1.960   1.182   0.759   2.766
+  HIS248 NE21019   2.136   1.667   1.191   3.273   0.718
+  HIS254 NE21070   1.788   1.659   1.430   2.644   0.877   0.994
+  HIS280 NE21272   1.479   1.701   2.154   3.021   1.455   1.086   1.375
+                
+                
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+
+-------------------------------------------------------
+Program:     gmx pdb2gmx, version 2026.0-conda_forge
+Source file: src/gromacs/gmxpreprocess/pgutil.cpp (line 156)
+
+Fatal error:
+Residue 1 named ARG of a molecule in the input file was mapped
+to an entry in the topology database, but the atom CG used in
+that entry is not found in the input file. Perhaps your atom
+and/or residue naming needs to be fixed.
+
+For more information and tips for troubleshooting, please check the GROMACS
+website at https://manual.gromacs.org/current/user-guide/run-time-errors.html
+-------------------------------------------------------
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:final_status
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protonation_success         : False
+output_exists               : False
+output_nonempty             : False
+output_atom_count           : 0
+atom_count_increased        : False
+topology_exists             : True
+topology_nonempty           : False
+position_restraints_exists  : False
+position_restraints_nonempty: False
+protonation_error_message   : gmx pdb2gmx failed for input /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_01_sanitized.pdb | returncode=1 | output_exists=False | output_nonempty=False | topology_exists=True | topology_nonempty=False | position_restraints_exists=False | position_restraints_nonempty=False | input_atom_count=1277 | input_hetatm_count=0 | input_TER_count=1 | stdout_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stdout_gaps_fragment_01.log | stderr_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stderr_gaps_fragment_01.log | module_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3FDN/protonation.log | stderr_preview=:-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_01_sanitized.pdb -o 3FDN_proteinH_gaps_fragment_01.pdb -p 3FDN_proteinH_gaps_fragment_01.top -i 3FDN_proteinH_gaps_fragment_01_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/grom
+...[truncated]...
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_variant_structure
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3FDN
+protein_dir   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+variant_label : gaps_fragment_02
+input_pdb     : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_02_sanitized.pdb
+output_pdb    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_gaps_fragment_02.pdb
+input_source  : protein
+ph_compat     : 7.4
+ph_applied    : False
+ff            : amber99sb-ildn
+water_model   : tip3p
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protonation_method          : gmx pdb2gmx -ignh
+protonation_intent          : approximate previous AMBER-oriented behavior
+input_source                : protein
+input_pdb                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_02_sanitized.pdb
+output_pdb                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_gaps_fragment_02.pdb
+topology_output_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_gaps_fragment_02.top
+position_restraints_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_gaps_fragment_02_posre.itp
+variant_label               : 'gaps_fragment_02'
+ph_compatibility_value      : 7.4
+ph_applied_by_gromacs       : False
+ff                          : amber99sb-ildn
+water_model                 : tip3p
+chain_separation            : id_or_ter
+merge                       : no
+ignore_input_hydrogens      : True
+timeout_seconds             : 600
+input_atom_count            : 857
+input_hetatm_count          : 0
+input_ter_count             : 1
+input_end_count             : 1
+input_has_any_atoms         : True
+protonation_stdout_log_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stdout_gaps_fragment_02.log
+protonation_stderr_log_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stderr_gaps_fragment_02.log
+command                     : gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_02_sanitized.pdb -o 3FDN_proteinH_gaps_fragment_02.pdb -p 3FDN_proteinH_gaps_fragment_02.top -i 3FDN_proteinH_gaps_fragment_02_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+cwd                         : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:subprocess_result
+────────────────────────────────────────────────────────────────────────────────────────────────────
+returncode                  : 1
+stdout_length               : 1012
+stderr_length               : 4353
+stdout_log_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stdout_gaps_fragment_02.log
+stderr_log_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stderr_gaps_fragment_02.log
+output_exists               : False
+output_nonempty             : False
+topology_exists             : True
+topology_nonempty           : False
+position_restraints_exists  : False
+position_restraints_nonempty: False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:stdout
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff
+
+going to rename amber99sb-ildn.ff/aminoacids.r2b
+
+going to rename amber99sb-ildn.ff/dna.r2b
+
+going to rename amber99sb-ildn.ff/rna.r2b
+Reading /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_02_sanitized.pdb...
+Read '', 857 atoms
+
+Analyzing pdb file
+Splitting chemical chains based on TER records or chain id changing.
+
+There are 1 chains and 0 blocks of water and 105 residues with 857 atoms
+
+  chain  #res #atoms
+
+  1 'A'   105    857  
+
+All occupancies are one
+
+Reading residue database... (Amber99sb-ildn)
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Processing chain 1 'A' (857 atoms, 105 residues)
+
+Identified residue CYS290 as a starting terminus.
+
+Identified residue GLN394 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Generating any missing hydrogen atoms and/or adding termini.
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:stderr
+────────────────────────────────────────────────────────────────────────────────────────────────────
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_02_sanitized.pdb -o 3FDN_proteinH_gaps_fragment_02.pdb -p 3FDN_proteinH_gaps_fragment_02.top -i 3FDN_proteinH_gaps_fragment_02_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 163 donors and 158 acceptors were found.
+There are 212 hydrogen bonds
+Will use HISE for residue 306
+Will use HISE for residue 366
+Will use HISE for residue 380
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  CYS290  MET300  MET305  HIS306  CYS319  HIS366  MET373
+                     SG6    SD83   SD123  NE2134   SG236  NE2634   SD689
+  MET300    SD83   0.769
+  MET305   SD123   1.895   1.300
+  HIS306  NE2134   1.063   0.492   0.968
+  CYS319   SG236   2.292   1.945   2.780   2.334
+  HIS366  NE2634   1.688   1.272   1.344   1.451   2.066
+  MET373   SD689   2.516   1.770   1.721   1.759   1.798   1.920
+  HIS380  NE2752   2.887   2.351   2.782   2.625   0.904   2.169   1.469
+  CYS393   SG849   2.862   2.239   2.579   2.311   1.702   2.698   1.005
+                  HIS380
+                  NE2752
+  CYS393   SG849   1.504
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+
+-------------------------------------------------------
+Program:     gmx pdb2gmx, version 2026.0-conda_forge
+Source file: src/gromacs/gmxpreprocess/pgutil.cpp (line 156)
+
+Fatal error:
+Residue 105 named GLN of a molecule in the input file was mapped
+to an entry in the topology database, but the atom OC2 used in
+that entry is not found in the input file. Perhaps your atom
+and/or residue naming needs to be fixed.
+
+For more information and tips for troubleshooting, please check the GROMACS
+website at https://manual.gromacs.org/current/user-guide/run-time-errors.html
+-------------------------------------------------------
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:final_status
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protonation_success         : False
+output_exists               : False
+output_nonempty             : False
+output_atom_count           : 0
+atom_count_increased        : False
+topology_exists             : True
+topology_nonempty           : False
+position_restraints_exists  : False
+position_restraints_nonempty: False
+protonation_error_message   : gmx pdb2gmx failed for input /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_02_sanitized.pdb | returncode=1 | output_exists=False | output_nonempty=False | topology_exists=True | topology_nonempty=False | position_restraints_exists=False | position_restraints_nonempty=False | input_atom_count=857 | input_hetatm_count=0 | input_TER_count=1 | stdout_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stdout_gaps_fragment_02.log | stderr_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stderr_gaps_fragment_02.log | module_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3FDN/protonation.log | stderr_preview=:-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_gaps_fragment_02_sanitized.pdb -o 3FDN_proteinH_gaps_fragment_02.pdb -p 3FDN_proteinH_gaps_fragment_02.top -i 3FDN_proteinH_gaps_fragment_02_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/grom
+...[truncated]...
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_variant_structure
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3FDN
+protein_dir   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN
+variant_label : best_complete
+input_pdb     : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_best_complete_sanitized.pdb
+output_pdb    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_best_complete.pdb
+input_source  : alphafold
+ph_compat     : 7.4
+ph_applied    : False
+ff            : amber99sb-ildn
+water_model   : tip3p
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protonation_method          : gmx pdb2gmx -ignh
+protonation_intent          : approximate previous AMBER-oriented behavior
+input_source                : alphafold
+input_pdb                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_best_complete_sanitized.pdb
+output_pdb                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_best_complete.pdb
+topology_output_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_best_complete.top
+position_restraints_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_proteinH_best_complete_posre.itp
+variant_label               : 'best_complete'
+ph_compatibility_value      : 7.4
+ph_applied_by_gromacs       : False
+ff                          : amber99sb-ildn
+water_model                 : tip3p
+chain_separation            : id_or_ter
+merge                       : no
+ignore_input_hydrogens      : True
+timeout_seconds             : 600
+input_atom_count            : 2204
+input_hetatm_count          : 0
+input_ter_count             : 1
+input_end_count             : 1
+input_has_any_atoms         : True
+protonation_stdout_log_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stdout_best_complete.log
+protonation_stderr_log_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stderr_best_complete.log
+command                     : gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_best_complete_sanitized.pdb -o 3FDN_proteinH_best_complete.pdb -p 3FDN_proteinH_best_complete.top -i 3FDN_proteinH_best_complete_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+cwd                         : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:subprocess_result
+────────────────────────────────────────────────────────────────────────────────────────────────────
+returncode                  : 0
+stdout_length               : 1722
+stderr_length               : 5372
+stdout_log_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stdout_best_complete.log
+stderr_log_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/3FDN_protonation_stderr_best_complete.log
+output_exists               : True
+output_nonempty             : True
+topology_exists             : True
+topology_nonempty           : True
+position_restraints_exists  : True
+position_restraints_nonempty: True
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:stdout
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff
+
+going to rename amber99sb-ildn.ff/aminoacids.r2b
+
+going to rename amber99sb-ildn.ff/dna.r2b
+
+going to rename amber99sb-ildn.ff/rna.r2b
+Reading /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_best_complete_sanitized.pdb...
+Read '', 2204 atoms
+
+Analyzing pdb file
+Splitting chemical chains based on TER records or chain id changing.
+
+There are 1 chains and 0 blocks of water and 269 residues with 2204 atoms
+
+  chain  #res #atoms
+
+  1 'A'   269   2204  
+
+All occupancies are one
+
+Reading residue database... (Amber99sb-ildn)
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Processing chain 1 'A' (2204 atoms, 269 residues)
+
+Identified residue ARG126 as a starting terminus.
+
+Identified residue GLN394 as a ending terminus.
+
+Checking for duplicate atoms....
+
+Generating any missing hydrogen atoms and/or adding termini.
+
+Now there are 269 residues with 4417 atoms
+
+Making bonds...
+
+Number of bonds was 4473, now 4472
+
+Generating angles, dihedrals and pairs...
+
+Making cmap torsions...
+
+There are 12209 dihedrals,  902 impropers, 8086 angles
+          11674 pairs,     4472 bonds and     0 virtual sites
+
+Total mass 31210.146 a.m.u.
+
+Total charge 5.000 e
+
+Writing topology
+
+Writing coordinate file...
+
+		--------- PLEASE NOTE ------------
+
+You have successfully generated a topology from: /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_best_complete_sanitized.pdb.
+
+The Amber99sb-ildn force field and the tip3p water model are used.
+
+		--------- ETON ESAELP ------------
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:stderr
+────────────────────────────────────────────────────────────────────────────────────────────────────
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3FDN/components/.tmp_sanitized_protonation/3FDN_best_complete_sanitized.pdb -o 3FDN_proteinH_best_complete.pdb -p 3FDN_proteinH_best_complete.top -i 3FDN_proteinH_best_complete_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 432 donors and 394 acceptors were found.
+There are 600 hydrogen bonds
+Will use HISE for residue 176
+Will use HISD for residue 187
+Will use HISE for residue 190
+Will use HISE for residue 201
+Will use HISE for residue 248
+Will use HISE for residue 254
+Will use HISE for residue 280
+Will use HISE for residue 306
+Will use HISE for residue 366
+Will use HISE for residue 380
+9 out of 9 lines of specbond.dat converted successfully
+Special Atom Distance matrix:
+                  HIS176  HIS187  HIS190  HIS201  CYS247  HIS248  HIS254
+                  NE2415  NE2512  NE2541  NE2640  SG1015 NE21025 NE21076
+  HIS187  NE2512   1.949
+  HIS190  NE2541   2.690   1.754
+  HIS201  NE2640   1.831   1.763   3.115
+  CYS247  SG1015   1.886   1.375   0.820   2.589
+  HIS248 NE21025   1.941   1.882   1.200   3.053   0.664
+  HIS254 NE21076   1.510   1.676   1.347   2.355   0.704   0.971
+  HIS280 NE21278   1.473   0.826   1.593   2.108   0.928   1.205   1.225
+  CYS290  SG1352   0.798   2.264   2.428   2.465   1.652   1.512   1.181
+  MET300  SD1429   1.446   2.472   2.189   3.049   1.505   1.108   1.194
+  MET305  SD1469   1.826   2.814   2.942   3.525   2.253   1.772   2.237
+  HIS306 NE21480   1.217   2.249   2.241   2.874   1.488   1.118   1.291
+  CYS319  SG1582   3.127   3.266   1.825   4.183   1.900   1.635   1.849
+  HIS366 NE21980   2.582   3.617   3.024   4.300   2.530   1.930   2.365
+  MET373  SD2035   2.953   2.671   1.705   4.102   1.644   1.148   2.102
+  HIS380 NE22098   3.604   3.569   2.065   4.750   2.240   1.834   2.420
+  CYS393  SG2195   3.271   2.468   1.013   3.994   1.479   1.391   2.050
+                  HIS280  CYS290  MET300  MET305  HIS306  CYS319  HIS366
+                 NE21278  SG1352  SD1429  SD1469 NE21480  SG1582 NE21980
+  CYS290  SG1352   1.615
+  MET300  SD1429   1.721   0.712
+  MET305  SD1469   2.010   1.532   1.300
+  HIS306 NE21480   1.460   0.681   0.449   0.988
+  CYS319  SG1582   2.753   2.448   1.908   2.918   2.259
+  HIS366 NE21980   2.815   1.869   1.271   1.483   1.478   2.080
+  MET373  SD2035   2.053   2.502   1.931   2.072   1.923   1.858   2.068
+  HIS380 NE22098   3.011   2.943   2.296   2.955   2.557   0.909   2.136
+  CYS393  SG2195   2.131   2.891   2.434   2.924   2.485   1.770   2.867
+                  MET373  HIS380
+                  SD2035 NE22098
+  HIS380 NE22098   1.446
+  CYS393  SG2195   1.060   1.519
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.arn
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.arn
+Before cleaning: 11758 pairs
+Before cleaning: 12209 dihedrals
+
+GROMACS reminds you: "We cannot wait for Nature's good graces - to take them from her is our goal" (Ivan Michurin)
+
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:final_status
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protonation_success         : True
+output_exists               : True
+output_nonempty             : True
+output_atom_count           : 4417
+atom_count_increased        : True
+topology_exists             : True
+topology_nonempty           : True
+position_restraints_exists  : True
+position_restraints_nonempty: True
+protonation_error_message   : <none>
+

@@ -154,3 +154,29 @@ accession=P00742 header=sp|P00742|FA10_HUMAN Coagulation factor X OS=Homo sapien
 [UNIPROT FASTA]
 entry_count: 1
 accessions: P00742
+================================================================================
+[2026-05-17 18:11:58] module=fasta_files pdb_id=1F0R
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/1F0R.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/fasta
+residue_range=16-50
+[CHAIN SELECTION]
+relevant_chain_ids=A,B
+[SEQRES FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/fasta/PDB-1F0R-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 2
+chains: A, B
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/1F0R/fasta/PDB-1F0R-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 1F0R
+query: xref:pdb-1F0R
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-1F0R&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=P00742 header=sp|P00742|FA10_HUMAN Coagulation factor X OS=Homo sapiens OX=9606 GN=F10 PE=1 SV=2
+[UNIPROT FASTA]
+entry_count: 1
+accessions: P00742

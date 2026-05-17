@@ -98,7 +98,7 @@ The Amber99sb-ildn force field and the tip3p water model are used.
 
 Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
 Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
-Working dir:  /tmp/fruton_parameter_audit_6vx19xll
+Working dir:  /tmp/fruton_parameter_audit_bkl5m63b
 Command line:
   gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/2WCG/components/.tmp_sanitized_variant_audit/2WCG_best_complete_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
 
@@ -262,4 +262,4 @@ Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs
 Before cleaning: 20564 pairs
 Before cleaning: 21550 dihedrals
 
-GROMACS reminds you: "This is Tense !" (Star Wars Episode I The Phantom Menace)
+GROMACS reminds you: "Ohne Arbeit waer das Leben oede" (Wir Sind Helden)

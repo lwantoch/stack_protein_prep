@@ -154,3 +154,29 @@ accession=P19971 header=sp|P19971|TYPH_HUMAN Thymidine phosphorylase OS=Homo sap
 [UNIPROT FASTA]
 entry_count: 1
 accessions: P19971
+================================================================================
+[2026-05-17 18:11:58] module=fasta_files pdb_id=1UOU
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/1UOU
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/1UOU/1UOU.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/1UOU/fasta
+residue_range=33-480
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/1UOU/fasta/PDB-1UOU-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/1UOU/fasta/PDB-1UOU-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 1UOU
+query: xref:pdb-1UOU
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-1UOU&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=P19971 header=sp|P19971|TYPH_HUMAN Thymidine phosphorylase OS=Homo sapiens OX=9606 GN=TYMP PE=1 SV=2
+[UNIPROT FASTA]
+entry_count: 1
+accessions: P19971

@@ -172,3 +172,32 @@ residue_jump       : 7
 cn_distance        : 13.171378857203981
 reason             : cn_distance_exceeds_cutoff(13.171 > 1.800)
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:32] split_protein_for_gap_protonation:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+input_pdb_path      : /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_protein_monomer.pdb
+output_dir          : /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_gaps_fragments
+pdb_id              : 2AFX
+variant_label       : gaps
+cn_distance_cutoff  : 1.8
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:32] split_protein_for_gap_protonation:summary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+n_input_residues : 323
+n_fragments      : 2
+n_boundaries     : 1
+manifest_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/.tmp_gaps_fragments/fragment_manifest.json
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:32] split_protein_for_gap_protonation:boundary
+────────────────────────────────────────────────────────────────────────────────────────────────────
+chain_id           : A
+left_residue       : LYS A 182
+right_residue      : PRO A 189
+left_resseq        : 182
+right_resseq       : 189
+residue_jump       : 7
+cn_distance        : 13.171378857203981
+reason             : cn_distance_exceeds_cutoff(13.171 > 1.800)
+

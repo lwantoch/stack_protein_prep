@@ -1,0 +1,5 @@
+metal_element	metal_chain	metal_resseq	donor_element	donor_residue_name	donor_chain	donor_resseq	donor_atom_name	distance_angstrom
+ZN	A	400	S	CYS	A	156	SG	2.266
+ZN	A	400	S	CYS	A	185	SG	2.316
+ZN	A	400	S	CYS	A	188	SG	2.322
+ZN	A	400	S	CYS	A	153	SG	2.350

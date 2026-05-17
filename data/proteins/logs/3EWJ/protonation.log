@@ -982,3 +982,167 @@ Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs
 
 ...[truncated]...
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_variant_structure
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3EWJ
+protein_dir   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ
+variant_label : single
+input_pdb     : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/.tmp_sanitized_protonation/3EWJ_single_sanitized.pdb
+output_pdb    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_proteinH_single.pdb
+input_source  : protein
+ph_compat     : 7.4
+ph_applied    : False
+ff            : amber99sb-ildn
+water_model   : tip3p
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:start
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protonation_method          : gmx pdb2gmx -ignh
+protonation_intent          : approximate previous AMBER-oriented behavior
+input_source                : protein
+input_pdb                   : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/.tmp_sanitized_protonation/3EWJ_single_sanitized.pdb
+output_pdb                  : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_proteinH_single.pdb
+topology_output_path        : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_proteinH_single.top
+position_restraints_path    : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_proteinH_single_posre.itp
+variant_label               : 'single'
+ph_compatibility_value      : 7.4
+ph_applied_by_gromacs       : False
+ff                          : amber99sb-ildn
+water_model                 : tip3p
+chain_separation            : id_or_ter
+merge                       : no
+ignore_input_hydrogens      : True
+timeout_seconds             : 600
+input_atom_count            : 1999
+input_hetatm_count          : 0
+input_ter_count             : 1
+input_end_count             : 1
+input_has_any_atoms         : True
+protonation_stdout_log_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_protonation_stdout_single.log
+protonation_stderr_log_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_protonation_stderr_single.log
+command                     : gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/.tmp_sanitized_protonation/3EWJ_single_sanitized.pdb -o 3EWJ_proteinH_single.pdb -p 3EWJ_proteinH_single.top -i 3EWJ_proteinH_single_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+cwd                         : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:subprocess_result
+────────────────────────────────────────────────────────────────────────────────────────────────────
+returncode                  : 1
+stdout_length               : 809
+stderr_length               : 2980
+stdout_log_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_protonation_stdout_single.log
+stderr_log_path             : /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_protonation_stderr_single.log
+output_exists               : False
+output_nonempty             : False
+topology_exists             : True
+topology_nonempty           : False
+position_restraints_exists  : False
+position_restraints_nonempty: False
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:stdout
+────────────────────────────────────────────────────────────────────────────────────────────────────
+Using the Amber99sb-ildn force field in directory amber99sb-ildn.ff
+
+going to rename amber99sb-ildn.ff/aminoacids.r2b
+
+going to rename amber99sb-ildn.ff/dna.r2b
+
+going to rename amber99sb-ildn.ff/rna.r2b
+Reading /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/.tmp_sanitized_protonation/3EWJ_single_sanitized.pdb...
+Read '', 1999 atoms
+
+Analyzing pdb file
+Splitting chemical chains based on TER records or chain id changing.
+
+There are 1 chains and 0 blocks of water and 255 residues with 1999 atoms
+
+  chain  #res #atoms
+
+  1 'B'   255   1999  
+
+All occupancies are one
+
+Reading residue database... (Amber99sb-ildn)
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Preserving residues names by default
+
+Processing chain 1 'B' (1999 atoms, 255 residues)
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:stderr
+────────────────────────────────────────────────────────────────────────────────────────────────────
+               :-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/.tmp_sanitized_protonation/3EWJ_single_sanitized.pdb -o 3EWJ_proteinH_single.pdb -p 3EWJ_proteinH_single.top -i 3EWJ_proteinH_single_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.rtp
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.hdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.n.tdb
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.c.tdb
+Analysing hydrogen-bonding network for automated assignment of histidine
+ protonation. 379 donors and 392 acceptors were found.
+There are 571 hydrogen bonds
+Will use HISD for residue 233
+Will use HISE for residue 297
+Will use HISE for residue 336
+
+-------------------------------------------------------
+Program:     gmx pdb2gmx, version 2026.0-conda_forge
+Source file: src/gromacs/gmxpreprocess/hizzie.cpp (line 311)
+
+Fatal error:
+Incomplete ring in HIS361
+
+For more information and tips for troubleshooting, please check the GROMACS
+website at https://manual.gromacs.org/current/user-guide/run-time-errors.html
+-------------------------------------------------------
+
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:12:34] protonate_selected_structure:final_status
+────────────────────────────────────────────────────────────────────────────────────────────────────
+protonation_success         : False
+output_exists               : False
+output_nonempty             : False
+output_atom_count           : 0
+atom_count_increased        : False
+topology_exists             : True
+topology_nonempty           : False
+position_restraints_exists  : False
+position_restraints_nonempty: False
+protonation_error_message   : gmx pdb2gmx failed for input /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/.tmp_sanitized_protonation/3EWJ_single_sanitized.pdb | returncode=1 | output_exists=False | output_nonempty=False | topology_exists=True | topology_nonempty=False | position_restraints_exists=False | position_restraints_nonempty=False | input_atom_count=1999 | input_hetatm_count=0 | input_TER_count=1 | stdout_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_protonation_stdout_single.log | stderr_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/3EWJ_protonation_stderr_single.log | module_log=/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3EWJ/protonation.log | stderr_preview=:-) GROMACS - gmx pdb2gmx, 2026.0-conda_forge (-:
+
+Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
+Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
+Working dir:  /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components
+Command line:
+  gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/.tmp_sanitized_protonation/3EWJ_single_sanitized.pdb -o 3EWJ_proteinH_single.pdb -p 3EWJ_proteinH_single.top -i 3EWJ_proteinH_single_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
+
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/aminoacids.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/dna.r2b
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/rna.r2b
+All occupancies are one
+Opening force field file /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/share/gromacs/top/amber99sb-ildn.ff/atomtypes.atp
+
+...[truncated]...
+

@@ -154,3 +154,29 @@ accession=P09874 header=sp|P09874|PARP1_HUMAN Poly [ADP-ribose] polymerase 1 OS=
 [UNIPROT FASTA]
 entry_count: 1
 accessions: P09874
+================================================================================
+[2026-05-17 18:12:01] module=fasta_files pdb_id=3L3M
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/3L3M.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/fasta
+residue_range=2-349
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/fasta/PDB-3L3M-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/3L3M/fasta/PDB-3L3M-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 3L3M
+query: xref:pdb-3L3M
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-3L3M&format=fasta
+[UNIPROT RESULT] entry_count=1
+accession=P09874 header=sp|P09874|PARP1_HUMAN Poly [ADP-ribose] polymerase 1 OS=Homo sapiens OX=9606 GN=PARP1 PE=1 SV=4
+[UNIPROT FASTA]
+entry_count: 1
+accessions: P09874

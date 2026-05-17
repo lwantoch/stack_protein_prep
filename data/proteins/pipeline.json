@@ -373,9 +373,9 @@
         "metals.model_ready": "no",
         "metals.check_log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/1W4R/metalls_check_single.log",
         "metals.check_manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/components/metals_check/single/1W4R_single_metal_check.json",
-        "metall_params.status": "skipped",
-        "metall_params.site_count": "0",
-        "metall_params.manifest_path": ""
+        "metall_params.status": "success",
+        "metall_params.site_count": "1",
+        "metall_params.manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/metall_params/manifest.json"
     },
     {
         "pdb_id": "2AFX",
@@ -436,9 +436,9 @@
         "metals.model_ready": "no",
         "metals.check_log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/2AFX/metalls_check_gaps.log",
         "metals.check_manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/metals_check/gaps/2AFX_gaps_metal_check.json",
-        "metall_params.status": "skipped",
-        "metall_params.site_count": "0",
-        "metall_params.manifest_path": ""
+        "metall_params.status": "success",
+        "metall_params.site_count": "1",
+        "metall_params.manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/metall_params/manifest.json"
     },
     {
         "pdb_id": "2P1T",
@@ -751,9 +751,9 @@
         "metals.model_ready": "no",
         "metals.check_log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3EWJ/metalls_check_input_inventory.log",
         "metals.check_manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/components/metals_check/input_inventory/3EWJ_input_inventory_metal_check.json",
-        "metall_params.status": "skipped",
-        "metall_params.site_count": "0",
-        "metall_params.manifest_path": ""
+        "metall_params.status": "success",
+        "metall_params.site_count": "1",
+        "metall_params.manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3EWJ/metall_params/manifest.json"
     },
     {
         "pdb_id": "3FDN",
@@ -877,9 +877,9 @@
         "metals.model_ready": "no",
         "metals.check_log_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/logs/3FRG/metalls_check_single.log",
         "metals.check_manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3FRG/components/metals_check/single/3FRG_single_metal_check.json",
-        "metall_params.status": "skipped",
-        "metall_params.site_count": "0",
-        "metall_params.manifest_path": ""
+        "metall_params.status": "success",
+        "metall_params.site_count": "1",
+        "metall_params.manifest_path": "/home/grheco/repositorios/stack_protein_prep/data/proteins/3FRG/metall_params/manifest.json"
     },
     {
         "pdb_id": "3K5E",

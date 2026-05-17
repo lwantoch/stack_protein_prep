@@ -274,3 +274,49 @@ image_width: 1748
 image_height: 3158
 [OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
 [RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 18:12:09] module=alignment_visualization pdb_id=3OLL
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 18:12:09
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python
+[RENDER METRICS]
+record_a_header: PDB|3OLL|SEQRES|chain_A
+record_b_header: sp|Q15788|NCOA1_HUMAN Nuclear receptor coactivator 1 OS=Homo sapiens OX=9606 GN=NCOA1 PE=1 SV=3
+alignment_length: 1459
+n_blocks: 25
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 3158
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/SEQRES_chain_A_vs_UniProt.aln.png
+================================================================================
+[2026-05-17 18:12:09] module=alignment_visualization pdb_id=3OLL
+================================================================================
+alignment_fasta_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.fasta
+output_png_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+residues_per_line=60
+font_size=18
+header_font_size=20
+label_width=24
+timestamp=2026-05-17 18:12:09
+cwd=/home/grheco/repositorios/stack_protein_prep
+python_executable=/home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin/python
+[RENDER METRICS]
+record_a_header: PDB|3OLL|ATOM|chain_A
+record_b_header: sp|Q15788|NCOA1_HUMAN Nuclear receptor coactivator 1 OS=Homo sapiens OX=9606 GN=NCOA1 PE=1 SV=3
+alignment_length: 1457
+n_blocks: 25
+cell_width: 23
+cell_height: 21
+image_width: 1748
+image_height: 3158
+[OUTPUT PNG] /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png
+[RESULT] rendered alignment PNG -> /home/grheco/repositorios/stack_protein_prep/data/proteins/3OLL/fasta/alignments/ATOM_chain_A_vs_UniProt.aln.png

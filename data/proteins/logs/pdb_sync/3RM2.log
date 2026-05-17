@@ -100,3 +100,10 @@ pdb_id        : 3RM2
 residue_range : '16-246'
 pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3RM2
+residue_range : '16-246'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3RM2/3RM2.pdb
+

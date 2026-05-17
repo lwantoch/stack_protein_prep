@@ -1,0 +1,6 @@
+metal_element	metal_chain	metal_resseq	donor_element	donor_residue_name	donor_chain	donor_resseq	donor_atom_name	distance_angstrom
+ZN	A	504	O	ASP	A	275	OD2	2.111
+ZN	A	504	N	HIS	A	238	NE2	2.139
+ZN	A	504	N	HIS	A	274	NE2	2.186
+ZN	A	504	O	ASP	A	392	OD1	2.254
+ZN	A	504	O	ASP	A	392	OD2	3.339

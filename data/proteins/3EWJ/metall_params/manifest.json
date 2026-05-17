@@ -1,0 +1,21 @@
+{
+  "pdb_id": "3EWJ",
+  "status": "success",
+  "transition_metal_site_count": 1,
+  "sites": [
+    {
+      "site_index": 1,
+      "site_folder": "site_001_ZN_B_2",
+      "element": "ZN",
+      "chain_id": "B",
+      "residue_number": 2,
+      "coordination_number": 5,
+      "found_geometry": "square_pyramidal",
+      "geometry_ok": false,
+      "hydrogen_cleanup_status": "success",
+      "removed_h_count": 0,
+      "mcpb_scaffold_generated": false,
+      "mcpb_folder": "site_001_ZN_B_2/03_mcpb"
+    }
+  ]
+}

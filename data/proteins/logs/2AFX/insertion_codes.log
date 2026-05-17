@@ -156,3 +156,31 @@
 2026-05-17 17:44:57 | INFO    | Success: True
 2026-05-17 17:44:57 | INFO    | Message: copied original pdb (no insertion codes)
 2026-05-17 17:44:57 | INFO    | Finished insertion code processing
+2026-05-17 18:12:10 | INFO    | Searching preferred input PDB for protein_dir=/home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX
+2026-05-17 18:12:10 | INFO    | Candidate count: 11
+2026-05-17 18:12:10 | INFO    | Candidate 1: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 2: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX_delins.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 3: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_artifact.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 4: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_ligand.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 5: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_metals.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 6: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_protein.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 7: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_proteinH_gaps_fragment_01.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 8: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_proteinH_gaps_fragment_02.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 9: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_protein_monomer.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 10: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_representative_unit.pdb
+2026-05-17 18:12:10 | INFO    | Candidate 11: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/components/2AFX_water.pdb
+2026-05-17 18:12:10 | INFO    | Chosen input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+2026-05-17 18:12:10 | INFO    | ============================================================
+2026-05-17 18:12:10 | INFO    | Starting insertion code processing
+2026-05-17 18:12:10 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+2026-05-17 18:12:10 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX_delins.pdb
+2026-05-17 18:12:10 | INFO    | Insertion codes detected: False
+2026-05-17 18:12:10 | INFO    | No insertion codes detected; copying input PDB unchanged
+2026-05-17 18:12:10 | INFO    | Input PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX.pdb
+2026-05-17 18:12:10 | INFO    | Output PDB: /home/grheco/repositorios/stack_protein_prep/data/proteins/2AFX/2AFX_delins.pdb
+2026-05-17 18:12:10 | INFO    | copied original pdb (no insertion codes)
+2026-05-17 18:12:10 | INFO    | Final status: none
+2026-05-17 18:12:10 | INFO    | Color: green
+2026-05-17 18:12:10 | INFO    | Success: True
+2026-05-17 18:12:10 | INFO    | Message: copied original pdb (no insertion codes)
+2026-05-17 18:12:10 | INFO    | Finished insertion code processing

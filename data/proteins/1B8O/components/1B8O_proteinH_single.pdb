@@ -1,4 +1,4 @@
-TITLE     GROningen MAchine for Chemical Simulation
+TITLE     Getting the Right Output Means no Artefacts in Calculating Stuff
 MODEL        1
 ATOM      1  N   ASN A   3       9.905  67.671  67.680  1.00  0.00           N
 ATOM      2  H1  ASN A   3      10.682  67.528  68.293  1.00  0.00            

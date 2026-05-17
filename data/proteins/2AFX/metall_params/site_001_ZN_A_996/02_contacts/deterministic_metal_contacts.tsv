@@ -1,0 +1,8 @@
+metal_element	metal_chain	metal_resseq	donor_element	donor_residue_name	donor_chain	donor_resseq	donor_atom_name	distance_angstrom
+ZN	A	996	N	1BN	A	1501	N2	2.007
+ZN	A	996	N	1BN	A	1501	N2	2.007
+ZN	A	996	O	GLU	B	202	OE2	2.013
+ZN	A	996	O	ASP	A	159	OD2	2.015
+ZN	A	996	N	HIS	B	330	NE2	2.087
+ZN	A	996	O	ASP	A	159	OD1	2.821
+ZN	A	996	O	GLU	B	202	OE1	2.822

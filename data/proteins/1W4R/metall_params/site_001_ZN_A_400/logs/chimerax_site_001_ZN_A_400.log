@@ -1,0 +1,27 @@
+Traceback (most recent call last):
+  File "/home/grheco/Chimera/share/chimeraInit.py", line 760, in init
+    chimera.openModels.open(a, prefixableType=1)
+  File "/home/grheco/Chimera/share/chimera/__init__.py", line 1921, in open
+    raise ValueError, "Unknown model type"
+ValueError: Unknown model type
+
+> 
+You have used an unregistered copy of Chimera for 17 days.
+You can either register now by visiting:
+   http://www.cgl.ucsf.edu/cgi-bin/chimera_registration.py
+or by choosing 'Registration...' from the 'Help' menu next
+time you start Chimera with the gui enabled.
+
+Registration is free.  By providing the information requested
+you will be helping us document the impact this software is
+having in the scientific community. The information you supply
+will only be used for reporting summary statistics to NIH.
+Error while processing /home/grheco/repositorios/stack_protein_prep/data/proteins/1W4R/metall_params/site_001_ZN_A_400/02_contacts/chimera_contacts.cxc:
+ValueError: Unknown model type
+
+  File "/home/grheco/Chimera/share/chimera/__init__.py", line 1921, in open
+    raise ValueError, "Unknown model type"
+
+See reply log for Python traceback.
+
+

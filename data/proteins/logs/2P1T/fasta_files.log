@@ -160,3 +160,30 @@ accession=P19793 header=sp|P19793|RXRA_HUMAN Retinoic acid receptor RXR-alpha OS
 [UNIPROT FASTA]
 entry_count: 2
 accessions: Q15596, P19793
+================================================================================
+[2026-05-17 18:11:59] module=fasta_files pdb_id=2P1T
+================================================================================
+pdb_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T
+pdb_file_path=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/2P1T.pdb
+fasta_directory=/home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta
+residue_range=229-458
+[CHAIN SELECTION]
+relevant_chain_ids=A
+[SEQRES FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/PDB-2P1T-SEQRES.fasta
+[ATOM FASTA]
+chain_count: 1
+chains: A
+output_path: /home/grheco/repositorios/stack_protein_prep/data/proteins/2P1T/fasta/PDB-2P1T-ATOM.fasta
+[UNIPROT QUERY]
+pdb_id: 2P1T
+query: xref:pdb-2P1T
+request_url: https://rest.uniprot.org/uniprotkb/search?query=xref%3Apdb-2P1T&format=fasta
+[UNIPROT RESULT] entry_count=2
+accession=Q15596 header=sp|Q15596|NCOA2_HUMAN Nuclear receptor coactivator 2 OS=Homo sapiens OX=9606 GN=NCOA2 PE=1 SV=2
+accession=P19793 header=sp|P19793|RXRA_HUMAN Retinoic acid receptor RXR-alpha OS=Homo sapiens OX=9606 GN=RXRA PE=1 SV=1
+[UNIPROT FASTA]
+entry_count: 2
+accessions: Q15596, P19793

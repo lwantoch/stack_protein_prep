@@ -102,7 +102,7 @@ The Amber99sb-ildn force field and the tip3p water model are used.
 
 Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
 Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
-Working dir:  /tmp/fruton_parameter_audit_v2yoo6c_
+Working dir:  /tmp/fruton_parameter_audit_8pzpsurl
 Command line:
   gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/3R04/components/.tmp_sanitized_variant_audit/3R04_single_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
 
@@ -184,4 +184,4 @@ Long Bond (1410-1412 = 0.277146 nm)
 Before cleaning: 11589 pairs
 Before cleaning: 12172 dihedrals
 
-GROMACS reminds you: "Performance and power are great targets for tuning, but really you want to tune for money!" (Erik Lindahl)
+GROMACS reminds you: "If There Is No Guitar In The House, You Know It's Owner Can Not Be Trusted" (Gogol Bordello)

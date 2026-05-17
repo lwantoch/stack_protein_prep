@@ -104,7 +104,7 @@ The Amber99sb-ildn force field and the tip3p water model are used.
 
 Executable:   /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default/bin.AVX2_256/gmx
 Data prefix:  /home/grheco/repositorios/stack_protein_prep/.pixi/envs/default
-Working dir:  /tmp/fruton_parameter_audit_3u_d8fbt
+Working dir:  /tmp/fruton_parameter_audit_k6cg6_gx
 Command line:
   gmx pdb2gmx -f /home/grheco/repositorios/stack_protein_prep/data/proteins/1I00/components/.tmp_sanitized_variant_audit/1I00_single_prepared_sanitized.pdb -o probe_output.pdb -p probe_topol.top -i probe_posre.itp -ff amber99sb-ildn -water tip3p -chainsep id_or_ter -merge no -ignh
 
@@ -185,4 +185,4 @@ Long Bond (1333-1335 = 0.269303 nm)
 Before cleaning: 11864 pairs
 Before cleaning: 12464 dihedrals
 
-GROMACS reminds you: "Everything is theoretically impossible, until it is done." (Robert Heinlein)
+GROMACS reminds you: "FORTRAN. Input: reason, output: pleasure" (ORDA, FORTRAN board game)

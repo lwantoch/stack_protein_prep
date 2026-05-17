@@ -1,0 +1,14 @@
+site              : site_001_ZN_A_996
+pdb_id            : 2AFX
+element           : ZN
+chain             : A
+residue_number    : 996
+coordination      : 7
+found_geometry    : pentagonal_bipyramidal_or_capped_octahedral
+geometry_ok       : False
+mcpb_scaffold     : False
+h_removed         : 1
+h_kept            : 0
+h_manual_review   : 0
+cleanup_status    : success
+cleanup_message   : Removed 1 hydrogen(s) from 1 transition-metal site(s).

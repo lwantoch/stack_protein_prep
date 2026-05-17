@@ -1,0 +1,14 @@
+site              : site_001_ZN_A_400
+pdb_id            : 1W4R
+element           : ZN
+chain             : A
+residue_number    : 400
+coordination      : 4
+found_geometry    : tetrahedral
+geometry_ok       : True
+mcpb_scaffold     : True
+h_removed         : 4
+h_kept            : 0
+h_manual_review   : 0
+cleanup_status    : success
+cleanup_message   : Removed 4 hydrogen(s) from 1 transition-metal site(s).

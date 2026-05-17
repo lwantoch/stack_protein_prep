@@ -100,3 +100,10 @@ pdb_id        : 3FRG
 residue_range : '153-505'
 pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FRG/3FRG.pdb
 
+════════════════════════════════════════════════════════════════════════════════════════════════════
+[2026-05-17 18:11:57] download_missing_pdb_files:skip_existing
+────────────────────────────────────────────────────────────────────────────────────────────────────
+pdb_id        : 3FRG
+residue_range : '153-505'
+pdb_file_path : /home/grheco/repositorios/stack_protein_prep/data/proteins/3FRG/3FRG.pdb
+

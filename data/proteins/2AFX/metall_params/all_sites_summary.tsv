@@ -1,0 +1,2 @@
+site_index	element	chain_id	residue_number	coordination_number	found_geometry	geometry_ok	h_removed	h_kept	h_manual_review	mcpb_scaffold_generated	mcpb_folder	status
+1	ZN	A	996	7	pentagonal_bipyramidal_or_capped_octahedral	False	1	0	0	False	site_001_ZN_A_996/03_mcpb	success
