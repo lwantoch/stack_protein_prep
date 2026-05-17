@@ -472,30 +472,141 @@ water_model = tip3p
     output_path.write_text(content, encoding="utf-8")
 
 
-def _write_commands_sh(output_path: Path, pdb_id: str) -> None:
-    """Write the MCPB.py step-by-step commands shell script."""
+def _write_commands_sh(output_path: Path, pdb_id: str, group_name: str, mol2_filename: str) -> None:
+    """Write the step-1 script: creates step01_gen_inputs/, runs MCPB.py -s 1,
+    then stages .com files into step02_gaussian/."""
     content = f"""\
 #!/usr/bin/env bash
+# =============================================================================
+# MCPB.py — Step 1  |  {pdb_id}  |  site {group_name}
+# =============================================================================
+# Creates step01_gen_inputs/, copies input files, runs MCPB.py -s 1.
+# Stages the three Gaussian .com files into step02_gaussian/.
+#
+# After this script:
+#   1. Review .com files in step02_gaussian/.
+#   2. Submit Gaussian jobs:  bash submit_gaussian.sh
+#   3. Once all Gaussian jobs complete:  bash run_after_gaussian.sh
+# =============================================================================
 set -euo pipefail
 
-# Step 1: Generate Gaussian input files and model PDBs.
+# -- Create step01 directory and copy all required inputs --------------------
+mkdir -p step01_gen_inputs
+cp {pdb_id}.in {pdb_id}_mcpb.pdb {mol2_filename} step01_gen_inputs/
+
+# -- Run MCPB.py step 1 (generates Gaussian input files and model PDBs) ------
+cd step01_gen_inputs
 MCPB.py -i {pdb_id}.in -s 1
+cd ..
 
-# --- Run Gaussian jobs after reviewing the generated .com files ---
-# g16 < {pdb_id}_small_opt.com  > {pdb_id}_small_opt.log
-# g16 < {pdb_id}_small_fc.com   > {pdb_id}_small_fc.log
-# formchk {pdb_id}_small_opt.chk {pdb_id}_small_opt.fchk
-# g16 < {pdb_id}_large_mk.com   > {pdb_id}_large_mk.log
+# -- Stage Gaussian input files into step02_gaussian/ ------------------------
+mkdir -p step02_gaussian
+cp step01_gen_inputs/{group_name}_small_opt.com step02_gaussian/
+cp step01_gen_inputs/{group_name}_small_fc.com  step02_gaussian/
+cp step01_gen_inputs/{group_name}_large_mk.com  step02_gaussian/
 
-# Step 2: Fit force constants from Gaussian Hessian (Seminario method).
-# MCPB.py -i {pdb_id}.in -s 2
+echo ""
+echo "Step 1 done.  Gaussian inputs staged in step02_gaussian/:"
+echo "  {group_name}_small_opt.com   geometry optimisation (small model)"
+echo "  {group_name}_small_fc.com    force constants / Hessian (small model)"
+echo "  {group_name}_large_mk.com    RESP charges (large model)"
+echo ""
+echo "Review each .com file, then run:  bash submit_gaussian.sh"
+"""
+    output_path.write_text(content, encoding="utf-8")
+    output_path.chmod(0o755)
+
+
+def _write_submit_gaussian_sh(output_path: Path, group_name: str) -> None:
+    """Write a SLURM submission template; changes into step02_gaussian/ before submitting."""
+    content = f"""\
+#!/usr/bin/env bash
+# =============================================================================
+# Gaussian HPC submission — {group_name}
+# =============================================================================
+# Submits three independent Gaussian jobs from step02_gaussian/.
+# Run ONLY after bash commands.sh has completed successfully.
+# Edit --ntasks, --mem, --time to match your cluster.
+# After all jobs complete:  bash run_after_gaussian.sh
+# =============================================================================
+set -euo pipefail
+cd step02_gaussian
+GRP="{group_name}"
+
+# --- 1. Geometry optimisation (small model) ---------------------------------
+sbatch --job-name="${{GRP}}_opt" --ntasks=8 --mem=16G --time=04:00:00 \\
+    --wrap="g16 < ${{GRP}}_small_opt.com > ${{GRP}}_small_opt.log \\
+         && formchk ${{GRP}}_small_opt.chk ${{GRP}}_small_opt.fchk"
+
+# --- 2. Force-constant calculation (small model) ----------------------------
+sbatch --job-name="${{GRP}}_fc" --ntasks=8 --mem=16G --time=04:00:00 \\
+    --wrap="g16 < ${{GRP}}_small_fc.com > ${{GRP}}_small_fc.log"
+
+# --- 3. RESP charges (large model) ------------------------------------------
+sbatch --job-name="${{GRP}}_mk" --ntasks=8 --mem=32G --time=08:00:00 \\
+    --wrap="g16 < ${{GRP}}_large_mk.com > ${{GRP}}_large_mk.log"
+
+echo "Submitted 3 Gaussian jobs.  Monitor with:  squeue -u \\$USER"
+echo "After all complete (from 03_mcpb/):  bash run_after_gaussian.sh"
+"""
+    output_path.write_text(content, encoding="utf-8")
+    output_path.chmod(0o755)
+
+
+def _write_run_after_gaussian_sh(output_path: Path, pdb_id: str, group_name: str) -> None:
+    """Write steps 2-4 script: creates step03_amber_params/, merges step01 +
+    step02 outputs, runs MCPB.py -s 2,3,4 and tleap."""
+    content = f"""\
+#!/usr/bin/env bash
+# =============================================================================
+# MCPB.py — Steps 2-4  |  {pdb_id}  |  site {group_name}
+# =============================================================================
+# Creates step03_amber_params/, assembles all required inputs, then runs
+# MCPB.py -s 2, -s 3, -s 4, and tleap.
+#
+# Run ONLY after all three Gaussian jobs in step02_gaussian/ have completed.
+#
+# Required files in step02_gaussian/ after Gaussian:
+#   {group_name}_small_opt.fchk   (from: formchk _small_opt.chk)
+#   {group_name}_small_fc.log
+#   {group_name}_large_mk.log
+#
+# Final outputs in step03_amber_params/:
+#   {group_name}.frcmod            AMBER bond/angle force constants
+#   {group_name}_addmed.mol2       AMBER partial charges (RESP)
+#   {group_name}_tleap.in / {group_name}_tleap.out
+# =============================================================================
+set -euo pipefail
+
+# -- Create step03 directory and assemble all required inputs ----------------
+mkdir -p step03_amber_params
+
+# All step01 outputs (model PDBs, .in, mol2, MCPB intermediate files)
+cp step01_gen_inputs/* step03_amber_params/
+
+# Gaussian outputs from step02
+cp step02_gaussian/{group_name}_small_opt.fchk step03_amber_params/
+cp step02_gaussian/{group_name}_small_fc.log   step03_amber_params/
+cp step02_gaussian/{group_name}_large_mk.log   step03_amber_params/
+
+# -- Run MCPB.py steps 2-4 and tleap ----------------------------------------
+cd step03_amber_params
+
+# Step 2: Derive bond/angle force constants (Seminario method).
+MCPB.py -i {pdb_id}.in -s 2
 
 # Step 3: Fit RESP charges.
-# MCPB.py -i {pdb_id}.in -s 3
+MCPB.py -i {pdb_id}.in -s 3
 
-# Step 4: Generate LEaP input.
-# MCPB.py -i {pdb_id}.in -s 4
-# tleap -s -f {pdb_id}_tleap.in > {pdb_id}_tleap.out
+# Step 4: Generate LEaP topology input.
+MCPB.py -i {pdb_id}.in -s 4
+tleap -s -f {group_name}_tleap.in > {group_name}_tleap.out
+
+echo ""
+echo "Parametrization complete.  Key outputs in step03_amber_params/:"
+echo "  {group_name}.frcmod"
+echo "  {group_name}_addmed.mol2"
+echo "  {group_name}_tleap.in / {group_name}_tleap.out"
 """
     output_path.write_text(content, encoding="utf-8")
     output_path.chmod(0o755)
@@ -546,50 +657,78 @@ def _find_metal_serial_in_pdb(pdb_path: Path, element: str) -> int | None:
     return None
 
 
-def _write_mcpb_readme(output_path: Path, pdb_id: str) -> None:
-    """Write a short README.md explaining MCPB workflow and review requirements."""
+def _write_mcpb_readme(output_path: Path, pdb_id: str, group_name: str) -> None:
+    """Write a README.md explaining the full MCPB multi-step workflow."""
     content = f"""\
-# MCPB Parametrization — {pdb_id}
+# MCPB Parametrization — {pdb_id}  |  site {group_name}
 
-## What MCPB.py does
+## Overview
 
-MCPB.py (Metal Center Parameter Builder) automates the bonded-model
-parametrization of transition-metal centers for AMBER force fields. It:
-
-1. Builds a "small model" (metal + first-shell donors) and a "large model"
-   (small model + second-shell) from the input PDB.
-2. Generates Gaussian input files for geometry optimization (small model),
-   force-constant calculation (Hessian, small model), and RESP charge fitting
-   (large model).
-3. Uses the Seminario method to derive bond/angle force constants from the
-   Gaussian Hessian.
-4. Produces AMBER ``frcmod`` and ``mol2`` files for LEaP.
+MCPB.py (Metal Center Parameter Builder) derives bonded-model AMBER parameters
+for transition-metal centers using quantum-chemical calculations.
 
 Reference: doi:10.1021/acs.jcim.5b00674
 
-## Before running
+## Directory layout
 
-Review and complete **all** ``TODO`` placeholders in ``{pdb_id}.in``:
+```
+03_mcpb/                         ← run all scripts from here
+├── {pdb_id}.in
+├── {pdb_id}_mcpb.pdb
+├── *.mol2
+├── commands.sh           Step 1
+├── submit_gaussian.sh    Gaussian HPC submission
+├── run_after_gaussian.sh Steps 2-4
+│
+├── step01_gen_inputs/    created by commands.sh
+│   ├── {group_name}_small_opt.com
+│   ├── {group_name}_small_fc.com
+│   ├── {group_name}_large_mk.com
+│   └── {group_name}_small.pdb / _large.pdb  (model PDBs)
+│
+├── step02_gaussian/      .com files staged here; Gaussian logs written here
+│   ├── {group_name}_small_opt.log / .fchk
+│   ├── {group_name}_small_fc.log
+│   └── {group_name}_large_mk.log
+│
+└── step03_amber_params/  created by run_after_gaussian.sh; final outputs here
+    ├── {group_name}.frcmod
+    ├── {group_name}_addmed.mol2
+    └── {group_name}_tleap.in / _tleap.out
+```
 
-- ``ion_ids``         — PDB serial number of the metal atom in ``{pdb_id}_mcpb.pdb``
-- ``ion_mol2files``   — mol2 file(s) for the metal ion and non-standard ligands
-- ``charge_m_sm``     — total charge and spin multiplicity for the small model
-- ``charge_m_lm``     — total charge and spin multiplicity for the large model
-- ``software_version``— Gaussian version available on your system (g09 or g16)
-- ``cut_off``         — verify the coordination-shell cutoff is appropriate
+## Workflow (3 scripts, 4 MCPB.py invocations)
+
+```
+bash commands.sh
+  → mkdir step01_gen_inputs/, run MCPB.py -s 1
+  → mkdir step02_gaussian/, copy .com files
+
+bash submit_gaussian.sh
+  → sbatch all three Gaussian jobs from step02_gaussian/
+
+bash run_after_gaussian.sh
+  → mkdir step03_amber_params/, merge step01 + step02 outputs
+  → MCPB.py -s 2, -s 3, -s 4, tleap
+```
+
+## Before running Step 1
+
+Review ``{pdb_id}.in``.  Fields auto-filled by FRUTON are marked in comments.
+Fields that require manual chemistry input carry ``TODO`` placeholders:
+
+- ``software_version`` — Gaussian version on your cluster (g09 or g16)
+- ``charge_m_sm / charge_m_lm`` — total charge + spin multiplicity of the QM
+  region; spin is unambiguous only for closed-shell d10 ions (Zn²⁺, Cu⁺)
 
 ## Gaussian
 
-Gaussian is an external quantum-chemistry program and must be licensed and
-installed separately. FRUTON does not run Gaussian automatically. After
-completing step 1 (``MCPB.py -i {pdb_id}.in -s 1``), review the generated
-``.com`` files before submitting them to Gaussian.
+Gaussian is a licensed external program; FRUTON does not run it automatically.
+``submit_gaussian.sh`` provides a SLURM template — adjust ``--ntasks``,
+``--mem``, and ``--time`` to match your cluster's policies.
 
-## Running
-
-```bash
-bash commands.sh
-```
+All three Gaussian jobs are independent and can be submitted simultaneously.
+Steps 2-4 require all three to finish before starting.
 """
     output_path.write_text(content, encoding="utf-8")
 
@@ -797,6 +936,7 @@ def _process_one_site(
         else:
             mol2_filename = "TODO.mol2"
 
+        group_name = f"{pdb_id}_{element}_{chain}_{resseq}"
         mcpb_in = mcpb_dir / f"{pdb_id}.in"
         _write_mcpb_in(
             output_path=mcpb_in,
@@ -810,8 +950,10 @@ def _process_one_site(
             formal_charge=formal_charge,
             spin_guess=spin_guess,
         )
-        _write_commands_sh(mcpb_dir / "commands.sh", pdb_id)
-        _write_mcpb_readme(mcpb_dir / "README.md", pdb_id)
+        _write_commands_sh(mcpb_dir / "commands.sh", pdb_id, group_name, mol2_filename)
+        _write_submit_gaussian_sh(mcpb_dir / "submit_gaussian.sh", group_name)
+        _write_run_after_gaussian_sh(mcpb_dir / "run_after_gaussian.sh", pdb_id, group_name)
+        _write_mcpb_readme(mcpb_dir / "README.md", pdb_id, group_name)
         site_result["mcpb_scaffold_generated"] = True
 
     # ------------------------------------------------------------------
