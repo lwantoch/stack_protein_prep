@@ -451,7 +451,7 @@ def _estimate_initial_work_units(record_count: int) -> int:
     """
 
     fixed_units = 4 + 2
-    per_record_units = 9
+    per_record_units = 10  # +1 for nonstd_residue_params (step 15)
     return fixed_units + record_count * per_record_units
 
 
