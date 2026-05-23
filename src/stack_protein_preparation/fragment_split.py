@@ -41,7 +41,7 @@ For the "gaps" variant, use this BEFORE protonation:
         -> split_gap_variant_structure(...)
         -> protonate each fragment separately
         -> merge protonated fragments
-        -> continue with amber_renaming etc.
+        -> continue with capping, prepared structure assembly, etc.
 
 Expected input
 --------------
