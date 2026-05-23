@@ -563,6 +563,97 @@ def add_hydrogens_to_crystal_water_pdb(
 
 
 # ============================================================================
+# PROPKA protonation state prediction
+# ============================================================================
+
+
+def _run_propka(pdb_path: Path) -> object | None:
+    """Run PROPKA on pdb_path; return the MolecularContainer or None on error."""
+    import contextlib
+    import io
+
+    try:
+        import propka.run  # type: ignore[import]
+    except ImportError:
+        return None
+
+    try:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+            mol = propka.run.single(str(pdb_path), optargs=["--quiet"])
+        return mol
+    except Exception:
+        return None
+
+
+def predict_protonation_states(
+    pdb_path: Path | str,
+    ph: float = 7.4,
+) -> dict[tuple[str, int, str], str]:
+    """Return PROPKA-based protonation state renames for HIS residues.
+
+    Maps (chain_id, res_num, icode) → new residue name. Only entries that
+    differ from the GROMACS/AMBER default (HIE for all HIS) are returned.
+    A HIS with PROPKA pKa > ph is assigned HIP (doubly protonated).
+    Returns an empty dict when PROPKA is unavailable or the run fails.
+    """
+    pdb_path = Path(pdb_path)
+    mol = _run_propka(pdb_path)
+    if mol is None:
+        return {}
+
+    renames: dict[tuple[str, int, str], str] = {}
+    try:
+        groups = mol.conformations["AVR"].groups
+    except (KeyError, AttributeError):
+        return {}
+
+    for g in groups:
+        if g.residue_type != "HIS" or not g.titratable:
+            continue
+        icode = (g.atom.icode or " ").strip()
+        key = (g.atom.chain_id, g.atom.res_num, icode)
+        if g.pka_value > ph:
+            renames[key] = "HIP"
+
+    return renames
+
+
+def _apply_protonation_renames(
+    input_path: Path,
+    output_path: Path,
+    renames: dict[tuple[str, int, str], str],
+) -> None:
+    """Rewrite input_path with per-residue name substitutions and copy to output_path.
+
+    Only ATOM/HETATM records are touched; residue name is at PDB columns 17-19.
+    """
+    if not renames:
+        import shutil
+
+        shutil.copy2(input_path, output_path)
+        return
+
+    lines: list[str] = []
+    with input_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith(("ATOM  ", "HETATM")):
+                chain = line[21] if len(line) > 21 else " "
+                try:
+                    res_num = int(line[22:26])
+                except ValueError:
+                    lines.append(line)
+                    continue
+                icode = line[26].strip() if len(line) > 26 else ""
+                key = (chain, res_num, icode)
+                if key in renames:
+                    new_name = f"{renames[key]:<3}"
+                    line = line[:17] + new_name + line[20:]
+            lines.append(line)
+    output_path.write_text("".join(lines), encoding="utf-8")
+
+
+# ============================================================================
 # external tool execution
 # ============================================================================
 
@@ -811,9 +902,37 @@ def protonate_selected_structure(
         ],
     )
 
+    import tempfile
+
+    propka_renames = predict_protonation_states(input_pdb, ph=ph)
+    propka_him_count = sum(1 for v in propka_renames.values() if v == "HIP")
+    propka_applied = bool(propka_renames)
+
+    _screen_item("propka_his_renamed", str(len(propka_renames)))
+    _screen_item("propka_hip_count", str(propka_him_count))
+    _append_log_block(
+        module_log_path,
+        "protonate_selected_structure:propka",
+        [
+            f"propka_ph               : {ph}",
+            f"propka_renames          : {len(propka_renames)}",
+            f"propka_hip_count        : {propka_him_count}",
+            f"propka_renames_detail   : {propka_renames}",
+        ],
+    )
+
+    if propka_applied:
+        tmp_propka_dir = tempfile.mkdtemp()
+        propka_input = Path(tmp_propka_dir) / "propka_renamed.pdb"
+        _apply_protonation_renames(input_pdb, propka_input, propka_renames)
+        pdb2gmx_input: Path = propka_input
+    else:
+        tmp_propka_dir = None
+        pdb2gmx_input = input_pdb
+
     try:
         result = run_gmx_pdb2gmx_protonation(
-            input_pdb=input_pdb,
+            input_pdb=pdb2gmx_input,
             output_pdb=output_pdb,
             topology_output_path=topology_output_path,
             position_restraints_output_path=position_restraints_output_path,
@@ -827,6 +946,11 @@ def protonate_selected_structure(
     except Exception as exc:
         _log_exception(module_log_path, "protonate_selected_structure:exception", exc)
         raise
+    finally:
+        if tmp_propka_dir is not None:
+            import shutil as _shutil
+
+            _shutil.rmtree(tmp_propka_dir, ignore_errors=True)
 
     _write_text_log(stdout_log_path, result.stdout)
     _write_text_log(stderr_log_path, result.stderr)
@@ -940,7 +1064,14 @@ def protonate_selected_structure(
         "protonation_position_restraints_path": str(position_restraints_output_path),
         "protonation_ph": ph,
         "protonation_ph_applied_by_gromacs": False,
-        "protonation_state_policy": "GROMACS force-field defaults; AMBER-family approximation",
+        "protonation_propka_applied": propka_applied,
+        "protonation_propka_his_renamed": len(propka_renames),
+        "protonation_propka_hip_count": propka_him_count,
+        "protonation_state_policy": (
+            f"PROPKA-guided HIS states at pH {ph}; gmx pdb2gmx -ignh"
+            if propka_applied
+            else "GROMACS force-field defaults; AMBER-family approximation"
+        ),
         "gromacs_force_field": ff,
         "gromacs_water_model": water_model,
         "gromacs_chain_separation": chain_separation,
