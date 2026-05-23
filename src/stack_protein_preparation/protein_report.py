@@ -769,15 +769,65 @@ def _build_narratives(
         )
 
     prep_status = s("prepared_structure.status")
-    prep_variant = s("prepared_structure.variant")
     available = s("available_models")
     if prep_status in done:
-        variant_str = f" (variant: {prep_variant})" if prep_variant else ""
-        avail_str = f" Available model families: {available}." if available else ""
-        add(12,
-            f"The final prepared structure was assembled{variant_str} "
-            f"and written to the prepared/ directory.{avail_str}"
-        )
+        variants = [v.strip() for v in available.split("|") if v.strip()] if available else []
+        if not variants:
+            fallback = s("prepared_structure.variant")
+            variants = [fallback] if fallback else []
+        n = len(variants)
+        if n == 0:
+            add(12,
+                "The prepared structure was assembled and written to the "
+                "prepared/ directory."
+            )
+        elif n == 1:
+            add(12,
+                f"One prepared model variant was produced ({variants[0]}) "
+                f"and written to the prepared/ directory."
+            )
+        else:
+            label_list = ", ".join(variants)
+            add(12,
+                f"{n} prepared model variants were produced "
+                f"({label_list}) and written to the prepared/ directory. "
+                f"Each variant is described below."
+            )
+        _variant_prose = {
+            "initial": (
+                "The initial variant retains the deposited crystal structure "
+                "without any gap-filling. Missing internal residues remain as "
+                "structural chain breaks. This model is selected when the protein "
+                "sequence is complete or when gap-filling is not applicable."
+            ),
+            "gaps": (
+                "The gaps variant preserves all chain breaks present in the "
+                "deposited coordinates. Each artificial terminus introduced by a "
+                "missing-residue region was capped with ACE (acetyl) and NME "
+                "(N-methylamide) blocking groups to prevent spurious terminal "
+                "charges during simulation."
+            ),
+            "modeller": (
+                f"The modeller variant provides a gap-free, fully connected chain: "
+                f"missing residues were reconstructed by MODELLER"
+                f"{_cite('sali1993modeller', 'webb2016modeller')} "
+                f"(see gap-filling step above). The filled model was subsequently "
+                f"protonated and assembled into the final prepared topology."
+            ),
+            "alphafold": (
+                f"The alphafold variant provides a gap-free, fully connected chain: "
+                f"missing regions were grafted from an AlphaFold2"
+                f"{_cite('jumper2021alphafold')} predicted structure "
+                f"(see gap-filling step above). The grafted model was subsequently "
+                f"protonated and assembled into the final prepared topology."
+            ),
+        }
+        if n > 1:
+            for v in variants:
+                prose = _variant_prose.get(
+                    v, f"The {v} variant was assembled and written to the prepared/ directory."
+                )
+                add(12, prose)
 
     eval_status = s("model_eval.status")
     if eval_status in done:
