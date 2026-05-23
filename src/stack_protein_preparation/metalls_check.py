@@ -27,6 +27,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
+from stack_protein_preparation.pdb_components import WATER_NAMES as WATER_RESIDUE_NAMES
+
 MetalCheckStatus = Literal["success", "warning", "required", "failed", "skipped"]
 MetalClass = Literal[
     "none",
@@ -35,8 +37,6 @@ MetalClass = Literal[
     "mixed",
     "unsupported_nontransition",
 ]
-
-WATER_RESIDUE_NAMES = {"HOH", "WAT", "H2O", "SOL", "TIP3", "TIP3P"}
 DONOR_ELEMENTS = {"N", "O", "S", "SE"}
 
 TRANSITION_METAL_ELEMENTS = {

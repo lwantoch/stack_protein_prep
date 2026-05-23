@@ -28,6 +28,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
+from stack_protein_preparation.pdb_components import WATER_NAMES
+
 ProtonationInputSource = Literal["protein", "filler", "modeller", "alphafold"]
 
 GromacsWaterModel = Literal[
@@ -498,9 +500,6 @@ def _basic_structure_diagnostics(input_pdb: Path) -> dict[str, int | bool]:
 # crystal water preparation
 # ============================================================================
 
-_WATER_RES_NAMES_FOR_SOL = {"HOH", "WAT", "H2O", "TIP", "TIP3", "TIP3P", "SOL"}
-
-
 def _rename_water_pdb_to_sol(input_path: Path, output_path: Path) -> None:
     """Rewrite a water PDB renaming residues to SOL and O atoms to OW.
 
@@ -511,7 +510,7 @@ def _rename_water_pdb_to_sol(input_path: Path, output_path: Path) -> None:
     with input_path.open("r", encoding="utf-8") as fh:
         for line in fh:
             if line.startswith("ATOM") or line.startswith("HETATM"):
-                if line[17:20].strip() in _WATER_RES_NAMES_FOR_SOL:
+                if line[17:20].strip() in WATER_NAMES:
                     atom_name = line[12:16].strip()
                     padded = " OW " if atom_name in ("O", "OW") else f" {atom_name:<3}"
                     line = line[:12] + padded + line[16:17] + "SOL" + line[20:]

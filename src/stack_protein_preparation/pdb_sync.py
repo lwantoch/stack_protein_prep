@@ -25,8 +25,14 @@ Current trimming behavior
 -------------------------
 - If range is empty:
     keep the downloaded PDB unchanged.
-- If range is present, for example '20-280':
-    keep only ATOM residues whose residue number is within the inclusive range.
+- If range is present as a plain integer range, for example '20-280':
+    keep only ATOM residues whose residue number is within the inclusive range
+    (applied to all chains).
+- If range is present as a chain-aware range, for example 'A25-B15':
+    chain A: keep residues whose residue number >= 25 (start endpoint)
+    chain B: keep residues whose residue number <= 15 (end endpoint)
+    chains not named in the range are dropped entirely.
+    For a same-chain range like 'A25-A200', only chain A is kept (25–200).
 - Waters are always kept, even if their residue number lies outside the range.
 - Other HETATM records are currently kept unchanged.
 
@@ -67,25 +73,19 @@ This module is NOT responsible for:
 from __future__ import annotations
 
 import csv
+import re
 import traceback
 import urllib.request
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+
+from stack_protein_preparation.pdb_components import WATER_NAMES as WATER_RESIDUE_NAMES
 
 PDB_ID_COLUMN_NAME = "pdb_id"
 RANGE_COLUMN_NAME = "range"
 DEFAULT_PDB_ID_CSV_FILENAME = "pdb_ids.csv"
 RCSB_PDB_DOWNLOAD_URL_TEMPLATE = "https://files.rcsb.org/download/{pdb_id}.pdb"
-
-WATER_RESIDUE_NAMES = {
-    "HOH",
-    "WAT",
-    "H2O",
-    "TIP",
-    "TIP3",
-    "TIP3P",
-    "SOL",
-}
 
 MODULE_NAME = "pdb_sync"
 IGNORED_SUBDIRECTORY_NAMES = {
@@ -263,39 +263,85 @@ def normalize_range_value(raw_range_value: str | None) -> str:
     return raw_range_value.strip()
 
 
+@dataclass(frozen=True)
+class ParsedRange:
+    """Structured representation of a residue range, optionally chain-aware.
+
+    For a plain integer range ('25-200'): start_chain and end_chain are None.
+    For a chain-aware range ('A25-B15'): both chain fields are set.
+    """
+
+    start_resnum: int
+    end_resnum: int
+    start_chain: str | None = None
+    end_chain: str | None = None
+
+    @property
+    def is_chain_aware(self) -> bool:
+        return self.start_chain is not None
+
+    @property
+    def is_cross_chain(self) -> bool:
+        return (
+            self.start_chain is not None
+            and self.end_chain is not None
+            and self.start_chain != self.end_chain
+        )
+
+
+_CHAIN_AWARE_RANGE_RE = re.compile(r"([A-Za-z])(-?\d+)-([A-Za-z])(-?\d+)")
+_LEGACY_RANGE_RE = re.compile(r"(-?\d+)-(-?\d+)")
+
+
+def _parse_range_internal(normalized: str) -> ParsedRange:
+    """Parse a non-empty, stripped range string into a ParsedRange."""
+    m = _CHAIN_AWARE_RANGE_RE.fullmatch(normalized)
+    if m:
+        start_chain = m.group(1).upper()
+        start_resnum = int(m.group(2))
+        end_chain = m.group(3).upper()
+        end_resnum = int(m.group(4))
+        return ParsedRange(
+            start_resnum=start_resnum,
+            end_resnum=end_resnum,
+            start_chain=start_chain,
+            end_chain=end_chain,
+        )
+    m = _LEGACY_RANGE_RE.fullmatch(normalized)
+    if m:
+        start_resnum = int(m.group(1))
+        end_resnum = int(m.group(2))
+        if start_resnum > end_resnum:
+            raise ValueError(
+                f"Invalid range value {normalized!r}. Range start must be <= range end."
+            )
+        return ParsedRange(start_resnum=start_resnum, end_resnum=end_resnum)
+    raise ValueError(
+        f"Invalid range value {normalized!r}. "
+        "Expected '10-280' (legacy) or 'A10-B280' (chain-aware)."
+    )
+
+
 def parse_residue_range(range_value: str) -> tuple[int, int] | None:
-    """
-    Parse a simple inclusive residue range string such as '10-280'.
-    """
-    normalized_range_value = normalize_range_value(range_value)
+    """Parse a residue range string; return (start, end) integers or None.
 
-    if not normalized_range_value:
+    Accepts both the legacy '10-280' format and the new chain-aware 'A10-B280'
+    format.  For chain-aware ranges the chain identifiers are discarded here —
+    use parse_residue_range_chain_aware when chain information is needed.
+    """
+    normalized = normalize_range_value(range_value)
+    if not normalized:
         return None
+    parsed = _parse_range_internal(normalized)
+    return (parsed.start_resnum, parsed.end_resnum)
 
-    parts = normalized_range_value.split("-")
-    if len(parts) != 2:
-        raise ValueError(
-            f"Invalid range value {normalized_range_value!r}. Expected format like '10-280'."
-        )
 
-    start_text, end_text = parts[0].strip(), parts[1].strip()
-
-    try:
-        start_residue_number = int(start_text)
-        end_residue_number = int(end_text)
-    except ValueError as exc:
-        raise ValueError(
-            f"Invalid range value {normalized_range_value!r}. "
-            "Range boundaries must be integers."
-        ) from exc
-
-    if start_residue_number > end_residue_number:
-        raise ValueError(
-            f"Invalid range value {normalized_range_value!r}. "
-            "Range start must be <= range end."
-        )
-
-    return (start_residue_number, end_residue_number)
+def parse_residue_range_chain_aware(range_value: str) -> ParsedRange | None:
+    """Parse a residue range string and return a full ParsedRange, or None if empty."""
+    normalized = normalize_range_value(range_value)
+    if not normalized:
+        return None
+    return _parse_range_internal(normalized)
 
 
 # ---------------------------------------------------------------------------
@@ -538,8 +584,33 @@ def _resseq(line: str) -> int | None:
         return None
 
 
+def _chain_id(line: str) -> str:
+    """Return the chain identifier from a PDB ATOM/HETATM line (column 22, 0-indexed 21)."""
+    if len(line) > 21:
+        return line[21]
+    return ""
+
+
 def _is_water_line(line: str) -> bool:
     return _record_type(line) == "HETATM" and _resname(line) in WATER_RESIDUE_NAMES
+
+
+def _atom_line_passes_range(line: str, residue_number: int, parsed_range: ParsedRange) -> bool:
+    """Return True if this ATOM line should be kept given the parsed range."""
+    if not parsed_range.is_chain_aware:
+        return parsed_range.start_resnum <= residue_number <= parsed_range.end_resnum
+
+    chain = _chain_id(line)
+    start_chain = parsed_range.start_chain
+    end_chain = parsed_range.end_chain
+
+    if chain == start_chain and chain == end_chain:
+        return parsed_range.start_resnum <= residue_number <= parsed_range.end_resnum
+    if chain == start_chain:
+        return residue_number >= parsed_range.start_resnum
+    if chain == end_chain:
+        return residue_number <= parsed_range.end_resnum
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -627,7 +698,7 @@ def trim_pdb_to_residue_range(
         output_pdb_path.stem,
     )
 
-    parsed_range = parse_residue_range(residue_range)
+    parsed_range = parse_residue_range_chain_aware(residue_range)
 
     if parsed_range is None:
         output_pdb_path.write_text(
@@ -659,8 +730,6 @@ def trim_pdb_to_residue_range(
         )
         return range_summary
 
-    start_residue_number, end_residue_number = parsed_range
-
     kept_lines: list[str] = []
     total_atom_lines = 0
     kept_atom_lines = 0
@@ -679,7 +748,7 @@ def trim_pdb_to_residue_range(
                 if residue_number is None:
                     continue
 
-                if start_residue_number <= residue_number <= end_residue_number:
+                if _atom_line_passes_range(line, residue_number, parsed_range):
                     kept_lines.append(line)
                     kept_atom_lines += 1
                 continue
@@ -712,8 +781,10 @@ def trim_pdb_to_residue_range(
             f"input_pdb_path        : {input_pdb_path}",
             f"output_pdb_path       : {output_pdb_path}",
             f"residue_range         : {residue_range!r}",
-            f"parsed_start          : {start_residue_number}",
-            f"parsed_end            : {end_residue_number}",
+            f"parsed_start          : {parsed_range.start_resnum}",
+            f"parsed_end            : {parsed_range.end_resnum}",
+            f"start_chain           : {parsed_range.start_chain}",
+            f"end_chain             : {parsed_range.end_chain}",
             f"total_atom_lines      : {total_atom_lines}",
             f"kept_atom_lines       : {kept_atom_lines}",
             f"total_water_hetatm    : {total_water_hetatm_lines}",
