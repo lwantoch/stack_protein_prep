@@ -1298,6 +1298,9 @@ def _run_linear_protonation_route_for_variant(
         "protonation_input_source": str(protonation_result["protonation_input_source"]),
         "protonation_input_path": str(protonation_result["protonation_input_path"]),
         "protonation_output_path": str(protonation_output_path),
+        "protonation_propka_his_assignments": str(
+            protonation_result.get("protonation_propka_his_assignments", "")
+        ),
         "final_protein_input_paths": str(protonation_output_path),
     }
 

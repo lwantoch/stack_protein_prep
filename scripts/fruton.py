@@ -85,6 +85,7 @@ from stack_protein_preparation.pipeline_state import (
     PROTONATION_INPUT_PATH_COLUMN_NAME,
     PROTONATION_INPUT_SOURCE_COLUMN_NAME,
     PROTONATION_OUTPUT_PATH_COLUMN_NAME,
+    PROTONATION_PROPKA_HIS_COLUMN_NAME,
     PROTONATION_STATUS_COLUMN_NAME,
     RANGE_COLUMN_NAME,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
@@ -1213,6 +1214,9 @@ def run_pipeline() -> None:
             pipeline_record[PROTONATION_OUTPUT_PATH_COLUMN_NAME] = route_result[
                 "protonation_output_path"
             ]
+            pipeline_record[PROTONATION_PROPKA_HIS_COLUMN_NAME] = route_result.get(
+                "protonation_propka_his_assignments", ""
+            )
 
             final_protein_input_paths_text = route_result.get(
                 "final_protein_input_paths",

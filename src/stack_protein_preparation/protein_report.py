@@ -741,11 +741,18 @@ def _build_narratives(
     if s("protonation.status") in done:
         src = s("protonation.input_source")
         src_str = f" using {src} as input" if src else ""
+        ph_raw = s("protonation.ph") or "7.4"
+        try:
+            ph_str = f"{float(ph_raw):.1f}"
+        except (ValueError, TypeError):
+            ph_str = str(ph_raw)
         add(11,
-            f"Protonation states of titratable residues (Asp, Glu, His, Lys, "
-            f"Arg, Cys, Tyr) were predicted at pH 7.4 using "
+            f"Histidine pKa values were predicted at pH {ph_str} using "
             f"PROPKA 3{_cite('olsson2011propka', 'sondergaard2011propka')}. "
-            f"Hydrogen atoms were then added by GROMACS pdb2gmx "
+            f"Histidines with predicted pKa above pH {ph_str} were assigned "
+            f"as HIP (doubly protonated, net charge +1); all others were "
+            f"assigned as HIE (epsilon-tautomer, neutral). "
+            f"Hydrogen atoms were then placed by GROMACS pdb2gmx "
             f"(-ignh){_cite('abraham2015gromacs')}{src_str}. "
             f"Partial charges and bonded parameters were assigned with the "
             f"AMBER ff99SB force field{_cite('hornak2006ff99sb')} as extended "
@@ -1713,6 +1720,138 @@ def _build_simple_evidence_table(
     return table
 
 
+def _collect_residue_renames(
+    input_pdb: Path,
+    output_pdb: Path,
+) -> list[dict[str, str]]:
+    """Return per-residue rename records by diffing protonation input vs output.
+
+    Both files are read and residues are matched by (chain, resseq, icode).
+    A record is emitted only when the residue name changes. Returns an empty
+    list when either file is missing or unreadable.
+
+    Each record has keys: chain, res_num, icode, from_name, to_name, source.
+    source is 'PROPKA' for HIP assignments, 'GROMACS' for others (e.g.
+    disulfide CYS2, MSE->MET).
+    """
+    def _parse_residues(pdb_path: Path) -> dict[tuple[str, int, str], str]:
+        res: dict[tuple[str, int, str], str] = {}
+        try:
+            with pdb_path.open("r", encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    if not (line.startswith("ATOM  ") or line.startswith("HETATM")):
+                        continue
+                    try:
+                        res_name = line[17:20].strip()
+                        chain = line[21]
+                        res_num = int(line[22:26])
+                        icode = line[26].strip() if len(line) > 26 else ""
+                        key = (chain, res_num, icode)
+                        if key not in res:
+                            res[key] = res_name
+                    except (ValueError, IndexError):
+                        pass
+        except OSError:
+            pass
+        return res
+
+    if not input_pdb.is_file() or not output_pdb.is_file():
+        return []
+
+    before = _parse_residues(input_pdb)
+    after = _parse_residues(output_pdb)
+
+    _HIP_KEYS = {"HIP"}
+    renames: list[dict[str, str]] = []
+    for key, from_name in sorted(before.items(), key=lambda kv: kv[0]):
+        to_name = after.get(key)
+        if to_name is None or to_name == from_name:
+            continue
+        chain, res_num, icode = key
+        source = "PROPKA" if to_name in _HIP_KEYS else "GROMACS"
+        renames.append({
+            "chain": chain,
+            "res_num": str(res_num),
+            "icode": icode or "",
+            "from_name": from_name,
+            "to_name": to_name,
+            "source": source,
+        })
+    return renames
+
+
+def _build_residue_rename_table(
+    renames: list[dict[str, str]],
+    styles: dict[str, Any],
+    width: float,
+) -> Any:
+    """Build a table of protonation-step residue renamings."""
+    from reportlab.lib import colors
+    from reportlab.platypus import Paragraph, Table, TableStyle
+
+    data: list[list[Any]] = [[
+        Paragraph("Chain", styles["EvidenceHeader"]),
+        Paragraph("Res.", styles["EvidenceHeader"]),
+        Paragraph("Ins.", styles["EvidenceHeader"]),
+        Paragraph("From", styles["EvidenceHeader"]),
+        Paragraph("To", styles["EvidenceHeader"]),
+        Paragraph("Driver", styles["EvidenceHeader"]),
+        Paragraph("Note", styles["EvidenceHeader"]),
+    ]]
+
+    _notes = {
+        "HIP": "doubly protonated His; net charge +1",
+        "CYS2": "disulfide-bridged Cys",
+        "MET": "selenomethionine converted to methionine",
+    }
+
+    propka_rows: set[int] = set()
+    for r in renames:
+        row_idx = len(data)
+        note = _notes.get(r["to_name"], "")
+        data.append([
+            Paragraph(_safe_pdf_text(r["chain"]), styles["EvidenceCell"]),
+            Paragraph(_safe_pdf_text(r["res_num"]), styles["EvidenceCell"]),
+            Paragraph(_safe_pdf_text(r["icode"] or "-"), styles["EvidenceCell"]),
+            Paragraph(_safe_pdf_text(r["from_name"]), styles["EvidenceCell"]),
+            Paragraph(_safe_pdf_text(r["to_name"]), styles["EvidenceCell"]),
+            Paragraph(_safe_pdf_text(r["source"]), styles["EvidenceCell"]),
+            Paragraph(_safe_pdf_text(note), styles["EvidenceCell"]),
+        ])
+        if r["source"] == "PROPKA":
+            propka_rows.add(row_idx)
+
+    col_w = width
+    col_widths = [
+        0.07 * col_w,   # Chain
+        0.07 * col_w,   # Res.
+        0.06 * col_w,   # Ins.
+        0.10 * col_w,   # From
+        0.10 * col_w,   # To
+        0.12 * col_w,   # Driver
+        0.48 * col_w,   # Note
+    ]
+
+    table = Table(data, colWidths=col_widths, repeatRows=1)
+    style_cmds = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(_IDIS_PANEL_2)),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor(_IDIS_NAVY)),
+        ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor(_IDIS_LINE)),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.HexColor(_IDIS_LINE)),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]
+    for row_idx in propka_rows:
+        style_cmds.append(
+            ("BACKGROUND", (0, row_idx), (-1, row_idx), colors.HexColor(_FRUTON_YELLOW_SOFT))
+        )
+    table.setStyle(TableStyle(style_cmds))
+    return table
+
+
 def _build_sequence_evidence_flowables(
     fasta_records: list[dict[str, str]],
     styles: dict[str, Any],
@@ -2128,6 +2267,29 @@ def _build_pdf(
         narrative_flowables.append(Paragraph("No completed pipeline steps were recorded.", styles["BodyAudit"]))
     story.append(_build_narrative_table(narrative_flowables, usable_width))
     story.append(Spacer(1, 0.30 * cm))
+
+    # ------------------------------------------------------------------
+    # Protonation residue rename table
+    # ------------------------------------------------------------------
+    prot_in_path_str = _record_text(pipeline_record, "protonation.input_path")
+    prot_out_path_str = _record_text(pipeline_record, "protonation.output_path")
+    if prot_in_path_str and prot_out_path_str:
+        prot_in = Path(prot_in_path_str)
+        prot_out = Path(prot_out_path_str)
+        residue_renames = _collect_residue_renames(prot_in, prot_out)
+        if residue_renames:
+            story.append(_section_block(
+                "Protonation: residue assignments",
+                "All residue name changes introduced by the PROPKA + gmx pdb2gmx protonation step. "
+                "PROPKA-driven rows (highlighted) reflect pKa-based histidine state selection. "
+                "GROMACS-driven rows reflect force-field template substitutions (e.g. disulfide "
+                "bridges, selenomethionine conversion).",
+                styles,
+                usable_width,
+            ))
+            story.append(Spacer(1, 0.08 * cm))
+            story.append(_build_residue_rename_table(residue_renames, styles, usable_width))
+            story.append(Spacer(1, 0.22 * cm))
 
     # ------------------------------------------------------------------
     # Explicit audit decision and file evidence

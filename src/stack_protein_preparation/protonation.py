@@ -20,6 +20,7 @@ functionally meaningful; it is not passed to pdb2gmx (GROMACS has no
 
 from __future__ import annotations
 
+import json
 import os
 import shlex
 import shutil
@@ -587,37 +588,54 @@ def _run_propka(pdb_path: Path) -> object | None:
         return None
 
 
+def _get_propka_his_assignments(
+    mol: object,
+    ph: float,
+) -> list[dict[str, str | int | float]]:
+    """Return one record per titratable HIS group with pKa and assigned state.
+
+    Each record has keys: chain, res_num, icode, pka, assigned.
+    assigned is 'HIP' when pka > ph, else 'HIE'.
+    Records are sorted by (chain, res_num, icode).
+    """
+    assignments: list[dict[str, str | int | float]] = []
+    try:
+        groups = mol.conformations["AVR"].groups  # type: ignore[union-attr]
+    except (KeyError, AttributeError):
+        return assignments
+    for g in groups:
+        if g.residue_type != "HIS" or not g.titratable:
+            continue
+        icode = (g.atom.icode or " ").strip()
+        assignments.append({
+            "chain": g.atom.chain_id,
+            "res_num": int(g.atom.res_num),
+            "icode": icode,
+            "pka": round(float(g.pka_value), 2),
+            "assigned": "HIP" if g.pka_value > ph else "HIE",
+        })
+    return sorted(assignments, key=lambda d: (str(d["chain"]), int(d["res_num"]), str(d["icode"])))
+
+
 def predict_protonation_states(
     pdb_path: Path | str,
     ph: float = 7.4,
 ) -> dict[tuple[str, int, str], str]:
-    """Return PROPKA-based protonation state renames for HIS residues.
+    """Return PROPKA-based HIP rename keys for residues with pKa > ph.
 
-    Maps (chain_id, res_num, icode) → new residue name. Only entries that
-    differ from the GROMACS/AMBER default (HIE for all HIS) are returned.
-    A HIS with PROPKA pKa > ph is assigned HIP (doubly protonated).
-    Returns an empty dict when PROPKA is unavailable or the run fails.
+    Maps (chain_id, res_num, icode) → 'HIP'. Only HIP entries are returned;
+    HIE is the GROMACS/AMBER default and needs no rename. Returns an empty
+    dict when PROPKA is unavailable or the run fails.
     """
     pdb_path = Path(pdb_path)
     mol = _run_propka(pdb_path)
     if mol is None:
         return {}
-
-    renames: dict[tuple[str, int, str], str] = {}
-    try:
-        groups = mol.conformations["AVR"].groups
-    except (KeyError, AttributeError):
-        return {}
-
-    for g in groups:
-        if g.residue_type != "HIS" or not g.titratable:
-            continue
-        icode = (g.atom.icode or " ").strip()
-        key = (g.atom.chain_id, g.atom.res_num, icode)
-        if g.pka_value > ph:
-            renames[key] = "HIP"
-
-    return renames
+    return {
+        (str(d["chain"]), int(d["res_num"]), str(d["icode"])): d["assigned"]
+        for d in _get_propka_his_assignments(mol, ph)
+        if d["assigned"] == "HIP"
+    }
 
 
 def _apply_protonation_renames(
@@ -905,12 +923,17 @@ def protonate_selected_structure(
 
     propka_mol = _run_propka(input_pdb)
     propka_ran = propka_mol is not None
-    propka_renames = predict_protonation_states(input_pdb, ph=ph) if propka_ran else {}
-    propka_him_count = sum(1 for v in propka_renames.values() if v == "HIP")
+    his_assignments = _get_propka_his_assignments(propka_mol, ph) if propka_ran else []
+    propka_renames: dict[tuple[str, int, str], str] = {
+        (str(d["chain"]), int(d["res_num"]), str(d["icode"])): str(d["assigned"])
+        for d in his_assignments
+        if d["assigned"] == "HIP"
+    }
+    propka_him_count = len(propka_renames)
     propka_applied = bool(propka_renames)
 
     _screen_item("propka_ran", str(propka_ran))
-    _screen_item("propka_his_renamed", str(len(propka_renames)))
+    _screen_item("propka_his_total", str(len(his_assignments)))
     _screen_item("propka_hip_count", str(propka_him_count))
     _append_log_block(
         module_log_path,
@@ -918,10 +941,10 @@ def protonate_selected_structure(
         [
             f"propka_ran              : {propka_ran}",
             f"propka_ph               : {ph}",
-            f"propka_renames          : {len(propka_renames)}",
+            f"propka_his_total        : {len(his_assignments)}",
             f"propka_hip_count        : {propka_him_count}",
             f"propka_applied          : {propka_applied}",
-            f"propka_renames_detail   : {propka_renames}",
+            f"propka_assignments      : {his_assignments}",
         ],
     )
 
@@ -1069,8 +1092,9 @@ def protonate_selected_structure(
         "protonation_ph": ph,
         "protonation_propka_ran": propka_ran,
         "protonation_propka_applied": propka_applied,
-        "protonation_propka_his_renamed": len(propka_renames),
+        "protonation_propka_his_total": len(his_assignments),
         "protonation_propka_hip_count": propka_him_count,
+        "protonation_propka_his_assignments": json.dumps(his_assignments) if his_assignments else "",
         "protonation_state_policy": (
             f"PROPKA-guided HIS states at pH {ph}; gmx pdb2gmx -ignh"
             if propka_ran
