@@ -472,7 +472,7 @@ def _write_representative_monomer_for_protein(
         input_pdb_path,
         representative_unit_path,
         keep_non_protein_hetero=True,
-        keep_waters=False,
+        keep_waters=True,
         overwrite=True,
     )
 
@@ -790,6 +790,145 @@ def _append_parameter_audit_variant_summary(
             f"unsupported_residues         : {', '.join(getattr(audit_result, 'unsupported_residue_names', ())) or '(none)'}",
         ],
     )
+
+
+def _prepare_crystal_water_component(
+    *,
+    pdb_id: str,
+    pdb_dir: Path,
+) -> None:
+    """Add TIP3P hydrogens to the crystal water component and rename to GROMACS SOL.
+
+    Calls ``add_hydrogens_to_crystal_water_pdb`` which renames the water residues
+    to SOL (OW + HW1 + HW2) using ``gmx pdb2gmx -ignh`` with the configured
+    force field and water model. Skipped silently when the water component is
+    absent or empty.
+    """
+    from stack_protein_preparation.protonation import add_hydrogens_to_crystal_water_pdb
+
+    water_path = pdb_dir / "components" / f"{pdb_id}_water.pdb"
+
+    if not water_path.exists() or water_path.stat().st_size == 0:
+        _log(
+            "crystal_water_preparation:skipped",
+            [
+                f"pdb_id     : {pdb_id}",
+                f"water_path : {water_path}",
+                "reason     : water component is empty or absent",
+            ],
+        )
+        return
+
+    add_hydrogens_to_crystal_water_pdb(
+        water_pdb_path=water_path,
+        ff=_force_field,
+        water_model=_water_model,
+    )
+
+    n_atom_lines = sum(
+        1 for line in water_path.read_text(encoding="utf-8").splitlines()
+        if line.startswith("ATOM") or line.startswith("HETATM")
+    )
+    _log(
+        "crystal_water_preparation:success",
+        [
+            f"pdb_id       : {pdb_id}",
+            f"water_path   : {water_path}",
+            f"n_atom_lines : {n_atom_lines}",
+            "SOL_format   : OW + HW1 + HW2 per molecule",
+        ],
+    )
+
+
+def _check_water_clashes_for_prepared_variant(
+    *,
+    pdb_id: str,
+    variant_label: str,
+    prepared_output_path: Path,
+    hard_clash_dist: float = 2.0,
+    soft_clash_dist: float = 2.5,
+) -> dict[str, object]:
+    """Report steric clashes between crystal waters (SOL OW) and protein atoms.
+
+    Reads the prepared structure (which already contains protein + SOL water),
+    extracts protein heavy-atom coordinates (ATOM records, non-H element) and
+    water OW coordinates (HETATM SOL OW), then for each OW finds the minimum
+    distance to any protein heavy atom. Results are written to the pipeline log;
+    clashes do not affect variant acceptance.
+    """
+    import numpy as np
+
+    protein_coords: list[tuple[float, float, float]] = []
+    water_records: list[tuple[str, float, float, float]] = []
+
+    if not prepared_output_path.exists():
+        return {"n_hard_clashes": 0, "n_soft_clashes": 0, "n_waters_checked": 0}
+
+    with prepared_output_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                record = line[:6]
+                if record == "ATOM  ":
+                    elem = line[76:78].strip().upper()
+                    if elem not in ("H", "D", ""):
+                        protein_coords.append(
+                            (float(line[30:38]), float(line[38:46]), float(line[46:54]))
+                        )
+                elif record == "HETATM":
+                    if line[17:20].strip() == "SOL" and line[12:16].strip() == "OW":
+                        chain_id = line[21]
+                        res_seq = int(line[22:26])
+                        icode = line[26].strip()
+                        water_id = f"{chain_id}/{res_seq}{icode}"
+                        water_records.append(
+                            (water_id, float(line[30:38]), float(line[38:46]), float(line[46:54]))
+                        )
+            except (ValueError, IndexError):
+                continue
+
+    if not protein_coords or not water_records:
+        _log(
+            f"water_clash_check:{pdb_id}:{variant_label}",
+            [
+                f"pdb_id             : {pdb_id}",
+                f"variant_label      : {variant_label}",
+                "result             : skipped (no protein atoms or no waters in prepared structure)",
+            ],
+        )
+        return {"n_hard_clashes": 0, "n_soft_clashes": 0, "n_waters_checked": len(water_records)}
+
+    prot = np.array(protein_coords)
+    hard_clashes: list[str] = []
+    soft_clashes: list[str] = []
+
+    for water_id, wx, wy, wz in water_records:
+        diffs = prot - np.array([wx, wy, wz])
+        min_dist = float(np.sqrt((diffs * diffs).sum(axis=1)).min())
+        if min_dist < hard_clash_dist:
+            hard_clashes.append(f"{water_id}({min_dist:.2f}A)")
+        elif min_dist < soft_clash_dist:
+            soft_clashes.append(f"{water_id}({min_dist:.2f}A)")
+
+    result: dict[str, object] = {
+        "n_waters_checked": len(water_records),
+        "n_hard_clashes": len(hard_clashes),
+        "n_soft_clashes": len(soft_clashes),
+        "hard_clash_examples": hard_clashes[:10],
+        "soft_clash_examples": soft_clashes[:10],
+    }
+    _log(
+        f"water_clash_check:{pdb_id}:{variant_label}",
+        [
+            f"pdb_id              : {pdb_id}",
+            f"variant_label       : {variant_label}",
+            f"n_waters_checked    : {len(water_records)}",
+            f"n_hard_clashes      : {len(hard_clashes)}  (dist < {hard_clash_dist} A)",
+            f"n_soft_clashes      : {len(soft_clashes)}  ({hard_clash_dist} <= dist < {soft_clash_dist} A)",
+            f"hard_clash_examples : {', '.join(hard_clashes[:10]) or '(none)'}",
+            f"soft_clash_examples : {', '.join(soft_clashes[:10]) or '(none)'}",
+        ],
+    )
+    return result
 
 
 def _run_metals_check_for_input_inventory(

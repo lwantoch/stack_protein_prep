@@ -216,12 +216,18 @@ def _residue_identifier(line: str) -> tuple[str, str, str, str]:
 
 
 def _parse_residue_range(residue_range: str) -> tuple[int, int]:
-    match = re.fullmatch(r"\s*(-?\d+)\s*-\s*(-?\d+)\s*", str(residue_range).strip())
-    if match is None:
+    stripped = str(residue_range).strip()
+    # Chain-aware format: A33-B480
+    m = re.fullmatch(r"[A-Za-z](-?\d+)-[A-Za-z](-?\d+)", stripped)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    # Legacy format: 33-480
+    m = re.fullmatch(r"\s*(-?\d+)\s*-\s*(-?\d+)\s*", stripped)
+    if m is None:
         raise ValueError(f"Invalid residue range: {residue_range!r}")
 
-    start_residue = int(match.group(1))
-    end_residue = int(match.group(2))
+    start_residue = int(m.group(1))
+    end_residue = int(m.group(2))
 
     if start_residue > end_residue:
         raise ValueError(f"Invalid residue range: start > end in {residue_range!r}")

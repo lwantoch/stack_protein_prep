@@ -495,6 +495,75 @@ def _basic_structure_diagnostics(input_pdb: Path) -> dict[str, int | bool]:
 
 
 # ============================================================================
+# crystal water preparation
+# ============================================================================
+
+_WATER_RES_NAMES_FOR_SOL = {"HOH", "WAT", "H2O", "TIP", "TIP3", "TIP3P", "SOL"}
+
+
+def _rename_water_pdb_to_sol(input_path: Path, output_path: Path) -> None:
+    """Rewrite a water PDB renaming residues to SOL and O atoms to OW.
+
+    This is a plain-text preparation step so that gmx pdb2gmx recognises the
+    water residues and applies the TIP3P template when adding hydrogens.
+    """
+    result_lines: list[str] = []
+    with input_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("ATOM") or line.startswith("HETATM"):
+                if line[17:20].strip() in _WATER_RES_NAMES_FOR_SOL:
+                    atom_name = line[12:16].strip()
+                    padded = " OW " if atom_name in ("O", "OW") else f" {atom_name:<3}"
+                    line = line[:12] + padded + line[16:17] + "SOL" + line[20:]
+            result_lines.append(line)
+    output_path.write_text("".join(result_lines), encoding="utf-8")
+
+
+def add_hydrogens_to_crystal_water_pdb(
+    water_pdb_path: str | Path,
+    ff: str = DEFAULT_GROMACS_FORCE_FIELD,
+    water_model: GromacsWaterModel = DEFAULT_GROMACS_WATER_MODEL,
+) -> None:
+    """Add TIP3P hydrogens to crystal waters using gmx pdb2gmx.
+
+    Renames water residues to SOL and O atoms to OW so that pdb2gmx recognises
+    them, then runs ``gmx pdb2gmx -ignh`` with the TIP3P template to place HW1
+    and HW2. The input file is overwritten in-place with the result. Empty or
+    missing files are silently skipped.
+    """
+    import shutil
+    import tempfile
+
+    water_pdb_path = Path(water_pdb_path)
+    if not water_pdb_path.exists() or water_pdb_path.stat().st_size == 0:
+        return
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp = Path(tmp_dir)
+        sol_input = tmp / "water_sol.pdb"
+        sol_output = tmp / "water_solH.pdb"
+
+        _rename_water_pdb_to_sol(water_pdb_path, sol_input)
+
+        run_gmx_pdb2gmx_protonation(
+            input_pdb=sol_input,
+            output_pdb=sol_output,
+            topology_output_path=tmp / "water_sol.top",
+            position_restraints_output_path=tmp / "water_sol_posre.itp",
+            ff=ff,
+            water_model=water_model,
+            ignore_input_hydrogens=True,
+        )
+
+        if not sol_output.exists() or sol_output.stat().st_size == 0:
+            raise RuntimeError(
+                f"gmx pdb2gmx produced no output for water component: {water_pdb_path}"
+            )
+
+        shutil.copy2(sol_output, water_pdb_path)
+
+
+# ============================================================================
 # external tool execution
 # ============================================================================
 

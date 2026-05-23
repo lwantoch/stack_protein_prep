@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import os
 import shutil
 import sys
@@ -61,6 +62,7 @@ from stack_protein_preparation.pipeline_state import (
     FILLER_MODEL_PATH_COLUMN_NAME,
     FILLER_MODEL_SOURCE_COLUMN_NAME,
     FILLER_STATUS_COLUMN_NAME,
+    GAP_BOUNDARIES_COLUMN_NAME,
     GAP_SIZES_COLUMN_NAME,
     HAS_GAPS_COLUMN_NAME,
     HAS_LIGANDS_COLUMN_NAME,
@@ -92,6 +94,16 @@ from stack_protein_preparation.pipeline_state import (
     NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME,
     NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME,
     NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME,
+    MODEL_EVALUATION_STATUS_COLUMN_NAME,
+    MODEL_EVALUATION_PCT_FAVORED_COLUMN_NAME,
+    MODEL_EVALUATION_PCT_OUTLIER_COLUMN_NAME,
+    MODEL_EVALUATION_CLASHSCORE_COLUMN_NAME,
+    MODEL_EVALUATION_OVERALL_QUALITY_COLUMN_NAME,
+    MODEL_EVALUATION_RAMA_PLOT_PATH_COLUMN_NAME,
+    MODEL_EVALUATION_MANIFEST_PATH_COLUMN_NAME,
+    REPORT_STATUS_COLUMN_NAME,
+    REPORT_PDF_PATH_COLUMN_NAME,
+    REPORT_FIGURE_PNG_PATH_COLUMN_NAME,
     STATUS_FAILED,
     STATUS_REQUIRED,
     STATUS_SKIPPED,
@@ -156,7 +168,11 @@ from stack_protein_preparation.pipeline_runner import (
     _build_prepared_structure_for_variant,
     _run_metall_params_for_protein,
     _run_nonstd_residue_params_for_protein,
+    _prepare_crystal_water_component,
+    _check_water_clashes_for_prepared_variant,
 )
+from stack_protein_preparation.model_evaluation import run_model_evaluation
+from stack_protein_preparation.protein_report import generate_protein_report
 
 FRUTON_LOGO = r"""
 ███████╗██████╗ ██╗   ██╗████████╗ ██████╗ ███╗   ██╗
@@ -435,7 +451,7 @@ def _verbose_screen_enabled() -> bool:
     return os.environ.get("FRUTON_VERBOSE", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-_PROGRESS = TerminalProgress(total_steps=17)
+_PROGRESS = TerminalProgress(total_steps=19)
 
 
 def _estimate_initial_work_units(record_count: int) -> int:
@@ -830,6 +846,21 @@ def run_pipeline() -> None:
         _screen_item(f"component_split -> {pdb_id}: from representative unit")
         _screen_item(f"monomer_selection -> {pdb_id}: {monomer_path.name}")
 
+        if component_summary.get("n_water_lines", 0) > 0:
+            try:
+                _run_mutating_call(
+                    log_title=f"step_8:crystal_water_preparation:{pdb_id}:captured_output",
+                    work_label="crystal_water_preparation",
+                    screen_pdb_id=pdb_id,
+                    func=_prepare_crystal_water_component,
+                    pdb_id=pdb_id,
+                    pdb_dir=pdb_dir,
+                )
+                _screen_item(f"crystal_water_preparation -> {pdb_id}: SOL (OW+HW1+HW2)")
+            except Exception as error:
+                _screen_error(f"crystal_water_preparation failed for {pdb_id}: {error!r}")
+                _log_fruton_exception(f"step_8:crystal_water_preparation:{pdb_id}", error)
+
         try:
             metal_inventory_result = _run_mutating_call(
                 log_title=f"step_8:metalls_check_input_inventory:{pdb_id}:captured_output",
@@ -910,6 +941,10 @@ def run_pipeline() -> None:
             "none" if n_gaps == 0 else "|".join(str(g) for g in gap_sizes)
         )
         pipeline_record[HAS_GAPS_COLUMN_NAME] = "yes" if n_gaps > 0 else "no"
+        gap_windows = gap_summary.get("gaps", [])
+        pipeline_record[GAP_BOUNDARIES_COLUMN_NAME] = (
+            json.dumps(gap_windows) if gap_windows else ""
+        )
 
         max_gap_size = max(gap_sizes) if gap_sizes else 0
         if max_gap_size > 5:
@@ -1248,6 +1283,26 @@ def run_pipeline() -> None:
                 )
                 metal_check_result = None
 
+            if model_source in ("modeller", "alphafold"):
+                try:
+                    clash_result = _check_water_clashes_for_prepared_variant(
+                        pdb_id=pdb_id,
+                        variant_label=variant_label,
+                        prepared_output_path=Path(prepared_output_path),
+                    )
+                    n_hard = clash_result.get("n_hard_clashes", 0)
+                    n_soft = clash_result.get("n_soft_clashes", 0)
+                    if n_hard or n_soft:
+                        _screen_item(
+                            f"water_clash_check -> {pdb_id} [{variant_label}]: "
+                            f"{n_hard} hard, {n_soft} soft"
+                        )
+                except Exception as error:
+                    _log_fruton_exception(
+                        f"step_11:water_clash_check:{pdb_id}:{variant_label}",
+                        error,
+                    )
+
             successful_variant_label_list.append(variant_label)
             successful_variant_result_list.append(
                 {
@@ -1574,10 +1629,84 @@ def run_pipeline() -> None:
         pipeline_record_list=pipeline_record_list,
     )
 
-    _screen_step(16, "save_pipeline_json")
-    _run_mutating_call(log_title="step_16:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
-    _screen_step(17, "write_pipeline_xlsx")
-    _run_mutating_call(log_title="step_17:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
+    _screen_step(16, "model_evaluation (Modeller-filled only)")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+        try:
+            eval_result = _run_mutating_call(
+                log_title=f"step_16:model_evaluation:{pdb_id}:captured_output",
+                work_label=f"model_evaluation:{pdb_id}",
+                screen_pdb_id=pdb_id,
+                func=run_model_evaluation,
+                protein_dir=pdb_dir,
+                pdb_id=pdb_id,
+                pipeline_record=pipeline_record,
+            )
+        except Exception as error:
+            _screen_error(f"model_evaluation failed for {pdb_id}: {error!r}")
+            _log_fruton_exception(f"step_16:model_evaluation:{pdb_id}", error)
+            pipeline_record[MODEL_EVALUATION_STATUS_COLUMN_NAME] = STATUS_FAILED
+            continue
+
+        status = str(eval_result.get("status", "")).strip()
+        pipeline_record[MODEL_EVALUATION_STATUS_COLUMN_NAME] = status
+        pipeline_record[MODEL_EVALUATION_PCT_FAVORED_COLUMN_NAME] = (
+            str(eval_result.get("pct_favored", "")) if eval_result.get("pct_favored") is not None else ""
+        )
+        pipeline_record[MODEL_EVALUATION_PCT_OUTLIER_COLUMN_NAME] = (
+            str(eval_result.get("pct_outlier", "")) if eval_result.get("pct_outlier") is not None else ""
+        )
+        pipeline_record[MODEL_EVALUATION_CLASHSCORE_COLUMN_NAME] = (
+            str(eval_result.get("clashscore", "")) if eval_result.get("clashscore") is not None else ""
+        )
+        pipeline_record[MODEL_EVALUATION_OVERALL_QUALITY_COLUMN_NAME] = str(eval_result.get("overall_quality", ""))
+        pipeline_record[MODEL_EVALUATION_RAMA_PLOT_PATH_COLUMN_NAME] = str(eval_result.get("rama_plot_path", ""))
+        pipeline_record[MODEL_EVALUATION_MANIFEST_PATH_COLUMN_NAME] = str(eval_result.get("manifest_path", ""))
+
+        if status == "skipped":
+            _screen_item(f"model_evaluation -> {pdb_id}: skipped (no Modeller gap-filling)")
+        elif status == "success":
+            pct_fav = eval_result.get("pct_favored")
+            quality = eval_result.get("overall_quality", "")
+            _screen_item(f"model_evaluation -> {pdb_id}: {quality} (favored {pct_fav}%)")
+        else:
+            _screen_item(f"model_evaluation -> {pdb_id}: {status} — {eval_result.get('message', '')}")
+
+    global_bib_path = protein_data_dir / "references.bib"
+    _screen_step(17, "protein_report")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+        try:
+            report_result = _run_mutating_call(
+                log_title=f"step_17:protein_report:{pdb_id}:captured_output",
+                work_label=f"protein_report:{pdb_id}",
+                screen_pdb_id=pdb_id,
+                func=generate_protein_report,
+                protein_dir=pdb_dir,
+                pdb_id=pdb_id,
+                pipeline_record=pipeline_record,
+                global_bib_path=global_bib_path,
+            )
+        except Exception as error:
+            _screen_error(f"protein_report failed for {pdb_id}: {error!r}")
+            _log_fruton_exception(f"step_17:protein_report:{pdb_id}", error)
+            pipeline_record[REPORT_STATUS_COLUMN_NAME] = STATUS_FAILED
+            continue
+
+        status = str(report_result.get("status", "")).strip()
+        pipeline_record[REPORT_STATUS_COLUMN_NAME] = status
+        pipeline_record[REPORT_PDF_PATH_COLUMN_NAME] = str(report_result.get("report_pdf_path", ""))
+        pipeline_record[REPORT_FIGURE_PNG_PATH_COLUMN_NAME] = str(report_result.get("figure_png_path", ""))
+
+        msg = report_result.get("message", "")
+        _screen_item(f"protein_report -> {pdb_id}: {status}" + (f" — {msg}" if msg else ""))
+
+    _screen_step(18, "save_pipeline_json")
+    _run_mutating_call(log_title="step_18:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
+    _screen_step(19, "write_pipeline_xlsx")
+    _run_mutating_call(log_title="step_19:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
 
     _screen_notice(f"pipeline JSON written: {pipeline_json_path}")
     _screen_notice(f"pipeline XLSX written: {pipeline_xlsx_path}")
