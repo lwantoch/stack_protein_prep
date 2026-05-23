@@ -1,20 +1,21 @@
-"""Run GROMACS-based protonation for FRUTON protein structures.
+"""PROPKA-guided, GROMACS-based protonation for FRUTON protein structures.
 
-This module selects a protein-like coordinate input and protonates it through
-``gmx pdb2gmx -ignh``. The public entry points intentionally mirror the previous
-FRUTON protonation module so existing pipeline code can keep calling
-``protonate_protein_structure(...)``, ``protonate_variant_structure(...)``, and
-``protonate_selected_structure(...)`` with minimal changes. The main backend
-difference is that GROMACS rebuilds hydrogens from force-field residue templates
-rather than using the previous pdb2pqr/PROPKA pH-based route.
+Protonation proceeds in two stages:
 
-The default settings are chosen to stay as close as practically possible to the
-old AMBER-oriented behavior without performing an explicit comparison step. The
-module uses an AMBER-family GROMACS force field, TIP3P water, keeps chain
-separation stable, ignores input hydrogens, and writes the protonated coordinate
-file to the same FRUTON output naming convention as before. The ``ph`` argument
-is retained and reported for backward compatibility, but it is not applied by
-``pdb2gmx`` because GROMACS does not provide a direct ``--with-ph`` equivalent.
+1. **PROPKA pKa prediction** — PROPKA 3 is run on the input structure at the
+   requested pH. Histidine residues whose predicted pKa exceeds the pH are
+   renamed HIP (doubly protonated) in a temporary copy of the input file.
+   All other HIS residues are left as HIE, which is the AMBER99SB-ILDN
+   default for neutral histidine. If PROPKA is unavailable or the run fails
+   the stage is skipped silently and the original input is passed unchanged.
+
+2. **GROMACS hydrogen placement** — ``gmx pdb2gmx -ignh`` rebuilds all
+   hydrogens from the force-field residue templates, using the PROPKA-renamed
+   residue names to select the correct HIS variant templates.
+
+The ``ph`` parameter controls the PROPKA decision boundary and is now
+functionally meaningful; it is not passed to pdb2gmx (GROMACS has no
+``--with-ph`` equivalent).
 """
 
 from __future__ import annotations
@@ -854,8 +855,8 @@ def protonate_selected_structure(
     if ignore_input_hydrogens:
         command_preview.append("-ignh")
 
-    _screen_header(pdb_id_guess, "starting GROMACS protonation")
-    _screen_item("method", "gmx pdb2gmx -ignh")
+    _screen_header(pdb_id_guess, "starting PROPKA + GROMACS protonation")
+    _screen_item("method", "PROPKA pKa prediction → gmx pdb2gmx -ignh")
     _screen_item("input_source", str(input_source))
     _screen_item("input", str(input_pdb))
     _screen_item("output", str(output_pdb))
@@ -865,7 +866,7 @@ def protonate_selected_structure(
         _screen_item("variant", variant_label)
     _screen_item("ff", ff)
     _screen_item("water_model", water_model)
-    _screen_item("ph_compat", f"{ph} retained; not directly applied by pdb2gmx")
+    _screen_item("ph", str(ph))
     _screen_item("stdout_log", str(stdout_log_path))
     _screen_item("stderr_log", str(stderr_log_path))
     _screen_item("module_log", str(module_log_path))
@@ -874,16 +875,14 @@ def protonate_selected_structure(
         module_log_path,
         "protonate_selected_structure:start",
         [
-            "protonation_method          : gmx pdb2gmx -ignh",
-            "protonation_intent          : approximate previous AMBER-oriented behavior",
+            "protonation_method          : PROPKA pKa prediction + gmx pdb2gmx -ignh",
             f"input_source                : {input_source}",
             f"input_pdb                   : {input_pdb}",
             f"output_pdb                  : {output_pdb}",
             f"topology_output_path        : {topology_output_path}",
             f"position_restraints_path    : {position_restraints_output_path}",
             f"variant_label               : {variant_label!r}",
-            f"ph_compatibility_value      : {ph}",
-            "ph_applied_by_gromacs       : False",
+            f"ph                          : {ph}",
             f"ff                          : {ff}",
             f"water_model                 : {water_model}",
             f"chain_separation            : {chain_separation}",
@@ -904,19 +903,24 @@ def protonate_selected_structure(
 
     import tempfile
 
-    propka_renames = predict_protonation_states(input_pdb, ph=ph)
+    propka_mol = _run_propka(input_pdb)
+    propka_ran = propka_mol is not None
+    propka_renames = predict_protonation_states(input_pdb, ph=ph) if propka_ran else {}
     propka_him_count = sum(1 for v in propka_renames.values() if v == "HIP")
     propka_applied = bool(propka_renames)
 
+    _screen_item("propka_ran", str(propka_ran))
     _screen_item("propka_his_renamed", str(len(propka_renames)))
     _screen_item("propka_hip_count", str(propka_him_count))
     _append_log_block(
         module_log_path,
         "protonate_selected_structure:propka",
         [
+            f"propka_ran              : {propka_ran}",
             f"propka_ph               : {ph}",
             f"propka_renames          : {len(propka_renames)}",
             f"propka_hip_count        : {propka_him_count}",
+            f"propka_applied          : {propka_applied}",
             f"propka_renames_detail   : {propka_renames}",
         ],
     )
@@ -1056,21 +1060,21 @@ def protonate_selected_structure(
 
     output_dict: dict[str, str | bool | float | int] = {
         "protonation_success": protonation_success,
-        "protonation_method": "gmx pdb2gmx -ignh",
+        "protonation_method": "PROPKA pKa prediction + gmx pdb2gmx -ignh",
         "protonation_input_source": input_source,
         "protonation_input_path": str(input_pdb),
         "protonation_output_path": str(output_pdb),
         "protonation_topology_path": str(topology_output_path),
         "protonation_position_restraints_path": str(position_restraints_output_path),
         "protonation_ph": ph,
-        "protonation_ph_applied_by_gromacs": False,
+        "protonation_propka_ran": propka_ran,
         "protonation_propka_applied": propka_applied,
         "protonation_propka_his_renamed": len(propka_renames),
         "protonation_propka_hip_count": propka_him_count,
         "protonation_state_policy": (
             f"PROPKA-guided HIS states at pH {ph}; gmx pdb2gmx -ignh"
-            if propka_applied
-            else "GROMACS force-field defaults; AMBER-family approximation"
+            if propka_ran
+            else "PROPKA unavailable; gmx pdb2gmx -ignh with GROMACS defaults"
         ),
         "gromacs_force_field": ff,
         "gromacs_water_model": water_model,
@@ -1138,8 +1142,7 @@ def protonate_variant_structure(
             f"input_pdb     : {input_pdb}",
             f"output_pdb    : {output_pdb}",
             f"input_source  : {input_source}",
-            f"ph_compat     : {ph}",
-            "ph_applied    : False",
+            f"ph            : {ph}",
             f"ff            : {ff}",
             f"water_model   : {water_model}",
         ],
@@ -1199,8 +1202,7 @@ def protonate_protein_structure(
             f"filler_output_dir        : {filler_output_dir}",
             f"modeller_model_path      : {modeller_model_path}",
             f"alphafold_model_path     : {alphafold_model_path}",
-            f"ph_compatibility_value   : {ph}",
-            "ph_applied_by_gromacs    : False",
+            f"ph                       : {ph}",
             f"ff                       : {ff}",
             f"water_model              : {water_model}",
             f"output_pdb               : {output_pdb}",
