@@ -1761,14 +1761,14 @@ def _collect_residue_renames(
     before = _parse_residues(input_pdb)
     after = _parse_residues(output_pdb)
 
-    _HIP_KEYS = {"HIP"}
+    _PROPKA_TARGETS = {"HIP", "HIE", "HID"}
     renames: list[dict[str, str]] = []
     for key, from_name in sorted(before.items(), key=lambda kv: kv[0]):
         to_name = after.get(key)
         if to_name is None or to_name == from_name:
             continue
         chain, res_num, icode = key
-        source = "PROPKA" if to_name in _HIP_KEYS else "GROMACS"
+        source = "PROPKA" if from_name == "HIS" and to_name in _PROPKA_TARGETS else "GROMACS"
         renames.append({
             "chain": chain,
             "res_num": str(res_num),
@@ -1801,6 +1801,8 @@ def _build_residue_rename_table(
 
     _notes = {
         "HIP": "doubly protonated His; net charge +1",
+        "HIE": "neutral His, epsilon-tautomer (N-epsilon protonated); net charge 0",
+        "HID": "neutral His, delta-tautomer (N-delta protonated); net charge 0",
         "CYS2": "disulfide-bridged Cys",
         "MET": "selenomethionine converted to methionine",
     }
