@@ -499,6 +499,86 @@ def _basic_structure_diagnostics(input_pdb: Path) -> dict[str, int | bool]:
 
 
 # ============================================================================
+# PDB element-column repair
+# ============================================================================
+
+_TWO_CHAR_ELEMENTS = frozenset({
+    "CL", "BR", "FE", "ZN", "MG", "CA", "MN", "CU", "CO", "NI",
+    "NA", "HG", "SE", "SI",
+})
+
+
+def _infer_element_from_atom_name(atom_name_field: str) -> str:
+    """Return the element symbol inferred from a 4-char PDB atom name field.
+
+    Hydrogen names (H, HA, HB, HG1, HW1, 1HB …) always resolve to 'H'.
+    Two-character heavy elements (CL, FE, ZN …) are only matched when the
+    atom name core does not begin with 'H', so 'HG1' (gamma-H) is never
+    mis-classified as mercury (HG).
+    """
+    name = atom_name_field.strip()
+    if not name:
+        return ""
+    i = 0
+    while i < len(name) and name[i].isdigit():
+        i += 1
+    core = name[i:] if i < len(name) else name
+    if not core:
+        return ""
+    if core[0].upper() == "H":
+        return "H"
+    two = core[:2].upper()
+    if two in _TWO_CHAR_ELEMENTS:
+        return two
+    return core[0].upper()
+
+
+def _fill_pdb_element_column(pdb_path: Path) -> None:
+    """Fill the element symbol column (cols 77-78) for ATOM/HETATM records.
+
+    gmx pdb2gmx writes hydrogen records without the element column, leaving
+    lines at 66 characters.  This pass fills the column from the atom name so
+    that downstream tools that rely on the element field (MDAnalysis, VMD,
+    OpenMM) get correct element assignments.
+    """
+    raw = pdb_path.read_text(encoding="utf-8")
+    lines = raw.splitlines(keepends=True)
+    fixed: list[str] = []
+    changed = False
+    for line in lines:
+        if line.startswith(("ATOM  ", "HETATM")):
+            body = line.rstrip("\n\r")
+            elem_field = body[76:78] if len(body) >= 78 else ""
+            elem_str = elem_field.strip()
+            elem_missing = not elem_str
+            # A 2-char element whose first character is 'H' (e.g. "HG") was
+            # mis-assigned by a previous pass that lacked the H-early-return
+            # rule.  Re-infer those as well.
+            has_wrong_h = (
+                len(elem_str) == 2 and elem_str[0].upper() == "H"
+            )
+            # Lines longer than 78 chars have junk beyond the element column
+            # (never written by GROMACS) that must be trimmed.
+            has_junk = len(body) > 78
+            if elem_missing or has_wrong_h or has_junk:
+                atom_name_field = body[12:16] if len(body) >= 16 else ""
+                elem = _infer_element_from_atom_name(atom_name_field)
+                if not elem and not elem_missing:
+                    elem = elem_str  # keep existing if inference yields nothing
+                if elem:
+                    new_body = body[:76].ljust(76) + elem.rjust(2)
+                    if new_body != body:
+                        body = new_body
+                        changed = True
+            eol = line[len(line.rstrip("\n\r")):]
+            fixed.append(body + eol)
+        else:
+            fixed.append(line)
+    if changed:
+        pdb_path.write_text("".join(fixed), encoding="utf-8")
+
+
+# ============================================================================
 # crystal water preparation
 # ============================================================================
 
@@ -562,6 +642,7 @@ def add_hydrogens_to_crystal_water_pdb(
             )
 
         shutil.copy2(sol_output, water_pdb_path)
+        _fill_pdb_element_column(water_pdb_path)
 
 
 # ============================================================================
@@ -992,6 +1073,7 @@ def protonate_selected_structure(
     )
 
     if output_nonempty:
+        _fill_pdb_element_column(output_pdb)
         output_atom_count = count_atoms_in_structure_file(output_pdb)
         atom_count_increased = output_atom_count > input_atom_count
     else:
