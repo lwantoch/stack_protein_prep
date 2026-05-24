@@ -11,7 +11,7 @@
 # =============================================================================
 set -euo pipefail
 
-FRUTON_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+FRUTON_ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 
 # ---- Initialize Lmod if module function not yet available ------------------
 # Needed when the script is called non-interactively (sbatch, cron, etc.)
