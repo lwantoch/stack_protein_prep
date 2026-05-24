@@ -455,7 +455,7 @@ def _verbose_screen_enabled() -> bool:
     return os.environ.get("FRUTON_VERBOSE", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-_PROGRESS = TerminalProgress(total_steps=19)
+_PROGRESS = TerminalProgress(total_steps=20)
 
 
 def _estimate_initial_work_units(record_count: int) -> int:
