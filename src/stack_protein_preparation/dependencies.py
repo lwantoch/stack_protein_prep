@@ -93,45 +93,54 @@ COMMAND_DEPENDENCIES: tuple[_CommandDependency, ...] = (
     _CommandDependency(
         "GROMACS",
         "gmx",
-        "GROMACS is not in PATH.  Fix: pixi install",
+        "GROMACS (gmx) is not in PATH.\n"
+        "  On CESGA: module load gromacs  (check available versions with: module avail gromacs)\n"
+        "  Add to your ~/.bashrc or load before running fruton.",
     ),
     _CommandDependency(
         "MODELLER",
         "mod10.8",
         "MODELLER is not in PATH.  Fix: pixi install\n"
-        "  Make sure KEY_MODELLER is set: export KEY_MODELLER=<your_key>\n"
+        "  Make sure KEY_MODELLER is set before running: export KEY_MODELLER=<your_key>\n"
         "  Register free academic key at: https://salilab.org/modeller/registration.html",
     ),
     _CommandDependency(
         "AmberTools — antechamber",
         "antechamber",
-        "antechamber is not in PATH.  Fix: pixi install",
+        "antechamber is not in PATH.\n"
+        "  On CESGA: module load ambertools  (check: module avail ambertools)\n"
+        "  Add to your ~/.bashrc or load before running fruton.",
     ),
     _CommandDependency(
         "AmberTools — prepgen",
         "prepgen",
-        "prepgen is not in PATH.  Fix: pixi install",
+        "prepgen is not in PATH.\n"
+        "  On CESGA: module load ambertools",
     ),
     _CommandDependency(
         "AmberTools — parmchk2",
         "parmchk2",
-        "parmchk2 is not in PATH.  Fix: pixi install",
+        "parmchk2 is not in PATH.\n"
+        "  On CESGA: module load ambertools",
     ),
     _CommandDependency(
         "AmberTools — tleap",
         "tleap",
-        "tleap is not in PATH.  Fix: pixi install",
+        "tleap is not in PATH.\n"
+        "  On CESGA: module load ambertools",
     ),
     _CommandDependency(
         "AmberTools — MCPB.py",
         "MCPB.py",
-        "MCPB.py is not in PATH.  Fix: pixi install",
+        "MCPB.py is not in PATH.\n"
+        "  On CESGA: module load ambertools",
     ),
     _CommandDependency(
         "Gaussian 16",
         "g16",
-        "g16 is not in PATH.  On CESGA: module load cesga/2020 g16/c1\n"
-        "  Gaussian is licensed software and must be available on the HPC cluster.",
+        "g16 is not in PATH.\n"
+        "  On CESGA: module load cesga/2020 g16/c1\n"
+        "  Gaussian is licensed software — must be loaded on the HPC cluster before running.",
     ),
 )
 
