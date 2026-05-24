@@ -81,12 +81,6 @@ PYTHON_DEPENDENCIES: tuple[_PythonDependency, ...] = (
     _PythonDependency("BioPython",  "Bio",      "biopython"),
     _PythonDependency("openpyxl",   "openpyxl", "openpyxl"),
     _PythonDependency("OpenMM",     "openmm",   "openmm"),
-    _PythonDependency(
-        "PTM-Psi",
-        "ptmpsi",
-        "git+https://github.com/pnnl/PTMPSI.git",
-        no_deps=True,
-    ),
 )
 
 COMMAND_DEPENDENCIES: tuple[_CommandDependency, ...] = (
