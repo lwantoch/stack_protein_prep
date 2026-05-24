@@ -716,8 +716,8 @@ def run_gaussian_parametrization_for_protein(
         result["status"] = "failed"
     elif "partial" in statuses:
         result["status"] = "partial"
-    elif "pending_hpc" in statuses:
-        result["status"] = "pending_hpc"
+    elif "required" in statuses or "pending_hpc" in statuses:
+        result["status"] = "required"
     elif statuses == {"skipped"}:
         result["status"] = "skipped"
     elif "success" in statuses:
