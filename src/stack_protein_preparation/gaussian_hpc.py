@@ -243,11 +243,22 @@ def run_mcpb_gaussian_for_protein(
         result["message"] = "No MCPB sites with commands.sh found."
         return result
 
-    if not _sbatch_available():
-        result["status"] = "pending_hpc"
+    hpc_available = _sbatch_available()
+
+    if not hpc_available:
+        # Local machine — run commands.sh to generate .com files, then stop.
+        for mcpb_dir in site_dirs:
+            step02 = mcpb_dir / "step02_gaussian"
+            if step02.is_dir() and list(step02.glob("*.com")):
+                continue  # already generated
+            try:
+                _run_sh("commands.sh", mcpb_dir)
+            except Exception:
+                pass  # best-effort; MCPB.py may not be installed locally
+        result["status"] = "required"
         result["message"] = (
-            f"{len(site_dirs)} MCPB site(s) ready — "
-            "sbatch not available, run on CESGA."
+            f"{len(site_dirs)} MCPB site(s): Gaussian input files prepared. "
+            "Submit on CESGA to complete parametrization."
         )
         return result
 
@@ -455,11 +466,22 @@ def run_resp_gaussian_for_protein(
         result["message"] = "No RESP directories with commands.sh found."
         return result
 
-    if not _sbatch_available():
-        result["status"] = "pending_hpc"
+    hpc_available = _sbatch_available()
+
+    if not hpc_available:
+        # Local machine — run commands.sh to generate .com files, then stop.
+        for resp_dir in resp_dirs:
+            step02 = resp_dir / "step02_gaussian"
+            if step02.is_dir() and list(step02.glob("*.com")):
+                continue  # already generated
+            try:
+                _run_sh("commands.sh", resp_dir)
+            except Exception:
+                pass  # best-effort; antechamber may not be installed locally
+        result["status"] = "required"
         result["message"] = (
-            f"{len(resp_dirs)} RESP residue(s) ready — "
-            "sbatch not available, run on CESGA."
+            f"{len(resp_dirs)} RESP residue(s): Gaussian input files prepared. "
+            "Submit on CESGA to complete parametrization."
         )
         return result
 

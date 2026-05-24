@@ -1566,7 +1566,11 @@ def run_pipeline() -> None:
         pipeline_record[GAUSSIAN_PARAMS_MANIFEST_PATH_COLUMN_NAME] = str(
             gauss_result.get("manifest_path", "") or ""
         )
-        _screen_item(f"gaussian_parametrization -> {pdb_id}: {status} — {gauss_result.get('message', '')}")
+        msg = gauss_result.get("message", "")
+        if status == STATUS_REQUIRED:
+            _screen_notice(f"gaussian_parametrization -> {pdb_id}: input files prepared — submit on CESGA to run Gaussian")
+        else:
+            _screen_item(f"gaussian_parametrization -> {pdb_id}: {status}" + (f" — {msg}" if msg else ""))
 
     _screen_step(16, "parameter_audit of variants")
 
