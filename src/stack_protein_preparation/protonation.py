@@ -661,9 +661,13 @@ def _run_propka(pdb_path: Path) -> object | None:
         return None
 
     try:
+        output_pka = str(pdb_path.with_suffix(".pka"))
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
-            mol = propka.run.single(str(pdb_path), optargs=["--quiet"])
+            mol = propka.run.single(
+                str(pdb_path),
+                optargs=["--quiet", "--output-file", output_pka],
+            )
         return mol
     except Exception:
         return None
