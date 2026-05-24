@@ -660,16 +660,27 @@ def _run_propka(pdb_path: Path) -> object | None:
     except ImportError:
         return None
 
+    output_pka = str(pdb_path.with_suffix(".pka"))
     try:
-        output_pka = str(pdb_path.with_suffix(".pka"))
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
             mol = propka.run.single(
                 str(pdb_path),
-                optargs=["--quiet", "--output-file", output_pka],
+                optargs=["--quiet", "-o", output_pka],
             )
         return mol
+    except SystemExit:
+        # argparse in some propka versions calls sys.exit() on bad args — retry without -o
+        pass
     except Exception:
+        return None
+
+    try:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+            mol = propka.run.single(str(pdb_path), optargs=["--quiet"])
+        return mol
+    except (Exception, SystemExit):
         return None
 
 
