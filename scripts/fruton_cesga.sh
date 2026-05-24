@@ -27,7 +27,7 @@ fi
 
 # ---- Load CESGA modules ----------------------------------------------------
 if declare -f module &>/dev/null; then
-    module load gromacs/2025.3
+    module load cesga/2025 gcc/system openmpi/4.1.8 gromacs/2025.3
     module load amber/20.13-AmberTools-22.2
     module load mafft/7.525-with-extensions
     # Gaussian is loaded per-job by run_gaussian.sh (licensed, node-only)
