@@ -24,11 +24,7 @@ if str(SRC_DIR) not in sys.path:
 
 from stack_protein_preparation.dependencies import ensure_fruton_dependencies
 
-FRUTON_DEPENDENCY_REPORT = ensure_fruton_dependencies(
-    install_missing=True,
-    include_optional_python=False,
-    strict=False,
-)
+FRUTON_DEPENDENCY_REPORT = ensure_fruton_dependencies()
 
 from stack_protein_preparation.fasta_files import create_fasta_files_for_pdb_directory
 from stack_protein_preparation.filler import (
@@ -207,17 +203,17 @@ def _print_logo() -> None:
 
 
 def _print_dependency_report() -> None:
-    required_missing = len(FRUTON_DEPENDENCY_REPORT.missing_required)
-    optional_missing = len(FRUTON_DEPENDENCY_REPORT.missing_optional)
+    missing = FRUTON_DEPENDENCY_REPORT.missing
+    installed = [c for c in FRUTON_DEPENDENCY_REPORT.checks if c.installed]
     print("┏━ FRUTON dependency check")
-    print(f"┃ required missing : {required_missing}")
-    print(f"┃ optional missing : {optional_missing}")
-    if required_missing:
-        for check in FRUTON_DEPENDENCY_REPORT.missing_required:
-            print(f"┃ missing required : {check.name} — {check.hint}")
-    if optional_missing and _verbose_screen_enabled():
-        for check in FRUTON_DEPENDENCY_REPORT.missing_optional:
-            print(f"┃ optional missing : {check.name}")
+    print(f"┃ missing  : {len(missing)}")
+    print(f"┃ installed: {len(installed)}")
+    for check in installed:
+        print(f"┃   installed : {check.name}")
+    for check in missing:
+        print(f"┃   MISSING   : {check.name}")
+        for line in check.hint.splitlines():
+            print(f"┃              {line}")
     print()
 
 
