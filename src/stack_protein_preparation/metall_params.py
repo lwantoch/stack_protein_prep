@@ -458,7 +458,7 @@ ion_mol2files {ion_mol2file}
 # 1 = optimise only H positions in the large model (recommended).
 large_opt 1
 
-force_field ff99SB-ILDN
+force_field ff14SB
 
 # Verify Gaussian version on your system (g09 or g16).
 software_version g16

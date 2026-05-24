@@ -176,8 +176,9 @@ def _read_mcpb_group_name(mcpb_dir: Path, pdb_id: str) -> str | None:
         in_file = candidates[0]
     for line in in_file.read_text(errors="replace").splitlines():
         stripped = line.strip()
-        if stripped.startswith("group_name") and "=" in stripped:
-            return stripped.split("=", 1)[1].strip()
+        if stripped.startswith("group_name"):
+            parts = stripped.split("=", 1) if "=" in stripped else stripped.split(None, 1)
+            return parts[1].strip() if len(parts) > 1 else None
     return None
 
 
