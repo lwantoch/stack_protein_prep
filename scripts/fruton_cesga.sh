@@ -37,6 +37,7 @@ if declare -f module &>/dev/null; then
     # Snapshot paths that the cesga/2025 swap will remove
     _AMBERHOME="${AMBERHOME:-}"
     _MAFFT_BIN="$(command -v mafft 2>/dev/null || true)"
+    _MAFFT_BINARIES="${MAFFT_BINARIES:-}"   # companion binaries dir used by mafft wrapper
 
     # Swap to cesga/2025 for GROMACS (deactivates amber + mafft modules)
     module load cesga/2025 gcc/system openmpi/4.1.8 gromacs/2025.3
@@ -48,11 +49,12 @@ if declare -f module &>/dev/null; then
         [[ -d "$_AMBERHOME/lib" ]] && \
             export LD_LIBRARY_PATH="$_AMBERHOME/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     fi
-    # Re-inject MAFFT path if not already present
+    # Re-inject MAFFT path and companion-binaries var if not already present
     if [[ -n "$_MAFFT_BIN" ]]; then
         _MAFFT_DIR="$(dirname "$_MAFFT_BIN")"
         [[ ":$PATH:" != *":$_MAFFT_DIR:"* ]] && export PATH="$_MAFFT_DIR:$PATH"
     fi
+    [[ -n "$_MAFFT_BINARIES" ]] && export MAFFT_BINARIES="$_MAFFT_BINARIES"
     # Gaussian is loaded per-job by run_gaussian.sh (licensed, node-only)
 else
     echo "WARNING: module system not found — GROMACS/AmberTools/MAFFT may be missing from PATH" >&2
