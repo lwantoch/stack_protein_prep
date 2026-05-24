@@ -303,7 +303,8 @@ def run_mcpb_gaussian_for_protein(
             try:
                 _run_sh("commands.sh", mcpb_dir)
             except Exception as exc:
-                site_info["error"] = f"commands.sh: {exc!r}"
+                stderr = getattr(exc, "stderr", None) or ""
+                site_info["error"] = f"commands.sh rc={getattr(exc, 'returncode', '?')}: {stderr[-800:] or exc!r}"
                 result["site_results"].append({
                     "group_name": group_name,
                     "status": "failed",
@@ -530,7 +531,8 @@ def run_resp_gaussian_for_protein(
             try:
                 _run_sh("commands.sh", resp_dir)
             except Exception as exc:
-                info["error"] = f"commands.sh: {exc!r}"
+                stderr = getattr(exc, "stderr", None) or ""
+                info["error"] = f"commands.sh rc={getattr(exc, 'returncode', '?')}: {stderr[-800:] or exc!r}"
                 result["residue_results"].append({
                     "resname": resname,
                     "status": "failed",
