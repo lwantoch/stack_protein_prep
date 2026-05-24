@@ -1062,6 +1062,116 @@ def _ion_element(ion_type: str) -> str:
     return clean[:2] if clean else ion_type.upper()[:2]
 
 
+def _find_metal_h_contacts(
+    pdb_path: Path,
+    donor_cutoff: float = 2.8,
+    h_cutoff: float = 2.5,
+) -> list[dict]:
+    """Return H atoms pointing toward each metal ion using BioPython NeighborSearch.
+
+    For each metal ion found in *pdb_path*, locates all H atoms within
+    *h_cutoff* Å.  An H atom at distance M-H < M-O (its parent oxygen) is
+    pointing toward the metal and should be flagged for removal or reorientation
+    before MCPB.py / Gaussian runs.
+
+    Returns a list of dicts with keys:
+        metal_label, metal_elem, h_name, h_res, h_chain, h_resnum,
+        mh_dist, mo_dist, parent_o_name, status
+    """
+    try:
+        from Bio.PDB import PDBParser, NeighborSearch
+        import numpy as np
+    except ImportError:
+        return []
+
+    try:
+        parser = PDBParser(QUIET=True)
+        struct = parser.get_structure("s", str(pdb_path))
+    except Exception:
+        return []
+
+    all_atoms = list(struct.get_atoms())
+    ns = NeighborSearch(all_atoms)
+    results: list[dict] = []
+
+    metal_elements = {
+        "MG", "CA", "ZN", "FE", "MN", "CU", "CO", "NI", "NA", "K",
+        "SR", "BA", "CD", "HG", "CR", "V", "MO", "W", "AL",
+    }
+
+    for metal_atom in all_atoms:
+        if metal_atom.element.upper() not in metal_elements:
+            continue
+        metal_pos = np.array(metal_atom.get_vector().get_array(), dtype="d")
+        metal_res = metal_atom.get_parent()
+        metal_chain = metal_res.get_parent().id
+        metal_label = (
+            f"{metal_atom.element} {metal_chain}{metal_res.id[1]} {metal_atom.name}"
+        )
+
+        near = ns.search(metal_pos, max(donor_cutoff, h_cutoff) + 0.5, "A")
+        # Build quick lookup of O/N distances from this metal
+        donor_dist: dict[tuple, float] = {}
+        for a in near:
+            if a.element.upper() in {"N", "O", "S"}:
+                d = float(np.linalg.norm(
+                    np.array(a.get_vector().get_array(), dtype="d") - metal_pos
+                ))
+                if d <= donor_cutoff:
+                    key = (a.get_parent().get_parent().id,
+                           a.get_parent().id[1], a.name)
+                    donor_dist[key] = d
+
+        for h_atom in near:
+            if h_atom.element.upper() != "H":
+                continue
+            mh = float(np.linalg.norm(
+                np.array(h_atom.get_vector().get_array(), dtype="d") - metal_pos
+            ))
+            if mh > h_cutoff:
+                continue
+
+            h_res = h_atom.get_parent()
+            h_chain = h_res.get_parent().id
+            # Find parent heavy atom (O or N within 1.2 Å of this H)
+            h_pos = np.array(h_atom.get_vector().get_array(), dtype="d")
+            parent_candidates = [
+                a for a in ns.search(h_pos, 1.2, "A")
+                if a is not h_atom and a.element.upper() in {"N", "O", "S"}
+            ]
+            if not parent_candidates:
+                parent_o_name = "?"
+                mo_dist = float("nan")
+            else:
+                parent_o = min(
+                    parent_candidates,
+                    key=lambda a: np.linalg.norm(
+                        np.array(a.get_vector().get_array(), dtype="d") - h_pos
+                    ),
+                )
+                parent_o_name = parent_o.name
+                mo_dist = float(np.linalg.norm(
+                    np.array(parent_o.get_vector().get_array(), dtype="d") - metal_pos
+                ))
+
+            status = "toward_metal" if (not np.isnan(mo_dist) and mh < mo_dist) else "near_metal"
+            results.append({
+                "metal_label": metal_label,
+                "metal_elem": metal_atom.element.upper(),
+                "h_name": h_atom.name,
+                "h_res": h_res.resname,
+                "h_chain": h_chain,
+                "h_resnum": h_res.id[1],
+                "mh_dist": round(mh, 3),
+                "mo_dist": round(mo_dist, 3) if not np.isnan(mo_dist) else None,
+                "parent_o_name": parent_o_name,
+                "status": status,
+            })
+
+    results.sort(key=lambda r: (r["metal_label"], r["mh_dist"]))
+    return results
+
+
 def _render_metal_pocket_figures(
     pdb_path: Path,
     ion_type: str,
@@ -1071,10 +1181,12 @@ def _render_metal_pocket_figures(
     """
     Render two metal-pocket PNGs for one ion type in *pdb_path*:
 
-    ``with_h``    — coordination shell with H visible (protonation state)
+    ``with_h``    — coordination shell with H visible; water molecules shown
     ``distances`` — coordination shell without H, with labelled M-donor distances
 
-    Returns dict with keys 'with_h' and 'distances'; value is Path or None.
+    Water molecules within the coordination shell are always shown alongside
+    coordinating protein residues.  Returns dict with keys 'with_h' and
+    'distances'; value is Path or None.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     ion_elem = _ion_element(ion_type)   # reliable element symbol, e.g. 'CA', 'ZN'
@@ -1084,22 +1196,23 @@ def _render_metal_pocket_figures(
     png_d = output_dir / f"{pdb_id}_metal_{ion_tag}_distances.png"
     results: dict[str, Path | None] = {"with_h": None, "distances": None}
 
-    # Coordination cutoffs: use 3.0 Å for residue shell, 2.8 Å for direct bonds.
-    # 2.8 Å excludes beta-carbons (typically 3.1–3.3 Å from transition metals)
-    # and water second-shell atoms while capturing all N/O/S/Se direct donors.
-    COORD_SHELL_CUTOFF = 3.5   # residue selection: grab full sidechains
+    # Coordination cutoffs
+    COORD_SHELL_CUTOFF = 3.5   # residue/water selection: grab full sidechains
     DONOR_CUTOFF       = 2.8   # strict donor atoms (direct bonds only)
+    # Water residue names used in GROMACS-prepared structures
+    WATER_RESNAMES = "HOH+SOL+WAT+TIP3+TIP"
 
     # Common setup block — elem selector avoids the CA (alpha-C) / Ca2+ collision
     setup = [
         f"load {pdb_path}, s",
         "bg_color white",
         "hide everything",
-        "set_color fruton_navy, [0.157, 0.196, 0.353]",
-        "set_color fruton_gold, [0.541, 0.451, 0.059]",
-        "set_color fruton_red, [0.902, 0.000, 0.078]",
-        "set_color fruton_yellow, [0.980, 0.902, 0.275]",
-        "set_color fruton_softgrey, [0.760, 0.770, 0.790]",
+        "set_color fruton_navy,    [0.157, 0.196, 0.353]",
+        "set_color fruton_gold,    [0.541, 0.451, 0.059]",
+        "set_color fruton_red,     [0.902, 0.000, 0.078]",
+        "set_color fruton_yellow,  [0.980, 0.902, 0.275]",
+        "set_color fruton_softgrey,[0.760, 0.770, 0.790]",
+        "set_color fruton_water,   [0.400, 0.780, 1.000]",
         # Thin transparent cartoon for context
         "show cartoon, s and polymer",
         "color fruton_softgrey, s and polymer",
@@ -1109,19 +1222,27 @@ def _render_metal_pocket_figures(
         "show sphere, metal_at",
         "color fruton_red, metal_at",
         "set sphere_scale, 0.45, metal_at",
-        # Coordinating residues: full sidechain within COORD_SHELL_CUTOFF of metal
+        # Coordinating protein residues: full sidechain within shell cutoff
         f"select coord_res, byres ((s and polymer) within {COORD_SHELL_CUTOFF} of metal_at)",
         "show sticks, coord_res",
         "color fruton_gold, coord_res and elem C",
         "color atomic, coord_res and not elem C",
+        # Coordinating water molecules (always include; water often IS the coord sphere)
+        f"select coord_water, byres ((s and resn {WATER_RESNAMES}) within {COORD_SHELL_CUTOFF} of metal_at)",
+        "show sticks, coord_water",
+        "color fruton_water, coord_water and elem O",
+        "color white, coord_water and elem H",
         "center metal_at",
-        "zoom (metal_at or coord_res), 3",
+        # Zoom to the union of metal, protein shell, and water shell
+        "zoom (metal_at or coord_res or coord_water), 3",
     ]
 
     # ---- Scene 1: with hydrogens ----
     pml_h = setup + [
+        # Protein coordination-shell H atoms
         "show sticks, coord_res and elem H",
         "color white, coord_res and elem H",
+        # Water H atoms already shown via coord_water above
         "set ray_opaque_background, 1",
         "set antialias, 2",
         "set ray_shadows, 0",
@@ -1134,13 +1255,17 @@ def _render_metal_pocket_figures(
 
     # ---- Scene 2: coordination distances ----
     # Select only proper donor atoms (N, O, S, Se) at strict cutoff.
-    # Pass the same cutoff to `distance` so PyMOL only draws bonds, not all pairs.
+    # Includes water OW atoms, which are the sole coordination sphere for
+    # purely aqua ions (e.g. Mg2+ in 1B8O).
     pml_d = setup + [
-        "hide sticks, coord_res and elem H",
-        # Direct donor heavy atoms (N/O/S/Se) within the strict bond cutoff.
+        # Hide H for clean distance view
+        "hide sticks, (coord_res or coord_water) and elem H",
+        # Direct donor heavy atoms (N/O/S/Se) from the full structure within cutoff.
         # NOTE: 'donors' is a reserved PyMOL keyword — use 'metal_donors'.
         (f"select metal_donors, (s within {DONOR_CUTOFF} of metal_at) and not metal_at "
          "and not elem H and (elem N or elem O or elem S or elem SE)"),
+        # Ensure donors are visible as sticks so distance labels have an anchor atom
+        "show sticks, metal_donors",
         # distance name, sel1, sel2, cutoff — cutoff prevents extra cross-pairs
         f"distance coord_dist, metal_at, metal_donors, {DONOR_CUTOFF}",
         "show dashes, coord_dist",
@@ -2403,7 +2528,8 @@ def _build_pdf(
         ion_label = f" ({_safe_pdf_text(ion_type)})" if ion_type else ""
         story.append(_section_block(
             f"Metal coordination pocket{ion_label}",
-            "Local metal-site view for protonation-state and donor-geometry inspection.",
+            "Local metal-site view for protonation-state and donor-geometry inspection. "
+            "Coordinating water molecules are shown in blue; protein residues in gold.",
             styles,
             usable_width,
         ))
@@ -2413,10 +2539,12 @@ def _build_pdf(
             story.append(KeepTogether([
                 Image(str(metal_png_h), width=9.6 * cm, height=9.6 * cm),
                 Paragraph(
-                    f"<i>Figure {figure_num}. Metal coordination pocket{ion_label} with hydrogen atoms visible. "
+                    f"<i>Figure {figure_num}. Metal coordination pocket{ion_label} with all hydrogen atoms visible. "
                     "The protein backbone is a transparent grey cartoon, the metal is a FRUTON-red sphere, "
-                    "coordinating residues use the IDIS-gold carbon accent, and hydrogens are white. "
-                    "Hydrogen positions expose donor protonation states such as histidine δ/ε tautomer choices.</i>",
+                    "coordinating protein residues use the gold carbon accent, and water molecules are shown in "
+                    "light blue (oxygen) and white (hydrogen). "
+                    "Hydrogen positions expose donor protonation states and water orientation relative to the metal. "
+                    "Water H atoms pointing toward the metal require reorientation before MCPB.py/Gaussian.</i>",
                     styles["CaptionAudit"],
                 ),
             ]))
@@ -2429,14 +2557,94 @@ def _build_pdf(
                 Paragraph(
                     f"<i>Figure {figure_num}. Metal coordination geometry{ion_label}. "
                     "Dashed FRUTON-yellow lines show distances (Å) between the metal ion and donor heavy atoms "
-                    "within the direct-donor cutoff. Hydrogen atoms are hidden for clarity.</i>",
+                    "(N, O, S) within the direct-donor cutoff. Coordinating water oxygens are shown as blue sticks. "
+                    "Hydrogen atoms are hidden for clarity.</i>",
                     styles["CaptionAudit"],
                 ),
             ]))
             figure_num += 1
             story.append(Spacer(1, 0.20 * cm))
 
-        story.append(Spacer(1, 0.20 * cm))
+        # ------ H-contact table (water H atoms toward metal) ------
+        prepared_out_for_h = str(pipeline_record.get("prepared_structure.output_path", "")).strip()
+        h_contacts: list[dict] = []
+        if prepared_out_for_h:
+            _prep_pdb_for_h = Path(prepared_out_for_h)
+            if _prep_pdb_for_h.exists():
+                h_contacts = _find_metal_h_contacts(_prep_pdb_for_h)
+
+        if h_contacts:
+            from reportlab.platypus import Paragraph as _Para, Table as _Tbl, TableStyle as _TS
+            from reportlab.lib import colors as _colors
+
+            story.append(Paragraph(
+                "Water H atoms requiring reorientation",
+                styles["SectionSubtitle"],
+            ))
+            story.append(Paragraph(
+                "The table below lists hydrogen atoms whose metal-H distance (M-H) is shorter than "
+                "the corresponding metal-oxygen distance (M-O).  These H atoms point toward the "
+                "metal rather than away from it, which is physically incorrect for a coordinated "
+                "water molecule.  They must be reoriented (rotated away from the metal) before "
+                "running MCPB.py or Gaussian — they should never be removed, as the water "
+                "molecule remains a metal ligand.",
+                styles["SmallNote"],
+            ))
+            story.append(Spacer(1, 0.08 * cm))
+
+            hdr = [
+                _Para("Metal", styles["EvidenceHeader"]),
+                _Para("Residue", styles["EvidenceHeader"]),
+                _Para("H atom", styles["EvidenceHeader"]),
+                _Para("Parent (O/N)", styles["EvidenceHeader"]),
+                _Para("M-H (Å)", styles["EvidenceHeader"]),
+                _Para("M-O (Å)", styles["EvidenceHeader"]),
+                _Para("Status", styles["EvidenceHeader"]),
+            ]
+            rows: list[list] = [hdr]
+            _toward = [r for r in h_contacts if r["status"] == "toward_metal"]
+            _near   = [r for r in h_contacts if r["status"] != "toward_metal"]
+            for r in _toward + _near:
+                mo_str = f"{r['mo_dist']:.3f}" if r["mo_dist"] is not None else "n/a"
+                chain_str = r["h_chain"] or "—"
+                res_str = f"{r['h_res']} {chain_str}{r['h_resnum']}"
+                status_str = "toward metal" if r["status"] == "toward_metal" else "near metal"
+                rows.append([
+                    _Para(_safe_pdf_text(r["metal_label"]), styles["EvidenceCell"]),
+                    _Para(_safe_pdf_text(res_str), styles["EvidenceCell"]),
+                    _Para(_safe_pdf_text(r["h_name"]), styles["EvidenceCell"]),
+                    _Para(_safe_pdf_text(r["parent_o_name"]), styles["EvidenceCell"]),
+                    _Para(_safe_pdf_text(f"{r['mh_dist']:.3f}"), styles["EvidenceCell"]),
+                    _Para(_safe_pdf_text(mo_str), styles["EvidenceCell"]),
+                    _Para(_safe_pdf_text(status_str), styles["EvidenceCell"]),
+                ])
+
+            col_w = [usable_width * f for f in (0.22, 0.18, 0.10, 0.12, 0.12, 0.12, 0.14)]
+            ts = _TS([
+                ("BACKGROUND",  (0, 0), (-1, 0), _colors.HexColor("#2D3259")),
+                ("TEXTCOLOR",   (0, 0), (-1, 0), _colors.white),
+                ("FONTSIZE",    (0, 0), (-1, -1), 7),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+                 [_colors.HexColor("#F5F5F5"), _colors.white]),
+                ("GRID", (0, 0), (-1, -1), 0.3, _colors.HexColor("#CCCCCC")),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING",  (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ])
+            # Highlight "toward_metal" rows in light orange
+            for i, r in enumerate(_toward, start=1):
+                ts.add("BACKGROUND", (0, i), (-1, i), _colors.HexColor("#FFF0D0"))
+            tbl = _Tbl(rows, colWidths=col_w)
+            tbl.setStyle(ts)
+            story.append(tbl)
+            story.append(Paragraph(
+                "Highlighted rows (toward metal) require water-molecule rotation before "
+                "MCPB.py/Gaussian parametrization.",
+                styles["SmallNote"],
+            ))
+            story.append(Spacer(1, 0.20 * cm))
+
+        story.append(Spacer(1, 0.10 * cm))
 
     # ------------------------------------------------------------------
     # Ramachandran scatter plot
