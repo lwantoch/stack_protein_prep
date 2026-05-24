@@ -26,9 +26,11 @@ if ! declare -f module &>/dev/null; then
 fi
 
 # ---- Load CESGA modules ----------------------------------------------------
+# Amber (cesga/2020) is loaded first, then GROMACS (cesga/2025) swaps the
+# cesga base — Amber binaries remain in PATH after the swap.
 if declare -f module &>/dev/null; then
+    module load cesga/2020 gcc/system openmpi/4.0.5_ft3_cuda amber/20.13-AmberTools-22.2
     module load cesga/2025 gcc/system openmpi/4.1.8 gromacs/2025.3
-    module load amber/20.13-AmberTools-22.2
     module load mafft/7.525-with-extensions
     # Gaussian is loaded per-job by run_gaussian.sh (licensed, node-only)
 else
