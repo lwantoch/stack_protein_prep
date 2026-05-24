@@ -1,6 +1,6 @@
 [workspace]
 authors = ["lwantoch <l.wantoch@icloud.com>"]
-channels = ["conda-forge", "https://salilab.org/modeller/conda/"]
+channels = ["conda-forge", "salilab"]
 name = "stack-protein_preparation"
 platforms = ["linux-64"]
 version = "0.1.0"
