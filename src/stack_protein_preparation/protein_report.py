@@ -1253,13 +1253,16 @@ def _render_metal_pocket_figures(
     if err is None:
         results["with_h"] = png_h
 
-    # ---- Scene 2: coordination distances ----
-    # Select only proper donor atoms (N, O, S, Se) at strict cutoff.
-    # Includes water OW atoms, which are the sole coordination sphere for
-    # purely aqua ions (e.g. Mg2+ in 1B8O).
+    # ---- Scene 2: coordination distances with H visible ----
+    # H atoms are kept visible so the viewer can see which water H atoms point
+    # toward the metal (short M-H, lying between metal and OW) and need
+    # reorientation.  Direct donor heavy atoms get distance labels; H atoms
+    # that are wrongly oriented appear close to the metal and can be compared
+    # directly with the H-reorientation table in the report.
     pml_d = setup + [
-        # Hide H for clean distance view
-        "hide sticks, (coord_res or coord_water) and elem H",
+        # Protein coordination-shell H atoms (already shown for water via setup)
+        "show sticks, coord_res and elem H",
+        "color white, coord_res and elem H",
         # Direct donor heavy atoms (N/O/S/Se) from the full structure within cutoff.
         # NOTE: 'donors' is a reserved PyMOL keyword — use 'metal_donors'.
         (f"select metal_donors, (s within {DONOR_CUTOFF} of metal_at) and not metal_at "
@@ -2558,7 +2561,8 @@ def _build_pdf(
                     f"<i>Figure {figure_num}. Metal coordination geometry{ion_label}. "
                     "Dashed FRUTON-yellow lines show distances (Å) between the metal ion and donor heavy atoms "
                     "(N, O, S) within the direct-donor cutoff. Coordinating water oxygens are shown as blue sticks. "
-                    "Hydrogen atoms are hidden for clarity.</i>",
+                    "Hydrogen atoms are shown; water H atoms pointing toward the metal (M–H &lt; M–O) "
+                    "are candidates for reorientation (see table below).</i>",
                     styles["CaptionAudit"],
                 ),
             ]))
