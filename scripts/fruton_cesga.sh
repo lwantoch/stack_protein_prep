@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# =============================================================================
+# FRUTON CESGA launcher
+#
+# Loads required CESGA modules then runs FRUTON via pixi.
+# $HOME/bin/fruton should point here:
+#
+#   ln -sf "$STORE/stack_protein_prep/scripts/fruton_cesga.sh" "$HOME/bin/fruton"
+#
+# Module versions are pinned here — update and git pull to change them.
+# =============================================================================
+set -euo pipefail
+
+FRUTON_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# ---- Initialize Lmod if module function not yet available ------------------
+# Needed when the script is called non-interactively (sbatch, cron, etc.)
+if ! declare -f module &>/dev/null; then
+    for _init in \
+        /usr/share/lmod/lmod/init/bash \
+        /usr/local/lmod/lmod/init/bash \
+        /etc/profile.d/lmod.sh \
+        /etc/profile.d/z00_lmod.sh; do
+        [[ -f "$_init" ]] && source "$_init" && break
+    done
+fi
+
+# ---- Load CESGA modules ----------------------------------------------------
+if declare -f module &>/dev/null; then
+    module load gromacs/2025.3
+    module load amber/20.13-AmberTools-22.2
+    module load mafft/7.525-with-extensions
+    # Gaussian is loaded per-job by run_gaussian.sh (licensed, node-only)
+else
+    echo "WARNING: module system not found — GROMACS/AmberTools/MAFFT may be missing from PATH" >&2
+fi
+
+# ---- Run FRUTON via pixi ---------------------------------------------------
+exec pixi run --manifest-path "$FRUTON_ROOT/pixi.toml" \
+    python "$FRUTON_ROOT/scripts/fruton.py" "$@"
