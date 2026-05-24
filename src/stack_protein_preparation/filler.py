@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
 import subprocess
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -26,10 +28,26 @@ from stack_protein_preparation.pipeline_logging import (
     write_log_header,
 )
 
-PYTHON_BIN = Path("/usr/bin/python3")
-MODELLER_PYTHONPATH = (
-    "/usr/lib/modeller10.8/modlib:/usr/lib/modeller10.8/lib/x86_64-intel8"
-)
+PYTHON_BIN = Path(sys.executable)
+
+
+def _detect_modeller_pythonpath() -> str:
+    """Return PYTHONPATH entries needed to import modeller.
+
+    Priority:
+    1. MODELLER_PYTHONPATH env var — explicit override (useful for custom installs).
+    2. If modeller is already importable in this Python (conda/pixi install) — no extra path needed.
+    3. Legacy local fallback (/usr/lib/modeller10.8) for dev machines with a system install.
+    """
+    override = os.environ.get("MODELLER_PYTHONPATH", "").strip()
+    if override:
+        return override
+    if importlib.util.find_spec("modeller") is not None:
+        return ""  # already on sys.path via conda/pixi
+    return "/usr/lib/modeller10.8/modlib:/usr/lib/modeller10.8/lib/x86_64-intel8"
+
+
+MODELLER_PYTHONPATH = _detect_modeller_pythonpath()
 
 MODULE_NAME = "filler"
 
@@ -572,12 +590,23 @@ def _normalize_alignment_template_for_validation(
 
 
 def _parse_residue_range(residue_range: str) -> tuple[int, int]:
-    match = re.fullmatch(r"\s*(\d+)\s*-\s*(\d+)\s*", str(residue_range).strip())
-    if match is None:
+    """Parse a residue range string; returns (start, end) integers.
+
+    Accepts both the legacy '25-200' format and the chain-aware 'A25-B200'
+    format. For chain-aware ranges only the residue numbers are returned.
+    """
+    stripped = str(residue_range).strip()
+    # Chain-aware format: A25-B200
+    m = re.fullmatch(r"[A-Za-z](-?\d+)-[A-Za-z](-?\d+)", stripped)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    # Legacy format: 25-200
+    m = re.fullmatch(r"\s*(-?\d+)\s*-\s*(-?\d+)\s*", stripped)
+    if m is None:
         raise ValueError(f"Invalid residue range: {residue_range!r}")
 
-    start_residue = int(match.group(1))
-    end_residue = int(match.group(2))
+    start_residue = int(m.group(1))
+    end_residue = int(m.group(2))
 
     if start_residue > end_residue:
         raise ValueError(f"Invalid residue range: start > end in {residue_range!r}")
@@ -633,6 +662,83 @@ def _resolve_residue_range_for_filler(
         f"{inferred_range}"
     )
     return inferred_range
+
+
+def _derive_per_chain_effective_range(
+    *,
+    residue_range: str,
+    chain_id: str,
+    template_pdb_path: Path,
+) -> str:
+    """Convert a possibly chain-aware range to a plain 'start-end' for one chain.
+
+    For a cross-chain range like 'A25-B15':
+    - start chain (A): lower bound is 25, upper bound is inferred from template
+    - end   chain (B): lower bound is inferred from template, upper bound is 15
+    - other chains: full template range (inferred)
+
+    For a same-chain range 'A25-A200' where chain matches: return '25-200'.
+    For a legacy plain range '25-200': return it unchanged.
+    """
+    stripped = residue_range.strip()
+    if not stripped:
+        return _infer_full_residue_range_from_protein_pdb(template_pdb_path)
+
+    m = re.fullmatch(r"([A-Za-z])(-?\d+)-([A-Za-z])(-?\d+)", stripped)
+    if m is None:
+        # Legacy format — return as-is
+        return stripped
+
+    start_chain = m.group(1).upper()
+    start_resnum = int(m.group(2))
+    end_chain = m.group(3).upper()
+    end_resnum = int(m.group(4))
+    norm_chain = chain_id.strip().upper()
+
+    template_range = _infer_full_residue_range_from_protein_pdb(template_pdb_path)
+    template_start, template_end = _parse_residue_range(template_range)
+
+    if start_chain == end_chain:
+        if norm_chain == start_chain:
+            return f"{start_resnum}-{end_resnum}"
+        return f"{template_start}-{template_end}"
+
+    # Cross-chain
+    if norm_chain == start_chain:
+        return f"{start_resnum}-{template_end}"
+    if norm_chain == end_chain:
+        return f"{template_start}-{end_resnum}"
+    return f"{template_start}-{template_end}"
+
+
+def _trim_final_model_in_place(model_path: Path, effective_residue_range: str) -> None:
+    """Trim ATOM records in a final model to the effective residue range, in-place.
+
+    effective_residue_range must be a plain 'start-end' integer range (chain-aware
+    ranges must already have been converted to per-chain bounds before calling this).
+    No-op if effective_residue_range is empty.
+    """
+    if not effective_residue_range.strip():
+        return
+
+    start_resnum, end_resnum = _parse_residue_range(effective_residue_range)
+
+    kept_lines: list[str] = []
+    with model_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("ATOM"):
+                raw_resseq = line[22:26].strip()
+                try:
+                    resnum = int(raw_resseq)
+                except ValueError:
+                    kept_lines.append(line)
+                    continue
+                if start_resnum <= resnum <= end_resnum:
+                    kept_lines.append(line)
+            else:
+                kept_lines.append(line)
+
+    model_path.write_text("".join(kept_lines), encoding="utf-8")
 
 
 def _find_gap_regions_in_sequence(aligned_sequence: str) -> tuple[GapRegion, ...]:
@@ -1576,7 +1682,8 @@ def run_modeller_binary(
 
     command = [str(PYTHON_BIN), script_path.name]
     env = dict(os.environ)
-    env["PYTHONPATH"] = MODELLER_PYTHONPATH
+    if MODELLER_PYTHONPATH:
+        env["PYTHONPATH"] = MODELLER_PYTHONPATH
 
     _debug(f"Running command: {' '.join(command)}")
     _debug(f"Using PYTHONPATH: {env['PYTHONPATH']}")
@@ -2133,6 +2240,18 @@ def run_filler_for_chain(
     )
     _log_debug(module_log_path, f"Resolved chain_id: {resolved_chain_id}")
 
+    # For chain-aware ranges derive the per-chain plain interval now that we
+    # know which chain we are modelling.
+    effective_residue_range = _derive_per_chain_effective_range(
+        residue_range=effective_residue_range,
+        chain_id=resolved_chain_id,
+        template_pdb_path=template_pdb_path,
+    )
+    _log_debug(
+        module_log_path,
+        f"effective_residue_range (per-chain): {effective_residue_range}",
+    )
+
     script_path = output_dir / DEFAULT_MODELLER_SCRIPT_FILENAME
 
     alignment_fasta_path = find_alignment_fasta_for_filler(
@@ -2347,6 +2466,11 @@ def run_filler_for_chain(
                 ],
             )
 
+            _trim_final_model_in_place(alphafold_model_path, effective_residue_range)
+            _log_debug(
+                module_log_path,
+                f"Trimmed AlphaFold model to range {effective_residue_range!r}: {alphafold_model_path}",
+            )
             _log_debug(
                 module_log_path, "=== run_filler_for_chain END (ALPHAFOLD FALLBACK) ==="
             )
@@ -2479,6 +2603,11 @@ def run_filler_for_chain(
             ],
         )
 
+        _trim_final_model_in_place(modeller_model_path, effective_residue_range)
+        _log_debug(
+            module_log_path,
+            f"Trimmed MODELLER model to range {effective_residue_range!r}: {modeller_model_path}",
+        )
         _log_debug(module_log_path, f"Final MODELLER model path: {modeller_model_path}")
         _log_debug(module_log_path, "=== run_filler_for_chain END (MODELLER) ===")
 
