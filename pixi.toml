@@ -21,6 +21,7 @@ pytest = "*"
 biopython = ">=1.87,<2"
 gromacs = ">=2026.0,<2027"
 modeller = "*"
+ambertools = "*"
 pip = ">=26.1.1,<27"
 pdbfixer = ">=1.12,<2"
 

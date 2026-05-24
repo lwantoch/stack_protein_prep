@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import contextlib
 import io
 import json
@@ -523,11 +524,45 @@ def _run_mutating_call(
 
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="FRUTON — protein preparation pipeline",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help=(
+            "Directory containing pdb_ids.csv and pipeline data. "
+            "Defaults to the current working directory if it contains pdb_ids.csv, "
+            "otherwise <project_root>/data/proteins."
+        ),
+    )
+    return parser.parse_args()
+
+
+def _resolve_protein_data_dir(data_dir_arg: Path | None) -> Path:
+    if data_dir_arg is not None:
+        return data_dir_arg.resolve()
+    cwd = Path.cwd()
+    if (cwd / "pdb_ids.csv").is_file():
+        return cwd
+    return PROJECT_ROOT_DIR / "data" / "proteins"
+
+
 def run_pipeline() -> None:
-    protein_data_dir = PROJECT_ROOT_DIR / "data" / "proteins"
+    global FRUTON_LOG_DIR, FRUTON_LOG_PATH
+
+    args = _parse_args()
+    protein_data_dir = _resolve_protein_data_dir(args.data_dir)
     pdb_ids_csv_path = protein_data_dir / "pdb_ids.csv"
     pipeline_json_path = protein_data_dir / "pipeline.json"
     pipeline_xlsx_path = protein_data_dir / "pipeline.xlsx"
+
+    FRUTON_LOG_DIR = protein_data_dir / "logs" / "fruton"
+    FRUTON_LOG_PATH = protein_data_dir / "logs" / "fruton" / "fruton.log"
 
     FRUTON_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
