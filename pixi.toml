@@ -10,9 +10,10 @@ pipeline = "python scripts/run_pipeline.py"
 tests = "pytest"
 
 [dependencies]
-python = "3.12.*"
+# Heavy compiled tools (GROMACS, AmberTools, MAFFT) are loaded via CESGA modules.
+# See scripts/CESGA_SLURM/ and the fruton wrapper for module load commands.
+python = "3.11.*"
 openmm = ">=8.4.0,<9"
-mafft = "*"
 pillow = ">=12.1.1,<13"
 pdb2pqr = "*"
 propka = "*"
@@ -20,7 +21,7 @@ matplotlib = ">=3.10.8,<4"
 pytest = "*"
 biopython = ">=1.87,<2"
 modeller = "*"
-pip = ">=26.1.1,<27"
+pip = "*"
 pdbfixer = ">=1.12,<2"
 
 [pypi-dependencies]

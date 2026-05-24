@@ -94,53 +94,60 @@ COMMAND_DEPENDENCIES: tuple[_CommandDependency, ...] = (
         "GROMACS",
         "gmx",
         "GROMACS (gmx) is not in PATH.\n"
-        "  On CESGA: module load gromacs  (check available versions with: module avail gromacs)\n"
-        "  Add to your ~/.bashrc or load before running fruton.",
+        "  On CESGA: module load gromacs/2025.3\n"
+        "  Add to your fruton wrapper or ~/.bashrc.",
     ),
     _CommandDependency(
         "MODELLER",
         "mod10.8",
         "MODELLER is not in PATH.  Fix: pixi install\n"
-        "  Make sure KEY_MODELLER is set before running: export KEY_MODELLER=<your_key>\n"
+        "  Make sure KEY_MODELLER is set: export KEY_MODELLER=<your_key>\n"
         "  Register free academic key at: https://salilab.org/modeller/registration.html",
+    ),
+    _CommandDependency(
+        "MAFFT",
+        "mafft",
+        "mafft is not in PATH.\n"
+        "  On CESGA: module load mafft/7.525-with-extensions\n"
+        "  Add to your fruton wrapper or ~/.bashrc.",
     ),
     _CommandDependency(
         "AmberTools — antechamber",
         "antechamber",
         "antechamber is not in PATH.\n"
-        "  On CESGA: module load ambertools  (check: module avail ambertools)\n"
-        "  Add to your ~/.bashrc or load before running fruton.",
+        "  On CESGA: module load amber/20.13-AmberTools-22.2\n"
+        "  (may require prerequisites — check: module spider amber/20.13-AmberTools-22.2)",
     ),
     _CommandDependency(
         "AmberTools — prepgen",
         "prepgen",
         "prepgen is not in PATH.\n"
-        "  On CESGA: module load ambertools",
+        "  On CESGA: module load amber/20.13-AmberTools-22.2",
     ),
     _CommandDependency(
         "AmberTools — parmchk2",
         "parmchk2",
         "parmchk2 is not in PATH.\n"
-        "  On CESGA: module load ambertools",
+        "  On CESGA: module load amber/20.13-AmberTools-22.2",
     ),
     _CommandDependency(
         "AmberTools — tleap",
         "tleap",
         "tleap is not in PATH.\n"
-        "  On CESGA: module load ambertools",
+        "  On CESGA: module load amber/20.13-AmberTools-22.2",
     ),
     _CommandDependency(
         "AmberTools — MCPB.py",
         "MCPB.py",
         "MCPB.py is not in PATH.\n"
-        "  On CESGA: module load ambertools",
+        "  On CESGA: module load amber/20.13-AmberTools-22.2",
     ),
     _CommandDependency(
         "Gaussian 16",
         "g16",
         "g16 is not in PATH.\n"
         "  On CESGA: module load cesga/2020 g16/c1\n"
-        "  Gaussian is licensed software — must be loaded on the HPC cluster before running.",
+        "  Gaussian is licensed software — load on the HPC cluster before running.",
     ),
 )
 
