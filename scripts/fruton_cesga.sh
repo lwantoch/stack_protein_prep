@@ -34,8 +34,9 @@ if declare -f module &>/dev/null; then
     module load cesga/2020 gcc/system openmpi/4.0.5_ft3_cuda amber/20.13-AmberTools-22.2
     module load mafft/7.525-with-extensions
 
-    # Snapshot paths that the cesga/2025 swap will remove
+    # Snapshot env vars that the cesga/2025 swap will remove
     _AMBERHOME="${AMBERHOME:-}"
+    _AMBER_PYTHONPATH="${PYTHONPATH:-}"      # amber module adds pymsmt etc. to PYTHONPATH
     _MAFFT_BIN="$(command -v mafft 2>/dev/null || true)"
     _MAFFT_BINARIES="${MAFFT_BINARIES:-}"   # companion binaries dir used by mafft wrapper
 
@@ -49,6 +50,9 @@ if declare -f module &>/dev/null; then
         [[ -d "$_AMBERHOME/lib" ]] && \
             export LD_LIBRARY_PATH="$_AMBERHOME/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     fi
+    # Re-inject PYTHONPATH for AmberTools Python packages (pymsmt, etc.)
+    [[ -n "$_AMBER_PYTHONPATH" ]] && \
+        export PYTHONPATH="${_AMBER_PYTHONPATH}${PYTHONPATH:+:$PYTHONPATH}"
     # Re-inject MAFFT path and companion-binaries var if not already present
     if [[ -n "$_MAFFT_BIN" ]]; then
         _MAFFT_DIR="$(dirname "$_MAFFT_BIN")"
