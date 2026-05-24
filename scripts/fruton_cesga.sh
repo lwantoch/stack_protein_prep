@@ -26,12 +26,13 @@ if ! declare -f module &>/dev/null; then
 fi
 
 # ---- Load CESGA modules ----------------------------------------------------
-# Amber (cesga/2020) is loaded first, then GROMACS (cesga/2025) swaps the
-# cesga base — Amber binaries remain in PATH after the swap.
+# Load Amber and MAFFT (both cesga/2020) first, then swap to cesga/2025 for
+# GROMACS. After the swap Amber and MAFFT become "Inactive" in Lmod but their
+# binaries remain in PATH and are fully functional.
 if declare -f module &>/dev/null; then
     module load cesga/2020 gcc/system openmpi/4.0.5_ft3_cuda amber/20.13-AmberTools-22.2
-    module load cesga/2025 gcc/system openmpi/4.1.8 gromacs/2025.3
     module load mafft/7.525-with-extensions
+    module load cesga/2025 gcc/system openmpi/4.1.8 gromacs/2025.3
     # Gaussian is loaded per-job by run_gaussian.sh (licensed, node-only)
 else
     echo "WARNING: module system not found — GROMACS/AmberTools/MAFFT may be missing from PATH" >&2
