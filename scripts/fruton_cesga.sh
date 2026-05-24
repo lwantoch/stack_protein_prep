@@ -26,13 +26,33 @@ if ! declare -f module &>/dev/null; then
 fi
 
 # ---- Load CESGA modules ----------------------------------------------------
-# Load Amber and MAFFT (both cesga/2020) first, then swap to cesga/2025 for
-# GROMACS. After the swap Amber and MAFFT become "Inactive" in Lmod but their
-# binaries remain in PATH and are fully functional.
+# Amber and MAFFT require cesga/2020; GROMACS requires cesga/2025.  The swap
+# to cesga/2025 marks amber and mafft "Inactive" in Lmod AND removes their
+# PATH/LD_LIBRARY_PATH entries.  We snapshot the paths before the swap and
+# restore them manually afterwards so all tools remain accessible.
 if declare -f module &>/dev/null; then
     module load cesga/2020 gcc/system openmpi/4.0.5_ft3_cuda amber/20.13-AmberTools-22.2
     module load mafft/7.525-with-extensions
+
+    # Snapshot paths that the cesga/2025 swap will remove
+    _AMBERHOME="${AMBERHOME:-}"
+    _MAFFT_BIN="$(command -v mafft 2>/dev/null || true)"
+
+    # Swap to cesga/2025 for GROMACS (deactivates amber + mafft modules)
     module load cesga/2025 gcc/system openmpi/4.1.8 gromacs/2025.3
+
+    # Re-inject Amber paths stripped by the cesga swap
+    if [[ -n "$_AMBERHOME" ]]; then
+        export AMBERHOME="$_AMBERHOME"
+        export PATH="$_AMBERHOME/bin:$PATH"
+        [[ -d "$_AMBERHOME/lib" ]] && \
+            export LD_LIBRARY_PATH="$_AMBERHOME/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    fi
+    # Re-inject MAFFT path if not already present
+    if [[ -n "$_MAFFT_BIN" ]]; then
+        _MAFFT_DIR="$(dirname "$_MAFFT_BIN")"
+        [[ ":$PATH:" != *":$_MAFFT_DIR:"* ]] && export PATH="$_MAFFT_DIR:$PATH"
+    fi
     # Gaussian is loaded per-job by run_gaussian.sh (licensed, node-only)
 else
     echo "WARNING: module system not found — GROMACS/AmberTools/MAFFT may be missing from PATH" >&2
