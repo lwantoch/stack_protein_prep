@@ -262,3 +262,18 @@ if ! tail -n 80 "$LOG" | grep -q "Normal termination of Gaussian"; then
 fi
 
 echo "OK: Normal termination"
+
+# -------- auto-formchk for _small_opt jobs --------
+# MCPB.py -s 2 requires a formatted checkpoint (.fchk).
+# Convert automatically here so the pipeline step can copy it directly.
+if [[ "$BASE" == *_small_opt ]]; then
+  CHK_FILE="${WORKDIR}/${BASE}.chk"
+  FCHK_FILE="${WORKDIR}/${BASE}.fchk"
+  if [[ -f "$CHK_FILE" ]]; then
+    echo "Running formchk: $CHK_FILE → $FCHK_FILE"
+    formchk "$CHK_FILE" "$FCHK_FILE"
+    echo "OK: formchk complete"
+  else
+    echo "WARNING: $CHK_FILE not found — skipping formchk" >&2
+  fi
+fi

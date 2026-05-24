@@ -95,6 +95,8 @@ from stack_protein_preparation.pipeline_state import (
     NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME,
     NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME,
     NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME,
+    GAUSSIAN_PARAMS_STATUS_COLUMN_NAME,
+    GAUSSIAN_PARAMS_MANIFEST_PATH_COLUMN_NAME,
     MODEL_EVALUATION_STATUS_COLUMN_NAME,
     MODEL_EVALUATION_PCT_FAVORED_COLUMN_NAME,
     MODEL_EVALUATION_PCT_OUTLIER_COLUMN_NAME,
@@ -174,6 +176,7 @@ from stack_protein_preparation.pipeline_runner import (
 )
 from stack_protein_preparation.model_evaluation import run_model_evaluation
 from stack_protein_preparation.protein_report import generate_protein_report
+from stack_protein_preparation.gaussian_hpc import run_gaussian_parametrization_for_protein
 
 FRUTON_LOGO = r"""
 ███████╗██████╗ ██╗   ██╗████████╗ ██████╗ ███╗   ██╗
@@ -1532,7 +1535,40 @@ def run_pipeline() -> None:
         status = nonstd_result.get("status", "")
         _screen_item(f"nonstd_residue_params -> {pdb_id}: {status} ({n_residues} non-standard residue(s))")
 
-    _screen_step(15, "parameter_audit of variants")
+    _screen_step(15, "gaussian_parametrization (MCPB + RESP, HPC)")
+    for pipeline_record in pipeline_record_list:
+        pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
+        pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
+
+        has_metals = str(pipeline_record.get(HAS_METALS_COLUMN_NAME, "")).strip().lower() == "yes"
+        has_nonstd = str(pipeline_record.get(HAS_NONSTANDARD_RESIDUES_COLUMN_NAME, "")).strip().lower() == "yes"
+        if not has_metals and not has_nonstd:
+            _screen_item(f"gaussian_parametrization skipped for {pdb_id}: no metals or non-standard residues")
+            continue
+
+        try:
+            gauss_result = _run_mutating_call(
+                log_title=f"step_15:gaussian_parametrization:{pdb_id}:captured_output",
+                work_label=f"gaussian_parametrization:{pdb_id}",
+                screen_pdb_id=pdb_id,
+                func=run_gaussian_parametrization_for_protein,
+                protein_dir=pdb_dir,
+                pdb_id=pdb_id,
+            )
+        except Exception as error:
+            _screen_error(f"gaussian_parametrization failed for {pdb_id}: {error!r}")
+            _log_fruton_exception(f"step_15:gaussian_parametrization:{pdb_id}", error)
+            pipeline_record[GAUSSIAN_PARAMS_STATUS_COLUMN_NAME] = STATUS_FAILED
+            continue
+
+        status = str(gauss_result.get("status", "")).strip()
+        pipeline_record[GAUSSIAN_PARAMS_STATUS_COLUMN_NAME] = status
+        pipeline_record[GAUSSIAN_PARAMS_MANIFEST_PATH_COLUMN_NAME] = str(
+            gauss_result.get("manifest_path", "") or ""
+        )
+        _screen_item(f"gaussian_parametrization -> {pdb_id}: {status} — {gauss_result.get('message', '')}")
+
+    _screen_step(16, "parameter_audit of variants")
 
     for pipeline_record in pipeline_record_list:
         pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
@@ -1559,7 +1595,7 @@ def run_pipeline() -> None:
 
             try:
                 parameter_audit_result = _run_mutating_call(
-                    log_title=f"step_15:parameter_audit_variant:{pdb_id}:{variant_label}:captured_output",
+                    log_title=f"step_16:parameter_audit_variant:{pdb_id}:{variant_label}:captured_output",
                     work_label=f"parameter_audit:{variant_label}",
                     screen_pdb_id=pdb_id,
                     func=_run_parameter_audit_for_variant,
@@ -1573,7 +1609,7 @@ def run_pipeline() -> None:
                     f"parameter_audit variant failed for {pdb_id} [{variant_label}]: {error!r}"
                 )
                 _log_fruton_exception(
-                    f"step_15:parameter_audit_variant:{pdb_id}:{variant_label}",
+                    f"step_16:parameter_audit_variant:{pdb_id}:{variant_label}",
                     error,
                 )
                 continue
@@ -1633,13 +1669,13 @@ def run_pipeline() -> None:
         pipeline_record_list=pipeline_record_list,
     )
 
-    _screen_step(16, "model_evaluation (Modeller-filled only)")
+    _screen_step(17, "model_evaluation (Modeller-filled only)")
     for pipeline_record in pipeline_record_list:
         pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
         pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
         try:
             eval_result = _run_mutating_call(
-                log_title=f"step_16:model_evaluation:{pdb_id}:captured_output",
+                log_title=f"step_17:model_evaluation:{pdb_id}:captured_output",
                 work_label=f"model_evaluation:{pdb_id}",
                 screen_pdb_id=pdb_id,
                 func=run_model_evaluation,
@@ -1649,7 +1685,7 @@ def run_pipeline() -> None:
             )
         except Exception as error:
             _screen_error(f"model_evaluation failed for {pdb_id}: {error!r}")
-            _log_fruton_exception(f"step_16:model_evaluation:{pdb_id}", error)
+            _log_fruton_exception(f"step_17:model_evaluation:{pdb_id}", error)
             pipeline_record[MODEL_EVALUATION_STATUS_COLUMN_NAME] = STATUS_FAILED
             continue
 
@@ -1678,13 +1714,13 @@ def run_pipeline() -> None:
             _screen_item(f"model_evaluation -> {pdb_id}: {status} — {eval_result.get('message', '')}")
 
     global_bib_path = protein_data_dir / "references.bib"
-    _screen_step(17, "protein_report")
+    _screen_step(18, "protein_report")
     for pipeline_record in pipeline_record_list:
         pdb_id = pipeline_record[PDB_ID_COLUMN_NAME]
         pdb_dir = Path(pipeline_record[PDB_DIRECTORY_COLUMN_NAME])
         try:
             report_result = _run_mutating_call(
-                log_title=f"step_17:protein_report:{pdb_id}:captured_output",
+                log_title=f"step_18:protein_report:{pdb_id}:captured_output",
                 work_label=f"protein_report:{pdb_id}",
                 screen_pdb_id=pdb_id,
                 func=generate_protein_report,
@@ -1695,7 +1731,7 @@ def run_pipeline() -> None:
             )
         except Exception as error:
             _screen_error(f"protein_report failed for {pdb_id}: {error!r}")
-            _log_fruton_exception(f"step_17:protein_report:{pdb_id}", error)
+            _log_fruton_exception(f"step_18:protein_report:{pdb_id}", error)
             pipeline_record[REPORT_STATUS_COLUMN_NAME] = STATUS_FAILED
             continue
 
@@ -1707,10 +1743,10 @@ def run_pipeline() -> None:
         msg = report_result.get("message", "")
         _screen_item(f"protein_report -> {pdb_id}: {status}" + (f" — {msg}" if msg else ""))
 
-    _screen_step(18, "save_pipeline_json")
-    _run_mutating_call(log_title="step_18:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
-    _screen_step(19, "write_pipeline_xlsx")
-    _run_mutating_call(log_title="step_19:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
+    _screen_step(19, "save_pipeline_json")
+    _run_mutating_call(log_title="step_19:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=pipeline_record_list, json_path=pipeline_json_path)
+    _screen_step(20, "write_pipeline_xlsx")
+    _run_mutating_call(log_title="step_20:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
 
     _screen_notice(f"pipeline JSON written: {pipeline_json_path}")
     _screen_notice(f"pipeline XLSX written: {pipeline_xlsx_path}")
