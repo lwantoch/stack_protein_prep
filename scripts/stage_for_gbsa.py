@@ -2,24 +2,37 @@
 """Stage FRUTON prepared structures for input to gbsa-grub / gbsa-pipeline.
 
 For each protein with a completed prepared structure, this script:
-  1. Writes protein.pdb — the prepared structure with the cocrystal ligand
-     removed (replaced by the docked pose in gbsa-grub).
-  2. Converts each biochemical cofactor (e.g. FAD, NAD) from
-     components/{PDBID}_cofactor.pdb to one SDF file per molecule.
-  3. Stages phosaa14SB.xml for proteins with phosphorylated residues.
-  4. Writes a per-variant manifest.json with absolute paths ready for
-     constructing gbsa-grub statepoints.
+  1. Writes {PDBID}.pdb — the prepared structure with the cocrystal ligand
+     and crystal waters removed (waters go to {PDBID}_WAT.pdb).
+  2. Writes {PDBID}_WAT.pdb — HOH/WAT/SOL residues extracted from the
+     prepared structure for pre-insertion into the solvation box.
+  3. Converts each biochemical cofactor (e.g. FAD, NAD, ADP) from
+     components/{PDBID}_cofactor.pdb to one SDF per molecule in cofactors/.
+     FRUTON's _cofactor.pdb is treated as authoritative — all molecules in it
+     are staged as cofactors.
+  4. Stages phosaa14SB.xml for proteins with phosphorylated residues.
+  5. Writes a per-variant manifest.json.
+
+Output layout (matches generate_grid.sh):
+  {output_dir}/{dir_id}/{dir_id}.pdb          # protein without waters
+  {output_dir}/{dir_id}/{dir_id}_WAT.pdb      # crystal waters (if any)
+  {output_dir}/{dir_id}/cofactors/*.sdf       # cofactors (from _cofactor.pdb, if non-empty)
+  {output_dir}/{dir_id}/ligands/              # populated separately with DEKOIS SDFs
+  {output_dir}/{dir_id}/extra_ff/             # phosaa14SB.xml if needed
+
+Where dir_id is {PDBID} for default/single variants, {PDBID}_{variant}
+for named variants (gap, alpha, mod).
 
 Usage
 -----
     pixi run python scripts/stage_for_gbsa.py \\
         --proteins-dir data/proteins \\
-        --output-dir /path/to/gbsa_staging
+        --output-dir /path/to/proteins
 
     # Restrict to specific PDB IDs:
     pixi run python scripts/stage_for_gbsa.py \\
         --proteins-dir data/proteins \\
-        --output-dir /path/to/gbsa_staging \\
+        --output-dir /path/to/proteins \\
         --pdb-ids 1A5H 3OLL
 """
 from __future__ import annotations
@@ -32,6 +45,8 @@ import sys
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+_WATER_RESNAMES: frozenset[str] = frozenset({"HOH", "WAT", "SOL", "DOD"})
 
 
 # ---------------------------------------------------------------------------
@@ -48,27 +63,45 @@ def _resnames_in_pdb(path: Path) -> set[str]:
     return names
 
 
-def _strip_ligand_from_pdb(prepared_pdb: Path, ligand_resnames: set[str]) -> list[str]:
-    """Return PDB lines with cocrystal-ligand HETATM records removed.
+def _partition_pdb_lines(
+    prepared_pdb: Path,
+    ligand_resnames: set[str],
+) -> tuple[list[str], list[str]]:
+    """Split prepared PDB into (protein_lines, water_lines).
 
-    Crystal waters, metals, and backbone non-standard residues (PTR, SEP …)
-    are intentionally kept — gbsa-pipeline extracts waters separately and
-    OpenMM's AMBER FF handles simple ions via amber14-all.xml.
+    Cocrystal-ligand HETATM records and crystal waters are removed from the
+    protein output; waters are collected separately. Crystal waters,
+    metals, and backbone non-standard residues (PTR, SEP …) that are not
+    cocrystal ligands remain in the protein output.
     """
-    out: list[str] = []
+    protein_lines: list[str] = []
+    water_lines: list[str] = []
+
     for raw in prepared_pdb.read_text(encoding="utf-8", errors="replace").splitlines():
         line = raw.rstrip()
         if not line:
             continue
         rec = line[:6]
-        if rec == "HETATM" and len(line) >= 20:
+        if rec in ("ATOM  ", "HETATM") and len(line) >= 20:
             resname = line[17:20].strip().upper()
-            if resname in ligand_resnames:
+            if rec == "HETATM" and resname in ligand_resnames:
                 continue
-        out.append(line)
-    if out and out[-1] != "END":
-        out.append("END")
-    return out
+            if resname in _WATER_RESNAMES:
+                water_lines.append(line)
+                continue
+        protein_lines.append(line)
+
+    if protein_lines and protein_lines[-1] != "END":
+        protein_lines.append("END")
+
+    return protein_lines, water_lines
+
+
+def _write_water_pdb(water_lines: list[str], path: Path) -> None:
+    lines = water_lines[:]
+    if lines and lines[-1] != "END":
+        lines.append("END")
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +198,22 @@ def _find_phosaa14sb_xml() -> Path | None:
 
 
 # ---------------------------------------------------------------------------
+# Directory ID helper
+# ---------------------------------------------------------------------------
+
+def _dir_id(pdb_id: str, variant: str) -> str:
+    """Return the output directory base name for a given protein variant.
+
+    Single/default variants use just the PDB ID; named variants (gap, alpha,
+    mod) append the variant as a suffix so generate_grid.sh can treat each
+    model as an independent protein directory.
+    """
+    if not variant or variant.lower() in ("default", "single"):
+        return pdb_id
+    return f"{pdb_id}_{variant}"
+
+
+# ---------------------------------------------------------------------------
 # Stage one variant
 # ---------------------------------------------------------------------------
 
@@ -176,37 +225,49 @@ def stage_variant(
     components_dir: Path,
     nonstd_manifest_path: str | None,
     out_dir: Path,
+    dir_id: str,
 ) -> dict:
     """Stage one prepared variant into out_dir. Returns the manifest dict."""
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- protein.pdb --------------------------------------------------
+    # --- {dir_id}.pdb and {dir_id}_WAT.pdb --------------------------------
     ligand_resnames = _resnames_in_pdb(components_dir / f"{pdb_id}_ligand.pdb")
-    protein_lines = _strip_ligand_from_pdb(prepared_pdb, ligand_resnames)
-    protein_pdb_out = out_dir / "protein.pdb"
-    protein_pdb_out.write_text("\n".join(protein_lines) + "\n", encoding="utf-8")
-    logger.info("[%s/%s] protein.pdb written (%d lines)", pdb_id, variant, len(protein_lines))
+    protein_lines, water_lines = _partition_pdb_lines(prepared_pdb, ligand_resnames)
 
-    # --- cofactor SDFs ------------------------------------------------
+    protein_pdb_out = out_dir / f"{dir_id}.pdb"
+    protein_pdb_out.write_text("\n".join(protein_lines) + "\n", encoding="utf-8")
+    logger.info("[%s] %s written (%d lines)", dir_id, protein_pdb_out.name, len(protein_lines))
+
+    crystal_waters_pdb_out: Path | None = None
+    if water_lines:
+        crystal_waters_pdb_out = out_dir / f"{dir_id}_WAT.pdb"
+        _write_water_pdb(water_lines, crystal_waters_pdb_out)
+        logger.info("[%s] %s written (%d water records)", dir_id, crystal_waters_pdb_out.name, len(water_lines))
+
+    # --- cofactor SDFs in cofactors/ ---------------------------------------
+    # Stage whatever FRUTON put in _cofactor.pdb — that file is FRUTON's
+    # authoritative classification. If it has atoms, they are cofactors.
     cofactor_sdf_paths: list[str] = []
     cofactor_component = components_dir / f"{pdb_id}_cofactor.pdb"
     if cofactor_component.is_file() and cofactor_component.stat().st_size > 0:
         molecules = _group_cofactor_molecules(cofactor_component)
-        for mol_key, mol_lines in molecules.items():
-            sdf_out = out_dir / f"cofactor_{mol_key}.sdf"
-            if _pdb_lines_to_sdf(mol_lines, sdf_out):
-                cofactor_sdf_paths.append(str(sdf_out.resolve()))
-                logger.info("[%s/%s] cofactor SDF: %s", pdb_id, variant, sdf_out.name)
-            else:
-                # Write PDB fallback for manual conversion
-                fallback = out_dir / f"cofactor_{mol_key}.pdb"
-                fallback.write_text("\n".join(mol_lines) + "\nEND\n", encoding="utf-8")
-                logger.warning(
-                    "[%s/%s] SDF conversion failed for %s — PDB saved: %s",
-                    pdb_id, variant, mol_key, fallback.name,
-                )
+        if molecules:
+            cofactors_dir = out_dir / "cofactors"
+            cofactors_dir.mkdir(exist_ok=True)
+            for mol_key, mol_lines in molecules.items():
+                sdf_out = cofactors_dir / f"{mol_key}.sdf"
+                if _pdb_lines_to_sdf(mol_lines, sdf_out):
+                    cofactor_sdf_paths.append(str(sdf_out.resolve()))
+                    logger.info("[%s] cofactor SDF: %s", dir_id, sdf_out.name)
+                else:
+                    fallback = cofactors_dir / f"{mol_key}.pdb"
+                    fallback.write_text("\n".join(mol_lines) + "\nEND\n", encoding="utf-8")
+                    logger.warning(
+                        "[%s] SDF conversion failed for %s — PDB saved: %s",
+                        dir_id, mol_key, fallback.name,
+                    )
 
-    # --- phosaa14SB.xml -----------------------------------------------
+    # --- phosaa14SB.xml ---------------------------------------------------
     extra_ff_files: list[str] = []
     if _has_phosaa14sb(nonstd_manifest_path):
         xml_src = _find_phosaa14sb_xml()
@@ -217,18 +278,20 @@ def stage_variant(
             if not dst.exists():
                 shutil.copy2(xml_src, dst)
             extra_ff_files.append(str(dst.resolve()))
-            logger.info("[%s/%s] phosaa14SB.xml staged", pdb_id, variant)
+            logger.info("[%s] phosaa14SB.xml staged", dir_id)
         else:
             logger.warning(
-                "[%s/%s] phosaa14SB detected but XML not found — check openmmforcefields install",
-                pdb_id, variant,
+                "[%s] phosaa14SB detected but XML not found — check openmmforcefields install",
+                dir_id,
             )
 
-    # --- manifest.json ------------------------------------------------
+    # --- manifest.json ----------------------------------------------------
     manifest: dict = {
         "pdb_id": pdb_id,
         "variant": variant,
+        "dir_id": dir_id,
         "protein_pdb": str(protein_pdb_out.resolve()),
+        "crystal_waters_pdb": str(crystal_waters_pdb_out.resolve()) if crystal_waters_pdb_out else None,
         "cofactor_sdfs": cofactor_sdf_paths,
         "extra_ff_files": extra_ff_files,
         "has_cofactors": len(cofactor_sdf_paths) > 0,
@@ -276,8 +339,6 @@ def run(proteins_dir: Path, output_dir: Path, pdb_ids: list[str] | None, force: 
         variant_str = rec.get("prepared_structure.variant", "") or ""
         variants = [v.strip() for v in variant_str.split(",") if v.strip()]
 
-        # If the pipeline table has no variant info (e.g. status=failed but file
-        # was written), discover variants from the prepared/ directory on disk.
         if not variants:
             prepared_dir = pdb_dir / "prepared"
             variants = [
@@ -295,7 +356,8 @@ def run(proteins_dir: Path, output_dir: Path, pdb_ids: list[str] | None, force: 
                 n_skipped += 1
                 continue
 
-            out_dir = output_dir / pdb_id / variant
+            did = _dir_id(pdb_id, variant)
+            out_dir = output_dir / did
             try:
                 manifest = stage_variant(
                     pdb_id=pdb_id,
@@ -304,11 +366,12 @@ def run(proteins_dir: Path, output_dir: Path, pdb_ids: list[str] | None, force: 
                     components_dir=components_dir,
                     nonstd_manifest_path=nonstd_manifest_path,
                     out_dir=out_dir,
+                    dir_id=did,
                 )
                 all_manifests.append(manifest)
                 n_staged += 1
             except Exception as exc:
-                logger.error("Failed to stage %s/%s: %s", pdb_id, variant, exc, exc_info=True)
+                logger.error("Failed to stage %s (%s): %s", pdb_id, variant, exc, exc_info=True)
                 n_skipped += 1
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -328,7 +391,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--output-dir", type=Path, required=True,
-        help="Directory where staged files are written",
+        help="Directory where staged files are written (the proteins/ dir for generate_grid.sh)",
     )
     parser.add_argument(
         "--pdb-ids", nargs="*",
