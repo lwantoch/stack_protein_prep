@@ -161,6 +161,55 @@ def _pdb_lines_to_sdf(pdb_lines: list[str], sdf_path: Path) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Gaussian / MCPB / RESP force-field file collection
+# ---------------------------------------------------------------------------
+
+def _collect_gaussian_ff_files(pdb_dir: Path, gaussian_manifest_path: str | None) -> list[Path]:
+    """Return resolved paths to frcmod and mol2 files from a successful gaussian_params_manifest."""
+    if not gaussian_manifest_path:
+        return []
+    mp = Path(gaussian_manifest_path)
+    if not mp.is_file():
+        return []
+    try:
+        manifest = json.loads(mp.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    if manifest.get("status") != "success":
+        return []
+
+    files: list[Path] = []
+
+    def _resolve(raw: str) -> Path | None:
+        p = Path(raw)
+        resolved = p if p.is_absolute() else pdb_dir / p
+        return resolved if resolved.is_file() else None
+
+    for site in manifest.get("mcpb_result", {}).get("site_results", []):
+        if site.get("status") != "success":
+            continue
+        if site.get("frcmod"):
+            p = _resolve(site["frcmod"])
+            if p:
+                files.append(p)
+        for mol2 in site.get("mol2_files", []):
+            p = _resolve(mol2)
+            if p:
+                files.append(p)
+
+    for res in manifest.get("resp_result", {}).get("residue_results", []):
+        if res.get("status") != "success":
+            continue
+        for key in ("frcmod_path", "mol2_path"):
+            if res.get(key):
+                p = _resolve(res[key])
+                if p:
+                    files.append(p)
+
+    return files
+
+
+# ---------------------------------------------------------------------------
 # phosaa14SB detection and XML staging
 # ---------------------------------------------------------------------------
 
@@ -224,6 +273,7 @@ def stage_variant(
     prepared_pdb: Path,
     components_dir: Path,
     nonstd_manifest_path: str | None,
+    gaussian_ff_files: list[Path],
     out_dir: Path,
     dir_id: str,
 ) -> dict:
@@ -267,23 +317,33 @@ def stage_variant(
                         dir_id, mol_key, fallback.name,
                     )
 
-    # --- phosaa14SB.xml ---------------------------------------------------
+    # --- extra_ff/: phosaa14SB.xml + MCPB/RESP frcmod + mol2 files -------
     extra_ff_files: list[str] = []
+
+    def _stage_extra_ff(src: Path, label: str) -> None:
+        nonlocal extra_ff_files
+        extra_ff_dir = out_dir / "extra_ff"
+        extra_ff_dir.mkdir(exist_ok=True)
+        dst = extra_ff_dir / src.name
+        if not dst.exists():
+            shutil.copy2(src, dst)
+        dst_str = str(dst.resolve())
+        if dst_str not in extra_ff_files:
+            extra_ff_files.append(dst_str)
+        logger.info("[%s] extra_ff: %s", dir_id, label)
+
     if _has_phosaa14sb(nonstd_manifest_path):
         xml_src = _find_phosaa14sb_xml()
         if xml_src is not None:
-            extra_ff_dir = out_dir / "extra_ff"
-            extra_ff_dir.mkdir(exist_ok=True)
-            dst = extra_ff_dir / "phosaa14SB.xml"
-            if not dst.exists():
-                shutil.copy2(xml_src, dst)
-            extra_ff_files.append(str(dst.resolve()))
-            logger.info("[%s] phosaa14SB.xml staged", dir_id)
+            _stage_extra_ff(xml_src, "phosaa14SB.xml")
         else:
             logger.warning(
                 "[%s] phosaa14SB detected but XML not found — check openmmforcefields install",
                 dir_id,
             )
+
+    for ff_file in gaussian_ff_files:
+        _stage_extra_ff(ff_file, ff_file.name)
 
     # --- manifest.json ----------------------------------------------------
     manifest: dict = {
@@ -335,6 +395,8 @@ def run(proteins_dir: Path, output_dir: Path, pdb_ids: list[str] | None, force: 
         pdb_dir = Path(rec["pdb_directory"])
         components_dir = pdb_dir / "components"
         nonstd_manifest_path = rec.get("nonstd_residue_params.manifest_path") or None
+        gauss_manifest_path = rec.get("gaussian_params.manifest_path") or None
+        gaussian_ff_files = _collect_gaussian_ff_files(pdb_dir, gauss_manifest_path)
 
         variant_str = rec.get("prepared_structure.variant", "") or ""
         variants = [v.strip() for v in variant_str.split(",") if v.strip()]
@@ -365,6 +427,7 @@ def run(proteins_dir: Path, output_dir: Path, pdb_ids: list[str] | None, force: 
                     prepared_pdb=prepared_pdb,
                     components_dir=components_dir,
                     nonstd_manifest_path=nonstd_manifest_path,
+                    gaussian_ff_files=gaussian_ff_files,
                     out_dir=out_dir,
                     dir_id=did,
                 )
