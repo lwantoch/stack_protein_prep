@@ -29,7 +29,6 @@ import json
 import logging
 import shutil
 import sys
-import tempfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -95,30 +94,37 @@ def _group_cofactor_molecules(cofactor_pdb: Path) -> dict[str, list[str]]:
 
 
 def _pdb_lines_to_sdf(pdb_lines: list[str], sdf_path: Path) -> bool:
-    """Convert PDB atom lines to SDF via PyMOL. Returns True on success."""
+    """Convert PDB atom lines to SDF using RDKit. Returns True on success.
+
+    RDKit infers bond orders from atom connectivity and valence rules.
+    sanitize=False + explicit SanitizeMol lets partial failures surface as
+    warnings rather than silently returning None.
+    """
     try:
-        import pymol2
+        from rdkit import Chem
     except ImportError:
-        logger.warning("pymol2 not available — cannot convert %s", sdf_path.name)
+        logger.warning("rdkit not available — cannot convert %s", sdf_path.name)
         return False
 
     pdb_str = "\n".join(pdb_lines) + "\nEND\n"
-    with tempfile.NamedTemporaryFile(
-        suffix=".pdb", mode="w", encoding="utf-8", delete=False
-    ) as tmp:
-        tmp.write(pdb_str)
-        tmp_path = Path(tmp.name)
+
+    mol = Chem.MolFromPDBBlock(pdb_str, removeHs=False, sanitize=True)
+    if mol is None:
+        mol = Chem.MolFromPDBBlock(pdb_str, removeHs=False, sanitize=False)
+        if mol is None:
+            logger.warning("RDKit could not parse PDB block for %s", sdf_path.name)
+            return False
+        Chem.SanitizeMol(mol, catchErrors=True)
 
     try:
-        with pymol2.PyMOL() as p:
-            p.cmd.load(str(tmp_path), "cof")
-            p.cmd.save(str(sdf_path), "cof")
-        return sdf_path.is_file() and sdf_path.stat().st_size > 0
+        writer = Chem.SDWriter(str(sdf_path))
+        writer.write(mol)
+        writer.close()
     except Exception as exc:
-        logger.warning("PyMOL SDF conversion failed for %s: %s", sdf_path.name, exc)
+        logger.warning("RDKit SDF write failed for %s: %s", sdf_path.name, exc)
         return False
-    finally:
-        tmp_path.unlink(missing_ok=True)
+
+    return sdf_path.is_file() and sdf_path.stat().st_size > 0
 
 
 # ---------------------------------------------------------------------------
