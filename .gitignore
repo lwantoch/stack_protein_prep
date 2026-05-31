@@ -1,3 +1,12 @@
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Pipeline run outputs (regenerated each run)
+data/proteins/pipeline.json
+data/proteins/pipeline.xlsx

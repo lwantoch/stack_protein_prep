@@ -611,12 +611,20 @@ class _RepresentativeChainsSelect(Select):
         return model.id == self._model_id
 
     def accept_chain(self, chain: Any) -> bool:
+        # When keep_waters is True, accept all chains so that water residues
+        # on chains outside the representative set (e.g. a blank chain or a
+        # dedicated HOH chain) reach accept_residue for proper filtering.
+        if self._keep_waters:
+            return True
         return str(chain.id) in self._chain_ids
 
     def accept_residue(self, residue: Any) -> bool:
         hetero_flag = residue.id[0]
+        is_representative = str(residue.get_parent().id) in self._chain_ids
 
         if hetero_flag == " ":
+            if not is_representative:
+                return False
             if is_aa(residue, standard=True):
                 return True
             if is_aa(residue, standard=False):
@@ -625,6 +633,9 @@ class _RepresentativeChainsSelect(Select):
 
         if hetero_flag == "W":
             return self._keep_waters
+
+        if not is_representative:
+            return False
 
         if is_aa(residue, standard=False):
             return self._keep_modified_residues

@@ -829,6 +829,23 @@ def _build_narratives(
                 )
                 add(12, prose)
 
+        _req_range = s("range")
+        _act_range = s("prepared_structure.actual_range")
+        if _act_range:
+            if _req_range and _act_range != _req_range:
+                add(12,
+                    f"The requested residue range was {_req_range}; the final "
+                    f"prepared structure spans residues {_act_range} (ATOM records "
+                    f"of the representative variant). The discrepancy typically "
+                    f"reflects residues removed due to incomplete heavy atoms or "
+                    f"re-numbering introduced by insertion-code removal."
+                )
+            else:
+                add(12,
+                    f"The prepared structure spans residues {_act_range} "
+                    f"(ATOM records of the representative variant)."
+                )
+
     eval_status = s("model_eval.status")
     if eval_status in done:
         pct_fav = s("model_eval.rama_pct_favored")
@@ -986,6 +1003,81 @@ def _run_pml(pml_lines: list[str], output_png: Path, timeout: int = 180) -> str 
 
 
 # ---------------------------------------------------------------------------
+# Non-standard residue helpers
+# ---------------------------------------------------------------------------
+
+def _parse_resp_mol2(mol2_path: Path) -> list[dict]:
+    """Parse @<TRIPOS>ATOM section of a mol2 file, returning per-atom dicts.
+
+    Each dict has keys: name (str), sybyl_type (str), charge (float).
+    """
+    atoms: list[dict] = []
+    in_atom = False
+    try:
+        text = mol2_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return atoms
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped == "@<TRIPOS>ATOM":
+            in_atom = True
+            continue
+        if stripped.startswith("@<TRIPOS>") and in_atom:
+            break
+        if in_atom and stripped:
+            parts = stripped.split()
+            if len(parts) >= 9:
+                try:
+                    atoms.append({
+                        "name":       parts[1],
+                        "sybyl_type": parts[5],
+                        "charge":     float(parts[8]),
+                    })
+                except (ValueError, IndexError):
+                    pass
+    return atoms
+
+
+def _render_nonstd_mol2_figure(mol2_path: Path, output_png: Path) -> str | None:
+    """Render non-standard residue mol2 with RESP charge labels via headless PyMOL.
+
+    Atoms are coloured by partial charge (red=negative → white=neutral → blue=positive).
+    Heavy atoms are labelled with their atom name and RESP charge value.
+    Labels have a white opaque background for readability.
+    """
+    pml = [
+        f"load {mol2_path}, mol",
+        "bg_color white",
+        "hide everything, mol",
+        "show sticks, mol",
+        # Small spheres on heavy atoms so labels have a clear anchor point
+        "show spheres, mol and not elem H",
+        "set sphere_scale, 0.18, mol",
+        "set stick_radius, 0.10",
+        # Colour by RESP partial charge: red=negative, white=~0, blue=positive
+        "spectrum partial_charge, red_white_blue, mol",
+        # Label heavy atoms: atom name + charge on one line
+        'label mol and not elem H, "%s %.3f" % (name, partial_charge)',
+        # White opaque label background
+        "set label_bg_color, white",
+        "set label_bg_transparency, 0.0",
+        "set label_color, black",
+        "set label_size, 13",
+        "set label_font_id, 7",
+        "set label_position, (0, 0, 0.8)",
+        "orient mol",
+        "zoom mol, 2.5",
+        "set ray_opaque_background, 1",
+        "set antialias, 2",
+        "set ray_shadows, 0",
+        "set ray_trace_mode, 0",
+        f"png {output_png}, width=1200, height=900, dpi=150, ray=1",
+        "quit",
+    ]
+    return _run_pml(pml, output_png)
+
+
+# ---------------------------------------------------------------------------
 # PyMOL figure renderers
 # ---------------------------------------------------------------------------
 
@@ -1024,6 +1116,12 @@ def _render_pymol_figure(
         "set_color fruton_gold, [0.541, 0.451, 0.059]",
         "set_color fruton_red, [0.902, 0.000, 0.078]",
         "set_color fruton_softgrey, [0.720, 0.735, 0.770]",
+        # Cartoon style settings for a clean, illustrative look
+        "set cartoon_fancy_helices, 1",
+        "set cartoon_smooth_loops, 1",
+        "set cartoon_tube_radius, 0.35",
+        "set cartoon_loop_radius, 0.20",
+        "set specular, 0",
         "show cartoon, s and polymer",
         "color fruton_navy, s and ss h",
         "color fruton_gold, s and ss s",
@@ -1042,7 +1140,10 @@ def _render_pymol_figure(
     pml += [
         "set ray_opaque_background, 1",
         "set antialias, 2",
-        "set ray_shadows, 0",
+        "set ray_shadows, 1",
+        "set ray_trace_mode, 3",
+        "set ray_trace_color, black",
+        "set ray_trace_gain, 1.5",
         f"png {output_png}, width=1200, height=900, dpi=150, ray=1",
         "quit",
     ]
@@ -1213,7 +1314,10 @@ def _render_metal_pocket_figures(
         "set_color fruton_yellow,  [0.980, 0.902, 0.275]",
         "set_color fruton_softgrey,[0.760, 0.770, 0.790]",
         "set_color fruton_water,   [0.400, 0.780, 1.000]",
-        # Thin transparent cartoon for context
+        # Thin transparent cartoon for context — fancy cartoon style
+        "set cartoon_fancy_helices, 1",
+        "set cartoon_smooth_loops, 1",
+        "set specular, 0",
         "show cartoon, s and polymer",
         "color fruton_softgrey, s and polymer",
         "set cartoon_transparency, 0.65",
@@ -1245,7 +1349,10 @@ def _render_metal_pocket_figures(
         # Water H atoms already shown via coord_water above
         "set ray_opaque_background, 1",
         "set antialias, 2",
-        "set ray_shadows, 0",
+        "set ray_shadows, 1",
+        "set ray_trace_mode, 3",
+        "set ray_trace_color, black",
+        "set ray_trace_gain, 1.5",
         f"png {png_h}, width=900, height=900, dpi=150, ray=1",
         "quit",
     ]
@@ -1280,7 +1387,10 @@ def _render_metal_pocket_figures(
         "color fruton_yellow, coord_dist",
         "set ray_opaque_background, 1",
         "set antialias, 2",
-        "set ray_shadows, 0",
+        "set ray_shadows, 1",
+        "set ray_trace_mode, 3",
+        "set ray_trace_color, black",
+        "set ray_trace_gain, 1.5",
         f"png {png_d}, width=900, height=900, dpi=150, ray=1",
         "quit",
     ]
@@ -1500,11 +1610,10 @@ def _collect_path_evidence(record: dict[str, str], protein_dir: Path, max_rows: 
         "protonation.output_path",
         "prepared_structure.output_path",
         "model_eval.rama_plot_path",
-        "metall_params.output_dir",
-        "metall_params.frcmod_path",
-        "metall_params.mol2_path",
-        "metall_params.gaussian_input_path",
-        "metall_params.gaussian_log_path",
+        "metall_params_directory",
+        "metall_params.manifest_path",
+        "nonstd_residue_params.manifest_path",
+        "gaussian_params.manifest_path",
     ]
     rows: list[tuple[str, str]] = []
     seen_keys: set[str] = set()
@@ -1552,12 +1661,20 @@ def _preparation_decision(record: dict[str, str]) -> tuple[str, str]:
     nonstd = _record_text(record, "has_nonstandard_residues").lower()
     nonstd_status = _record_text(record, "nonstd_residue_params.status").lower()
 
+    gauss_status = _record_text(record, "gaussian_params.status").lower()
+    needs_gaussian = (
+        (metals in {"yes", "true"} and metal_status in {"success", "ready", "passed"})
+        or (nonstd in {"yes", "true"} and nonstd_status in {"success", "ready", "passed"})
+    )
+
     if prep_status in {"failed", "failure", "error"}:
         return "blocked", "prepared structure generation failed"
-    if metals in {"yes", "true"} and metal_status not in {"success", "ready", "passed"}:
+    if metals in {"yes", "true"} and metal_status not in {"success", "ready", "passed", "warning"}:
         return "requires metal-parameter review", "metal detected without accepted metal-parameter evidence"
-    if nonstd in {"yes", "true"} and nonstd_status not in {"success", "ready", "passed"}:
+    if nonstd in {"yes", "true"} and nonstd_status not in {"success", "ready", "passed", "warning"}:
         return "requires non-standard-residue review", "non-standard residue detected without accepted parameter evidence"
+    if needs_gaussian and gauss_status not in {"success", "ready", "passed", "partial"}:
+        return "requires Gaussian review", "MCPB/RESP Gaussian parametrization not yet complete or accepted"
     if quality in {"poor", "bad", "failed", "fail"}:
         return "requires structure-quality review", "Ramachandran/clash metrics are outside the preferred range"
     if prep_status in {"success", "warning"}:
@@ -1569,13 +1686,21 @@ def _asset_search_roots(protein_dir: Path) -> list[Path]:
     """Return likely asset directories for report logos.
 
     The report generator should not require a package-data installation just to
-    render a PDF.  This helper therefore checks local report/protein folders,
-    the canonical project data folder (`data/logo_idis.png`), common project
-    asset folders, the current working directory, the module directory, and
-    `/mnt/data` for notebook/sandbox runs.  Missing logos are not fatal: the page
-    header falls back to text labels, preserving the public API.
+    render a PDF.  This helper checks, in order:
+
+    1. protein_dir-relative paths (report/, assets/, ../) — useful when logos
+       are co-located with protein data.
+    2. Repo-root-anchored paths derived from __file__ — always correct regardless
+       of cwd: src/stack_protein_preparation/ → ../../ → repo root → data/ and
+       data/assets/.  This is the canonical location: place logos in
+       stack_protein_prep/data/ or stack_protein_prep/data/assets/.
+    3. cwd-relative paths — fallback for notebook/interactive runs.
+    4. /mnt/data — sandbox/Colab fallback.
+
+    Missing logos are not fatal: the page header falls back to text labels.
     """
-    module_dir = Path(__file__).resolve().parent
+    module_dir = Path(__file__).resolve().parent          # .../src/stack_protein_preparation/
+    repo_root = module_dir.parent.parent                  # .../stack_protein_prep/
     roots = [
         protein_dir / "report",
         protein_dir,
@@ -1584,13 +1709,19 @@ def _asset_search_roots(protein_dir: Path) -> list[Path]:
         protein_dir.parent.parent,
         protein_dir.parent.parent / "assets",
         protein_dir.parent.parent / "data",
+        # Repo-root anchor — works regardless of cwd or protein_dir location
+        repo_root / "data" / "assets",
+        repo_root / "data",
+        repo_root / "assets",
+        repo_root,
+        # cwd fallbacks
         Path.cwd(),
         Path.cwd() / "data",
         Path.cwd() / "assets",
+        # Module-adjacent fallbacks
         module_dir,
         module_dir / "assets",
         module_dir.parent / "assets",
-        module_dir.parent / "data",
         Path("/mnt/data"),
     ]
     seen: set[Path] = set()
@@ -2116,6 +2247,8 @@ def _build_pdf(
     metal_png_dist: Path | None = None,
     ion_type: str = "",
     pdb_citation_inline: str = "",
+    nonstd_residue_data: list[dict] | None = None,
+    rerun_markers: list[dict] | None = None,
 ) -> None:
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
@@ -2299,10 +2432,16 @@ def _build_pdf(
 
     uniprot = _record_text(pipeline_record, "uniprot_id")
     residue_range = _record_text(pipeline_record, "range")
+    actual_range = _record_text(pipeline_record, "prepared_structure.actual_range")
     subtitle_parts = []
     if uniprot:
         subtitle_parts.append(f"UniProt: {_safe_pdf_text(uniprot)}")
-    if residue_range:
+    if residue_range and actual_range and actual_range != residue_range:
+        subtitle_parts.append(
+            f"Range: {_safe_pdf_text(residue_range)} "
+            f"(actual: {_safe_pdf_text(actual_range)})"
+        )
+    elif residue_range:
         subtitle_parts.append(f"Range: {_safe_pdf_text(residue_range)}")
     subtitle_parts.append(_safe_pdf_text(_quality_summary(pipeline_record)))
     story.append(Paragraph(" &nbsp;·&nbsp; ".join(subtitle_parts), styles["ReportSubtitle"]))
@@ -2411,39 +2550,51 @@ def _build_pdf(
     ))
     story.append(Spacer(1, 0.08 * cm))
 
-    try:
-        rerun_from = int(str(pipeline_record.get("rerun.from_step", "") or "0"))
-    except ValueError:
-        rerun_from = 0
-    rerun_ts = _record_text(pipeline_record, "rerun.timestamp")
+    # Build sorted list of (step, timestamp) rerun markers — each becomes a red box.
+    _markers: list[tuple[int, str]] = []
+    for m in (rerun_markers or []):
+        try:
+            _markers.append((int(m["step"]), str(m.get("timestamp", ""))))
+        except (KeyError, TypeError, ValueError):
+            pass
+    _markers.sort(key=lambda x: x[0])
+    _pending_markers = list(_markers)  # consumed as we walk through paragraphs
+
+    def _make_marker_box(step: int, ts: str) -> list[Any]:
+        ts_note = f" ({_safe_pdf_text(ts)})" if ts else ""
+        t = Table(
+            [[Paragraph(
+                f"FILES CHANGED BY USER. — pipeline re-run from step {step}{ts_note}",
+                styles["MetricValue"],
+            )]],
+            colWidths=[usable_width - 0.9 * cm],
+        )
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED_SOFT)),
+            ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED)),
+            ("BOX", (0, 0), (-1, -1), 1.2, colors.HexColor(_FRUTON_RED)),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ]))
+        return [t, Spacer(1, 0.08 * cm)]
 
     narrative_flowables: list[Any] = []
     tagged = _build_narratives(pdb_id, pipeline_record, pdb_citation_inline=pdb_citation_inline)
-    marker_inserted = False
     if tagged:
         for step_num, para_text in tagged:
-            if rerun_from > 0 and not marker_inserted and step_num >= rerun_from:
-                ts_note = f" ({_safe_pdf_text(rerun_ts)})" if rerun_ts else ""
-                marker_table = Table(
-                    [[Paragraph(
-                        f"Input modified by user — pipeline re-run from step {rerun_from}{ts_note}",
-                        styles["MetricValue"],
-                    )]],
-                    colWidths=[usable_width - 0.9 * cm],
-                )
-                marker_table.setStyle(TableStyle([
-                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED_SOFT)),
-                    ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED)),
-                    ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor(_FRUTON_RED)),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 8),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                    ("TOPPADDING", (0, 0), (-1, -1), 5),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-                ]))
-                narrative_flowables.extend([marker_table, Spacer(1, 0.08 * cm)])
-                marker_inserted = True
+            # Insert all pending markers whose step <= current narrative step
+            while _pending_markers and _pending_markers[0][0] <= step_num:
+                m_step, m_ts = _pending_markers.pop(0)
+                narrative_flowables.extend(_make_marker_box(m_step, m_ts))
             narrative_flowables.append(Paragraph(para_text, styles["BodyAudit"]))
+        # Any markers beyond the last narrative step go at the end
+        for m_step, m_ts in _pending_markers:
+            narrative_flowables.extend(_make_marker_box(m_step, m_ts))
     else:
+        for m_step, m_ts in _pending_markers:
+            narrative_flowables.extend(_make_marker_box(m_step, m_ts))
         narrative_flowables.append(Paragraph("No completed pipeline steps were recorded.", styles["BodyAudit"]))
     story.append(_build_narrative_table(narrative_flowables, usable_width))
     story.append(Spacer(1, 0.30 * cm))
@@ -2506,11 +2657,14 @@ def _build_pdf(
         story.append(_build_simple_evidence_table(path_rows, styles, usable_width, left_header="Record key", right_header="Path"))
         story.append(Spacer(1, 0.22 * cm))
 
-    metal_evidence_rows = _collect_prefixed_evidence(pipeline_record, ("metals.", "metall_params."))
-    if _boolish_yes(_record_text(pipeline_record, "has_metals")) or metal_evidence_rows:
+    metal_evidence_rows = _collect_prefixed_evidence(
+        pipeline_record,
+        ("metals.", "metall_params.", "nonstd_residue_params.", "gaussian_params."),
+    )
+    if _boolish_yes(_record_text(pipeline_record, "has_metals")) or _boolish_yes(_record_text(pipeline_record, "has_nonstandard_residues")) or metal_evidence_rows:
         story.append(_section_block(
-            "Metal and parameterization evidence",
-            "Metal detection, coordination-site interpretation, and parameter-generation status are separated from generic structure preparation.",
+            "Parameterization evidence (metals, non-standard residues, Gaussian)",
+            "Metal detection, non-standard residue identification, Gaussian QM calculations, and generated force-field parameters.",
             styles,
             usable_width,
         ))
@@ -2688,6 +2842,119 @@ def _build_pdf(
         story.append(Spacer(1, 0.30 * cm))
 
     # ------------------------------------------------------------------
+    # Non-standard residue RESP charge figures
+    # ------------------------------------------------------------------
+    if nonstd_residue_data:
+        from reportlab.platypus import Paragraph as _Para, Table as _Tbl, TableStyle as _TS
+        from reportlab.lib import colors as _colors
+
+        story.append(_section_block(
+            "Non-standard residue parameters",
+            "Atom types and RESP partial charges for each non-standard residue. "
+            "Charges derive from two-stage RESP fitting to HF/6-31G* electrostatic potentials "
+            "or from a curated force-field database.",
+            styles,
+            usable_width,
+        ))
+        story.append(Spacer(1, 0.08 * cm))
+
+        for _nrd in nonstd_residue_data:
+            _resname      = _nrd["resname"]
+            _label        = _nrd["label"]
+            _atoms        = _nrd["atoms"]
+            _total_charge = _nrd["total_charge"]
+            _formal_q     = _nrd.get("formal_charge")
+            _src          = _nrd.get("charge_source", "")
+            _in_db        = _nrd.get("in_database", False)
+            _fig_png      = _nrd.get("figure_png")
+
+            _src_note = ""
+            if _in_db:
+                _src_note = "Charges from curated force-field database."
+            elif _src:
+                _src_note = f"Charge source: {_src}."
+
+            _formal_note = ""
+            if _formal_q is not None:
+                _formal_note = f" Formal charge: {_formal_q:+d}."
+
+            _sub_header = (
+                f"<b>{_safe_pdf_text(_resname)}</b> ({_safe_pdf_text(_label)}) — "
+                f"RESP total charge: {_total_charge:+.4f}.{_formal_note}"
+            )
+            if _src_note:
+                _sub_header += f" {_safe_pdf_text(_src_note)}"
+
+            story.append(Paragraph(_sub_header, styles["SectionSubtitle"]))
+            story.append(Spacer(1, 0.05 * cm))
+
+            # Build atom charge table (always shown alongside the figure)
+            _tbl_hdr = [
+                _Para("Atom", styles["EvidenceHeader"]),
+                _Para("SYBYL type", styles["EvidenceHeader"]),
+                _Para("RESP charge (e)", styles["EvidenceHeader"]),
+            ]
+            _tbl_rows: list[list] = [_tbl_hdr]
+            for _at in _atoms:
+                _q = _at["charge"]
+                _q_str = f"{_q:+.6f}"
+                _tbl_rows.append([
+                    _Para(_safe_pdf_text(_at["name"]), styles["EvidenceCell"]),
+                    _Para(_safe_pdf_text(_at["sybyl_type"]), styles["EvidenceCell"]),
+                    _Para(_safe_pdf_text(_q_str), styles["EvidenceCell"]),
+                ])
+            _tbl_rows.append([
+                _Para("<b>Total</b>", styles["EvidenceCell"]),
+                _Para("", styles["EvidenceCell"]),
+                _Para(f"<b>{_total_charge:+.6f}</b>", styles["EvidenceCell"]),
+            ])
+
+            _charge_ts = _TS([
+                ("BACKGROUND",    (0, 0), (-1, 0), _colors.HexColor("#2D3259")),
+                ("TEXTCOLOR",     (0, 0), (-1, 0), _colors.white),
+                ("FONTSIZE",      (0, 0), (-1, -1), 7),
+                ("ROWBACKGROUNDS",(0, 1), (-1, -2),
+                 [_colors.HexColor("#F5F5F5"), _colors.white]),
+                ("BACKGROUND",    (0, -1), (-1, -1), _colors.HexColor(_IDIS_PANEL_2)),
+                ("GRID",          (0, 0), (-1, -1), 0.3, _colors.HexColor("#CCCCCC")),
+                ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+                ("TOPPADDING",    (0, 0), (-1, -1), 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ])
+
+            _fig_png_path = Path(_fig_png) if _fig_png else None
+            if _fig_png_path and _fig_png_path.exists():
+                # Figure is 1200×900 (4:3); allocate ~60% of page width for it
+                _img_w = usable_width * 0.60
+                _img_h = _img_w * (900 / 1200)
+                _img = Image(str(_fig_png_path), width=_img_w, height=_img_h)
+                _tbl_w = usable_width - _img_w - 0.3 * cm
+                _col_w = [_tbl_w * 0.28, _tbl_w * 0.32, _tbl_w * 0.40]
+                _charge_tbl = _Tbl(_tbl_rows, colWidths=_col_w)
+                _charge_tbl.setStyle(_charge_ts)
+                _side_tbl = _Tbl(
+                    [[_img, _charge_tbl]],
+                    colWidths=[_img_w, usable_width - _img_w],
+                    style=_TS([("VALIGN", (0, 0), (-1, -1), "TOP")]),
+                )
+                story.append(_side_tbl)
+            else:
+                _col_w = [usable_width * 0.28, usable_width * 0.30, usable_width * 0.30]
+                _charge_tbl = _Tbl(_tbl_rows, colWidths=_col_w)
+                _charge_tbl.setStyle(_charge_ts)
+                story.append(_charge_tbl)
+
+            story.append(Paragraph(
+                f"<i>Figure {figure_num}. {_safe_pdf_text(_resname)} ({_safe_pdf_text(_label)}): "
+                "atoms coloured by RESP partial charge (red = negative, white = ~0, blue = positive); "
+                "heavy atoms labelled with atom name and charge value (white label background). "
+                f"RESP total charge = {_total_charge:+.4f} e.</i>",
+                styles["CaptionAudit"],
+            ))
+            figure_num += 1
+            story.append(Spacer(1, 0.25 * cm))
+
+    # ------------------------------------------------------------------
     # References
     # ------------------------------------------------------------------
     story.append(thin_rule)
@@ -2801,10 +3068,64 @@ def generate_protein_report(
             except Exception as exc:
                 messages.append(f"Metal figures: {exc}")
 
-    # 3. Collect citation keys for the bibliography section
+    # 3. Render non-standard residue mol2 figures and collect RESP charge data
+    nonstd_residue_data: list[dict] = []
+    nonstd_manifest_str = str(pipeline_record.get("nonstd_residue_params.manifest_path", "")).strip()
+    if nonstd_manifest_str:
+        nonstd_manifest_path = Path(nonstd_manifest_str)
+        if nonstd_manifest_path.exists():
+            try:
+                import json as _json_nonstd
+                _nonstd_manifest = _json_nonstd.loads(
+                    nonstd_manifest_path.read_text(encoding="utf-8")
+                )
+                nonstd_fig_dir = report_dir / "nonstd_figures"
+                nonstd_fig_dir.mkdir(parents=True, exist_ok=True)
+                for _res in _nonstd_manifest.get("residues", []):
+                    _label   = _res.get("label", "")
+                    _resname = _res.get("resname", "")
+                    _mol2 = (
+                        nonstd_manifest_path.parent
+                        / _label / "resp" / "step03_resp_params"
+                        / f"{_resname}.mol2"
+                    )
+                    if not _mol2.exists():
+                        continue
+                    _atoms = _parse_resp_mol2(_mol2)
+                    if not _atoms:
+                        continue
+                    _total_charge = sum(a["charge"] for a in _atoms)
+                    _fig_png = nonstd_fig_dir / f"{_resname}_{_label}_resp.png"
+                    _fig_err = _render_nonstd_mol2_figure(_mol2, _fig_png)
+                    if _fig_err:
+                        messages.append(f"Nonstd figure {_resname}: {_fig_err}")
+                    nonstd_residue_data.append({
+                        "resname":       _resname,
+                        "label":         _label,
+                        "formal_charge": _res.get("formal_charge"),
+                        "charge_source": _res.get("charge_source", ""),
+                        "in_database":   _res.get("in_database", False),
+                        "figure_png":    _fig_png if _fig_png.exists() else None,
+                        "atoms":         _atoms,
+                        "total_charge":  _total_charge,
+                    })
+            except Exception as exc:
+                messages.append(f"Nonstd residue data: {exc}")
+
+    # 4. Collect citation keys for the bibliography section
     ref_keys = _collect_ref_keys(pipeline_record)
 
-    # 4. Build the PDF
+    # 5. Load per-protein rerun markers (accumulated across runs by --from-step)
+    rerun_markers: list[dict] = []
+    markers_path = protein_dir / "rerun_markers.json"
+    try:
+        if markers_path.is_file():
+            import json as _json
+            rerun_markers = _json.loads(markers_path.read_text())
+    except Exception as exc:
+        messages.append(f"rerun_markers.json read warning: {exc}")
+
+    # 6. Build the PDF
     try:
         _build_pdf(
             pdb_id=pdb_id,
@@ -2816,6 +3137,8 @@ def generate_protein_report(
             metal_png_dist=metal_png_dist,
             ion_type=ion_type_str,
             pdb_citation_inline=pdb_citation_inline,
+            nonstd_residue_data=nonstd_residue_data,
+            rerun_markers=rerun_markers,
         )
     except Exception as exc:
         messages.append(f"PDF generation failed: {exc}")

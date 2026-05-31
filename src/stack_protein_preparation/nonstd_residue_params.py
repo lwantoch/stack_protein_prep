@@ -316,6 +316,8 @@ def _build_capped_model(
 
     # --- ACE cap -----------------------------------------------------------
     # Use C and O from the preceding residue; CA_prev serves as the methyl C.
+    # No TER between caps and residue — inter-residue TER causes tools like
+    # reduce to treat the residue as N-terminal and skip backbone NH addition.
     if prev_res is not None and "C" in prev_res and "O" in prev_res:
         c_v = prev_res["C"].get_vector()
         o_v = prev_res["O"].get_vector()
@@ -337,18 +339,38 @@ def _build_capped_model(
                 lines.append(_format_atom_line(serial, "CH3", "ACE", "A", 1,
                                                float(ch3[0]), float(ch3[1]), float(ch3[2]), "C"))
                 serial += 1
-        lines.append("TER")
     else:
         lines.append(f"REMARK  ACE cap omitted — no preceding residue with C/O")
 
     # --- Residue X ---------------------------------------------------------
+    # Pre-compute backbone N-H position so it can be inserted right after N.
+    # reduce does not know the backbone protonation state of non-standard
+    # residues (its HET dict entry for the free residue is not a peptide
+    # chain context), so it silently skips the N-H.  Backbone N is always a
+    # planar secondary amide — the H position is determined by the
+    # C_prev–N–CA plane via the -bisector rule.
+    _backbone_nh: tuple[float, float, float] | None = None
+    if prev_res is not None and "C" in prev_res and "N" in target and "CA" in target:
+        import numpy as np
+        _n_arr = target["N"].get_vector().get_array()
+        _c_prev_arr = prev_res["C"].get_vector().get_array()
+        _ca_arr = target["CA"].get_vector().get_array()
+        _v1 = _ca_arr - _n_arr;     _v1 /= np.linalg.norm(_v1)
+        _v2 = _c_prev_arr - _n_arr; _v2 /= np.linalg.norm(_v2)
+        _bis = _v1 + _v2;           _bis /= np.linalg.norm(_bis)
+        _h = _n_arr - _bis * 1.01   # H opposite the CA–N–Cprev bisector
+        _backbone_nh = (float(_h[0]), float(_h[1]), float(_h[2]))
+
     for atom in target.get_atoms():
         v = atom.get_vector()
         elem = (atom.element or atom.id[0]).strip()
         lines.append(_format_atom_line(serial, atom.id.strip(), resname, "A", 2,
                                        *v, elem))
         serial += 1
-    lines.append("TER")
+        if atom.id.strip() == "N" and _backbone_nh is not None:
+            lines.append(_format_atom_line(serial, "H", resname, "A", 2,
+                                           *_backbone_nh, "H"))
+            serial += 1
 
     # --- NME cap -----------------------------------------------------------
     if next_res is not None and "N" in next_res:
@@ -368,10 +390,10 @@ def _build_capped_model(
             lines.append(_format_atom_line(serial, "CH3", "NME", "A", 3,
                                            float(ch3[0]), float(ch3[1]), float(ch3[2]), "C"))
             serial += 1
-        lines.append("TER")
     else:
         lines.append(f"REMARK  NME cap omitted — no following residue with N")
 
+    lines.append("TER")
     lines.append("END")
     output_pdb.parent.mkdir(parents=True, exist_ok=True)
     output_pdb.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -471,47 +493,80 @@ def _write_commands_sh(
     output_path: Path,
     resname: str,
     charge: int,
-    capped_pdb_name: str = "capped.pdb",
 ) -> None:
     content = f"""\
 #!/usr/bin/env bash
 # =============================================================================
 # RESP parametrization — Step 1  |  {resname}
 # =============================================================================
-# Adds hydrogens with reduce, then uses antechamber to generate Gaussian
+# Uses antechamber (-h 1) to add missing hydrogens and generate Gaussian
 # input files for HF/6-31G* geometry optimisation and ESP calculation.
 # Stages the .com files into step02_gaussian/ ready for HPC submission.
 #
+# Formal charge : {charge}  (physiological pH — verify for your system)
+# Spin          : 1 (singlet — change for open-shell residues)
+#
 # After this script:
-#   1. Review .com files in step02_gaussian/.
+#   1. Review .com files in step02_gaussian/ (charge, H placement, geometry).
 #   2. Submit Gaussian jobs:  bash submit_gaussian.sh
 #   3. After Gaussian:  bash run_after_gaussian.sh
 # =============================================================================
-set -euo pipefail
+set -eo pipefail
 
+# Reload cesga/2020 + amber to avoid GLIBC_2.34 mismatch when this script
+# runs inside the cesga/2025 pipeline context (antechamber is a cesga/2020
+# binary and fails if cesga/2025 libraries are in LD_LIBRARY_PATH).
+# amber lives in the MPI-tier module path, which requires loading the
+# full prerequisite chain: cesga/2020 → gcc/system → openmpi → amber.
+if declare -f module &>/dev/null; then
+    module --force purge
+    # Reinitialise module paths from scratch so the cesga/2020 hierarchy
+    # is available (--force purge may leave MODULEPATH in an inconsistent state).
+    if [[ -f /etc/profile.d/modules.sh ]]; then
+        # shellcheck disable=SC1091
+        source /etc/profile.d/modules.sh
+    fi
+    module load cesga/2020
+    module load gcc/system
+    module load openmpi/4.0.5_ft3_cuda
+    module load amber/20.13-AmberTools-22.2
+fi
+
+set -u
+
+# -- Add hydrogens with reduce, then generate Gaussian input via antechamber --
+# reduce adds missing H atoms; antechamber assigns GAFF2 types and writes .com.
+# Intermediate antechamber files (ANTECHAMBER_*.AC etc.) go into step01_gaussian_inputs/.
 mkdir -p step01_gaussian_inputs
-
-# -- Add hydrogens -----------------------------------------------------------
-reduce {capped_pdb_name} > step01_gaussian_inputs/{resname}_capped_H.pdb
-
-# -- Generate Gaussian input files via antechamber ---------------------------
 cd step01_gaussian_inputs
 
-# Geometry optimisation (HF/6-31G*)
+reduce ../../capped_model_ace_nme.pdb > capped_model_ace_nme_H.pdb
+
 antechamber \\
-    -i {resname}_capped_H.pdb -fi pdb \\
+    -i capped_model_ace_nme_H.pdb -fi pdb \\
     -o {resname}_opt.com -fo gcrt \\
     -nc {charge} -s 2 -at gaff2 \\
     -gn {resname}_opt \\
     -gk "HF/6-31G* Opt"
 
-# ESP single-point on optimised geometry (MK charges)
-antechamber \\
-    -i {resname}_capped_H.pdb -fi pdb \\
-    -o {resname}_esp.com -fo gcrt \\
-    -nc {charge} -s 2 -at gaff2 \\
-    -gn {resname}_esp \\
-    -gk "HF/6-31G* Pop=MK IOp(6/33=2,6/42=6)"
+# antechamber hardcodes %chk=molecule; rename to match %oldchk in the ESP input.
+sed -i 's/%chk=molecule/%chk={resname}_opt/g' {resname}_opt.com
+
+# ESP single-point — reads OPTIMISED geometry from OPT checkpoint.
+# Mandatory for publication-quality RESP charges consistent with ff14SB
+# (Maier et al. JCTC 2015; Homeyer et al. J Mol Model 2006).
+# %mem/%nproc are stripped by run_gaussian.sh on CESGA (cores from --cpus-per-task).
+cat > {resname}_esp.com << 'ESPCOM'
+%mem=48GB
+%nproc=24
+%chk={resname}_esp
+%oldchk={resname}_opt
+#P HF/6-31G* Pop=MK IOp(6/33=2,6/42=6) Geom=AllCheck Guess=Read
+
+{resname} ESP single-point for RESP (HF/6-31G*, Merz-Kollman grid)
+
+
+ESPCOM
 
 cd ..
 
@@ -522,10 +577,10 @@ cp step01_gaussian_inputs/{resname}_esp.com step02_gaussian/
 
 echo ""
 echo "Step 1 done.  Gaussian inputs staged in step02_gaussian/:"
-echo "  {resname}_opt.com   HF/6-31G* geometry optimisation"
-echo "  {resname}_esp.com   HF/6-31G* ESP (MK charges)"
+echo "  {resname}_opt.com   HF/6-31G* geometry optimisation  (charge={charge})"
+echo "  {resname}_esp.com   HF/6-31G* ESP from optimised geometry (Geom=AllCheck)"
 echo ""
-echo "Review each .com file, then run:  bash submit_gaussian.sh"
+echo "Review charge and H placement, then run:  bash submit_gaussian.sh"
 """
     output_path.write_text(content, encoding="utf-8")
     output_path.chmod(0o755)
@@ -537,32 +592,34 @@ def _write_submit_gaussian_sh(output_path: Path, resname: str) -> None:
 # =============================================================================
 # Gaussian HPC submission — {resname}
 # =============================================================================
-# Submit geometry optimisation and ESP jobs from step02_gaussian/.
+# Delegates to the central CESGA Gaussian submission script.
 # Run ONLY after bash commands.sh has completed successfully.
-# Edit --ntasks, --mem, --time to match your cluster.
-#
-# Note: submit ESP job AFTER optimisation completes (it reads the chk file).
 # After all jobs complete:  bash run_after_gaussian.sh
 # =============================================================================
 set -euo pipefail
-cd step02_gaussian
 
-# --- 1. Geometry optimisation (HF/6-31G*) -----------------------------------
-JOB_OPT=$(sbatch --parsable \\
-    --job-name="{resname}_opt" --ntasks=8 --mem=16G --time=08:00:00 \\
-    --wrap="g16 < {resname}_opt.com > {resname}_opt.log")
-echo "Submitted opt job: ${{JOB_OPT}}"
-
-# --- 2. ESP single-point (depends on opt via chk) ---------------------------
-# The ESP .com reads the optimised geometry from the chk file.
-# It is safe to submit immediately — Slurm will hold it until opt finishes.
-sbatch --dependency=afterok:${{JOB_OPT}} \\
-    --job-name="{resname}_esp" --ntasks=8 --mem=16G --time=04:00:00 \\
-    --wrap="g16 < {resname}_esp.com > {resname}_esp.log"
-
-echo "Submitted ESP job (depends on opt)."
-echo "Monitor with:  squeue -u \\$USER"
-echo "After both complete:  bash run_after_gaussian.sh"
+SCRIPT_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
+# Locate the central CESGA submission script.
+# Priority: $FRUTON_SCRIPTS env var (set this when working from $LUSTRE
+# where the git repo is not present), then git-based discovery, then
+# directory walk-up.
+if [[ -n "${{FRUTON_SCRIPTS:-}}" && -f "${{FRUTON_SCRIPTS}}/submit_gaussian.sh" ]]; then
+    CENTRAL="${{FRUTON_SCRIPTS}}/submit_gaussian.sh"
+elif REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
+    CENTRAL="${{REPO_ROOT}}/scripts/CESGA_SLURM/submit_gaussian.sh"
+else
+    CENTRAL=""
+    DIR="$SCRIPT_DIR"
+    for _ in 1 2 3 4 5 6 7 8; do
+        if [[ -f "${{DIR}}/scripts/CESGA_SLURM/submit_gaussian.sh" ]]; then
+            CENTRAL="${{DIR}}/scripts/CESGA_SLURM/submit_gaussian.sh"
+            break
+        fi
+        DIR="$(dirname "$DIR")"
+    done
+fi
+[[ -n "${{CENTRAL:-}}" && -f "$CENTRAL" ]] || {{ echo "ERROR: central submit_gaussian.sh not found. Set FRUTON_SCRIPTS=/path/to/scripts/CESGA_SLURM" >&2; exit 2; }}
+exec bash "$CENTRAL" -r "$SCRIPT_DIR/step02_gaussian" --partition short --time 06:00:00 --mem 2000M --cpus 24 --gpus 0 "$@"
 """
     output_path.write_text(content, encoding="utf-8")
     output_path.chmod(0o755)
@@ -585,7 +642,23 @@ def _write_run_after_gaussian_sh(output_path: Path, resname: str, charge: int) -
 #   {resname}.mol2          {resname} atoms only (ACE/NME stripped)
 #   {resname}.frcmod        missing bonded parameters (parmchk2)
 # =============================================================================
-set -euo pipefail
+set -eo pipefail
+
+# Reload cesga/2020 + amber (antechamber/parmchk2 are cesga/2020 binaries).
+# amber lives in the MPI-tier module path — must load full prerequisite chain.
+if declare -f module &>/dev/null; then
+    module --force purge
+    if [[ -f /etc/profile.d/modules.sh ]]; then
+        # shellcheck disable=SC1091
+        source /etc/profile.d/modules.sh
+    fi
+    module load cesga/2020
+    module load gcc/system
+    module load openmpi/4.0.5_ft3_cuda
+    module load amber/20.13-AmberTools-22.2
+fi
+
+set -u
 
 mkdir -p step03_resp_params
 
@@ -611,17 +684,17 @@ dst = Path("step03_resp_params") / f"{{resname}}.mol2"
 
 text = src.read_text()
 sections = text.split("@<TRIPOS>")
-out_sections: list[str] = []
+out_sections = []
 
 for section in sections:
     if section.startswith("ATOM"):
-        kept_atoms: list[str] = []
+        kept_atoms = []
         for line in section.splitlines(keepends=True):
             parts = line.split()
             if len(parts) >= 9 and parts[7] == resname:
                 kept_atoms.append(line)
         # Renumber atoms
-        renumbered: list[str] = []
+        renumbered = []
         for i, line in enumerate(kept_atoms, start=1):
             parts = line.split()
             renumbered.append(
@@ -860,7 +933,6 @@ def _run_single_residue(
         output_path=resp_dir / "commands.sh",
         resname=resname,
         charge=charge,
-        capped_pdb_name="../capped_model_ace_nme.pdb",
     )
     _write_submit_gaussian_sh(
         output_path=resp_dir / "submit_gaussian.sh",

@@ -24,8 +24,9 @@ CENTRAL="${REPO_ROOT}/scripts/CESGA_SLURM/submit_gaussian.sh"
 
 exec bash "$CENTRAL" \
     -r "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/step02_gaussian" \
-    --partition compute \
-    --time 24:00:00 \
-    --mem 32G \
-    --cpus 16 \
+    --partition short \
+    --time 06:00:00 \
+    --mem 4000M \
+    --cpus 32 \
+    --gpus 1 \
     "$@"

@@ -33,6 +33,32 @@ FORCE_FIELD_RESIDUE_ALIASES = {
     "LYN": "LYS",
 }
 
+# Non-standard backbone residues that need RESP parametrization.
+# BioPython's is_aa(standard=False) misses many of these (e.g. CSD, OCS, MLY),
+# so we check this set explicitly in _is_protein_like_residue.
+# Protonation-state variants (HID, HIE, HIP, CYM, CYX, ASH, GLH, LYN) are
+# intentionally excluded — they are handled by standard force fields.
+_BACKBONE_NONSTD_RESNAMES: frozenset[str] = frozenset({
+    "MSE", "SEC", "PYL",          # selenium / pyrrolysine
+    "SEP", "TPO", "PTR",          # phosphoserine/threonine/tyrosine
+    "S1P", "T1P", "Y1P", "NEP",   # monoprotonated phospho variants
+    "CSO", "CSD", "OCS", "CSS", "CME", "SCY", "SMC", "P1L", "CAF",  # Cys oxidations
+    "MHO", "SME", "OMT",          # Met oxidations
+    "TYS", "NIY", "TYI", "IYR", "TPQ", "TYQ",  # Tyr modifications
+    "MLZ", "MLY", "M3L", "ALY", "KCR", "SLL", "KCX", "LYZ", "LLP",  # Lys modifications
+    "AGM", "DA2", "MMO", "MMA",   # Arg methylations
+    "CIR",                         # citrulline
+    "CGU",                         # gamma-carboxyglutamate
+    "HYP", "4FB",                  # Pro hydroxylation
+    "4HT", "TRO", "HTR",           # Trp modifications
+    "HIC",                         # 4-methyl-His
+    "PCA",                         # pyroglutamate
+    "SAR", "MAA", "MEA", "MEN",    # backbone N-methylation
+    "SAC",                         # N-terminal acetylation
+    "CRO", "DYG",                  # GFP chromophores
+    "H2D", "H1D", "H2E", "H1E",   # phosphohistidine (Bryce group)
+})
+
 
 @dataclass(slots=True, frozen=True)
 class Fragment:
@@ -250,8 +276,10 @@ def _is_protein_like_residue(residue: Residue.Residue) -> bool:
     residue_name = residue.get_resname().strip().upper()
     normalized_name = _normalize_residue_name_for_sequence(residue_name)
 
-    return is_aa(residue, standard=False) or (
-        normalized_name in protein_letters_3to1_extended
+    return (
+        is_aa(residue, standard=False)
+        or normalized_name in protein_letters_3to1_extended
+        or residue_name in _BACKBONE_NONSTD_RESNAMES
     )
 
 

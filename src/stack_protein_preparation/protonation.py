@@ -533,6 +533,89 @@ def _infer_element_from_atom_name(atom_name_field: str) -> str:
     return core[0].upper()
 
 
+def _remove_backbone_incomplete_residues(
+    input_pdb: Path,
+    output_pdb: Path,
+    log_path: Path | None = None,
+) -> list[str]:
+    """Remove residues missing backbone atoms (N, CA, C, O) from a PDB file.
+
+    Returns a list of human-readable strings describing removed residues.
+    Writes cleaned PDB to output_pdb (may equal input_pdb for in-place).
+    """
+    _BACKBONE = {"N", "CA", "C", "O"}
+    _SKIP_RESNAMES = {
+        "HOH", "WAT", "SOL",  # water
+        "NA", "K", "CL", "MG", "CA", "ZN", "FE", "MN", "CU", "CO", "NI",  # metals
+    }
+
+    lines = input_pdb.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+
+    # Collect atoms per residue key (chain, resnum, icode, resname)
+    res_atoms: dict[tuple[str, str, str, str], set[str]] = {}
+    res_order: list[tuple[str, str, str, str]] = []
+    for line in lines:
+        if not (line.startswith("ATOM  ") or line.startswith("HETATM")):
+            continue
+        if len(line) < 27:
+            continue
+        chain = line[21]
+        resnum = line[22:26]
+        icode = line[26]
+        resname = line[17:20].strip().upper()
+        atom_name = line[12:16].strip().upper()
+        key = (chain, resnum, icode, resname)
+        if key not in res_atoms:
+            res_atoms[key] = set()
+            res_order.append(key)
+        res_atoms[key].add(atom_name)
+
+    # Find residues that are standard amino acids but lack backbone atoms
+    removed: list[str] = []
+    bad_keys: set[tuple[str, str, str, str]] = set()
+    for key in res_order:
+        chain, resnum, icode, resname = key
+        if resname in _SKIP_RESNAMES:
+            continue
+        present = res_atoms[key]
+        missing_backbone = _BACKBONE - present
+        if missing_backbone:
+            label = f"{resname} {resnum.strip()}{icode.strip()} chain {chain}"
+            removed.append(f"removed incomplete residue {label} (missing {', '.join(sorted(missing_backbone))})")
+            bad_keys.add(key)
+
+    if not removed:
+        # Nothing to do — copy unchanged
+        if input_pdb != output_pdb:
+            output_pdb.write_text("".join(lines), encoding="utf-8")
+        return []
+
+    # Write cleaned PDB excluding bad residues
+    cleaned: list[str] = []
+    for line in lines:
+        if (line.startswith("ATOM  ") or line.startswith("HETATM")) and len(line) >= 27:
+            chain = line[21]
+            resnum = line[22:26]
+            icode = line[26]
+            resname = line[17:20].strip().upper()
+            if (chain, resnum, icode, resname) in bad_keys:
+                continue
+        cleaned.append(line)
+
+    output_pdb.parent.mkdir(parents=True, exist_ok=True)
+    output_pdb.write_text("".join(cleaned), encoding="utf-8")
+
+    if log_path is not None:
+        try:
+            with log_path.open("a", encoding="utf-8") as fh:
+                for msg in removed:
+                    fh.write(f"[pre-pdb2gmx cleanup] {msg}\n")
+        except Exception:
+            pass
+
+    return removed
+
+
 def _fill_pdb_element_column(pdb_path: Path) -> None:
     """Fill the element symbol column (cols 77-78) for ATOM/HETATM records.
 
@@ -650,8 +733,12 @@ def add_hydrogens_to_crystal_water_pdb(
 # ============================================================================
 
 
-def _run_propka(pdb_path: Path) -> object | None:
-    """Run PROPKA on pdb_path; return the MolecularContainer or None on error."""
+def _run_propka(pdb_path: Path, output_dir: Path | None = None) -> object | None:
+    """Run PROPKA on pdb_path; return the MolecularContainer or None on error.
+
+    The .pka file is written to output_dir (created if needed). Falls back to
+    running without -o when the propka version rejects that flag.
+    """
     import contextlib
     import io
 
@@ -660,7 +747,12 @@ def _run_propka(pdb_path: Path) -> object | None:
     except ImportError:
         return None
 
-    output_pka = str(pdb_path.with_suffix(".pka"))
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_pka = str(output_dir / (pdb_path.stem + ".pka"))
+    else:
+        output_pka = str(pdb_path.with_suffix(".pka"))
+
     try:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
@@ -675,13 +767,25 @@ def _run_propka(pdb_path: Path) -> object | None:
     except Exception:
         return None
 
+    # Fallback: -o was rejected by this propka version.
+    # propka without -o writes <stem>.pka to CWD, so chdir to the intended
+    # output directory before running to keep the file in the right place.
+    target_dir = output_dir if output_dir is not None else pdb_path.parent
+    target_dir.mkdir(parents=True, exist_ok=True)
+    _orig_cwd = os.getcwd()
     try:
+        os.chdir(str(target_dir))
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
             mol = propka.run.single(str(pdb_path), optargs=["--quiet"])
         return mol
     except (Exception, SystemExit):
         return None
+    finally:
+        try:
+            os.chdir(_orig_cwd)
+        except Exception:
+            pass
 
 
 def _get_propka_his_assignments(
@@ -1017,7 +1121,7 @@ def protonate_selected_structure(
 
     import tempfile
 
-    propka_mol = _run_propka(input_pdb)
+    propka_mol = _run_propka(input_pdb, output_dir=protein_dir_guess / "protonation")
     propka_ran = propka_mol is not None
     his_assignments = _get_propka_his_assignments(propka_mol, ph) if propka_ran else []
     propka_renames: dict[tuple[str, int, str], str] = {
@@ -1052,6 +1156,21 @@ def protonate_selected_structure(
     else:
         tmp_propka_dir = None
         pdb2gmx_input = input_pdb
+
+    # Remove residues with incomplete backbone before pdb2gmx to prevent
+    # "not found in the input file" failures for truncated crystal residues.
+    _cleaned_input = pdb2gmx_input.parent / (pdb2gmx_input.stem + "_backbone_cleaned.pdb")
+    _removed_residues = _remove_backbone_incomplete_residues(
+        pdb2gmx_input, _cleaned_input, log_path=module_log_path
+    )
+    if _removed_residues:
+        _append_log_block(
+            module_log_path,
+            "protonate_selected_structure:backbone_cleanup",
+            [f"Removed {len(_removed_residues)} residue(s) with incomplete backbone before pdb2gmx:"]
+            + _removed_residues,
+        )
+        pdb2gmx_input = _cleaned_input
 
     try:
         result = run_gmx_pdb2gmx_protonation(
@@ -1096,6 +1215,95 @@ def protonate_selected_structure(
         atom_count_increased = False
 
     protonation_success = result.returncode == 0 and output_nonempty
+
+    # pdbfixer retry: if pdb2gmx fails with structural defects (incomplete ring,
+    # missing atoms), repair with pdbfixer and re-run pdb2gmx once.
+    _PDBFIXER_TRIGGERS = (
+        "incomplete ring",
+        "missing atom",
+        "not found in residue",
+        "not found in the input file",  # truncated sidechain: atom present in ff but absent in PDB
+    )
+    stderr_lower = result.stderr.lower()
+    if not protonation_success and any(kw in stderr_lower for kw in _PDBFIXER_TRIGGERS):
+        _append_log_block(
+            module_log_path,
+            "protonate_selected_structure:pdbfixer_retry_start",
+            [
+                "pdb2gmx failed with structural defect; attempting pdbfixer repair",
+                f"trigger keywords matched: {[kw for kw in _PDBFIXER_TRIGGERS if kw in stderr_lower]}",
+                f"input: {pdb2gmx_input}",
+            ],
+        )
+        try:
+            import tempfile as _tempfile
+            from pdbfixer import PDBFixer as _PDBFixer
+            from openmm.app import PDBFile as _PDBFile
+
+            _fixed_dir = _tempfile.mkdtemp(prefix="pdbfixer_retry_")
+            _fixed_path = Path(_fixed_dir) / "pdbfixer_fixed.pdb"
+
+            _fixer = _PDBFixer(filename=str(pdb2gmx_input))
+            _fixer.findMissingResidues()
+            _fixer.missingResidues = {}  # keep internal state but add no new residues
+            _fixer.findMissingAtoms()
+            _fixer.addMissingAtoms()
+            with open(_fixed_path, "w", encoding="utf-8") as _fh:
+                _PDBFile.writeFile(_fixer.topology, _fixer.positions, _fh)
+
+            _append_log_block(
+                module_log_path,
+                "protonate_selected_structure:pdbfixer_repair_done",
+                [f"fixed pdb written to: {_fixed_path}"],
+            )
+
+            _retry_result = run_gmx_pdb2gmx_protonation(
+                input_pdb=_fixed_path,
+                output_pdb=output_pdb,
+                topology_output_path=topology_output_path,
+                position_restraints_output_path=position_restraints_output_path,
+                ff=ff,
+                water_model=water_model,
+                chain_separation=chain_separation,
+                merge=merge,
+                ignore_input_hydrogens=ignore_input_hydrogens,
+                timeout_seconds=timeout_seconds,
+            )
+            result = _retry_result
+            _write_text_log(stdout_log_path, result.stdout)
+            _write_text_log(stderr_log_path, result.stderr)
+
+            output_exists = output_pdb.is_file()
+            output_nonempty = output_exists and output_pdb.stat().st_size > 0
+            topology_exists = topology_output_path.is_file()
+            topology_nonempty = topology_exists and topology_output_path.stat().st_size > 0
+            position_restraints_exists = position_restraints_output_path.is_file()
+            position_restraints_nonempty = (
+                position_restraints_exists and position_restraints_output_path.stat().st_size > 0
+            )
+            if output_nonempty:
+                _fill_pdb_element_column(output_pdb)
+                output_atom_count = count_atoms_in_structure_file(output_pdb)
+                atom_count_increased = output_atom_count > input_atom_count
+            else:
+                output_atom_count = 0
+                atom_count_increased = False
+            protonation_success = result.returncode == 0 and output_nonempty
+
+            _append_log_block(
+                module_log_path,
+                "protonate_selected_structure:pdbfixer_retry_result",
+                [
+                    f"returncode       : {result.returncode}",
+                    f"protonation_success: {protonation_success}",
+                ],
+            )
+        except Exception as _pdbfixer_exc:
+            _append_log_block(
+                module_log_path,
+                "protonate_selected_structure:pdbfixer_retry_exception",
+                [str(_pdbfixer_exc)],
+            )
 
     _append_log_block(
         module_log_path,

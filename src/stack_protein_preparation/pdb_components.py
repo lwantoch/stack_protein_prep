@@ -176,6 +176,55 @@ CRYSTALLIZATION_ARTIFACTS = {
 
 PROTEIN_COMPONENT_RESIDUES = STANDARD_POLYMER_RESIDUES | PROTEIN_LIKE_NONSTANDARD
 
+# Biochemical cofactors: tightly bound functional molecules that are NOT the
+# target drug/ligand but are required for protein activity.  Molecules in this
+# set are written to a dedicated cofactor component file rather than to the
+# ligand file.  The priority order in split_pdb_components is:
+#   water > metal > protein-like > cofactor > artifact > ligand
+COFACTORS = {
+    # Flavins (vitamin B2 derivatives)
+    "FAD",  "FMN",  "RFL",  "FHD",  "FMNH",
+    # Nicotinamides (NAD/NADP and derivatives)
+    "NAD",  "NAI",  "NDP",  "NAP",  "NHD",  "NMN",  "NDR",  "NRQ",
+    # Coenzyme A and acyl derivatives
+    "COA",  "ACA",  "SCA",  "CAA",  "CFA",  "MCA",  "SCO",
+    # Heme / porphyrins / chlorophylls
+    "HEM",  "HEC",  "HEA",  "HEB",  "HDD",  "SRM",  "CLF",
+    "BCL",  "CHL",  "CLA",  "DDH",  "MHM",  "HAS",  "HEO",
+    # Iron–sulfur clusters
+    "FES",  "SF4",  "F3S",  "FEO",  "FNS",  "CLF",  "FS3",  "FS4",
+    # Pyridoxal / vitamin B6
+    "PLP",  "PMP",  "PLR",  "PYR",  "LP1",  "PYX",
+    # Thiamine / vitamin B1
+    "TPP",  "TDP",  "TPD",  "TMP",
+    # S-Adenosylmethionine / S-Adenosylhomocysteine
+    "SAM",  "SAH",  "SAE",
+    # Biotin
+    "BTN",  "BCT",
+    # Retinals / visual cofactors
+    "RET",  "RTL",  "LRE",
+    # Pyrroloquinoline quinone
+    "PQQ",
+    # Adenine nucleotides (as energy/phosphoryl-transfer cofactors)
+    "ATP",  "ADP",  "AMP",  "ANP",  "APC",  "APD",  "ACP",
+    # Guanine nucleotides (as GTPase cofactors)
+    "GTP",  "GDP",  "GMP",  "GNP",  "GSP",
+    # Other common nucleotide cofactors
+    "UTP",  "UDP",  "CTP",  "CDP",
+    # Lipoic acid
+    "LPA",  "LA",
+    # Molybdopterin / tungstopterin
+    "MGD",  "WCO",  "MPT",
+    # Menaquinone / ubiquinone
+    "MQ7",  "MQ8",  "UQ1",  "PLQ",
+    # Tetrahydrofolate and derivatives
+    "THF",  "DHF",  "FOL",  "H4F",  "5MC",  "MTF",
+    # Tocopherols / vitamin E (rare but occurs)
+    "TOC",
+    # Pantetheine (CoA precursor, occasionally in structures)
+    "PNS",
+}
+
 
 def _read_pdb_lines(pdb_path: Path) -> list[str]:
     with pdb_path.open("r", encoding="utf-8") as handle:
@@ -215,9 +264,22 @@ def _residue_identifier(line: str) -> tuple[str, str, str, str]:
     )
 
 
+def _parse_chain_qualified_range(
+    residue_range: str,
+) -> tuple[str, int, str, int] | None:
+    """Return (start_chain, start_resnum, end_chain, end_resnum) for 'A16-B50'.
+
+    Returns None when the range has no chain qualifiers.
+    """
+    m = re.fullmatch(r"([A-Za-z])(-?\d+)-([A-Za-z])(-?\d+)", str(residue_range).strip())
+    if m:
+        return m.group(1).upper(), int(m.group(2)), m.group(3).upper(), int(m.group(4))
+    return None
+
+
 def _parse_residue_range(residue_range: str) -> tuple[int, int]:
     stripped = str(residue_range).strip()
-    # Chain-aware format: A33-B480
+    # Chain-aware format: A33-B480 — strip chain letters, keep residue numbers
     m = re.fullmatch(r"[A-Za-z](-?\d+)-[A-Za-z](-?\d+)", stripped)
     if m:
         return int(m.group(1)), int(m.group(2))
@@ -286,6 +348,17 @@ def choose_relevant_chain_ids_from_range(
     if not residue_numbers_by_chain:
         return ()
 
+    # When the range has explicit chain qualifiers (A16-B50), return those chains directly.
+    chain_qual = _parse_chain_qualified_range(residue_range)
+    if chain_qual is not None:
+        start_chain, _, end_chain, _ = chain_qual
+        explicit_chains = tuple(
+            c for c in sorted({start_chain, end_chain})
+            if c in residue_numbers_by_chain
+        )
+        if explicit_chains:
+            return explicit_chains
+
     start_residue, end_residue = _parse_residue_range(residue_range)
     requested_range = set(range(start_residue, end_residue + 1))
 
@@ -324,6 +397,13 @@ def _is_protein_like_residue_line(line: str) -> bool:
     """
     residue_name = _resname(line)
     return residue_name in PROTEIN_COMPONENT_RESIDUES
+
+
+def _is_cofactor_line(line: str) -> bool:
+    """Return True for HETATM residues that are known biochemical cofactors."""
+    if not line.startswith("HETATM"):
+        return False
+    return _resname(line) in COFACTORS
 
 
 def _is_artifact_line(line: str) -> bool:
@@ -409,6 +489,10 @@ def _search_waters(pdb_lines: list[str]) -> dict[str, int]:
     return _count_distinct_residues(pdb_lines, _is_water_line)
 
 
+def _search_cofactors(pdb_lines: list[str]) -> dict[str, int]:
+    return _count_distinct_residues(pdb_lines, _is_cofactor_line)
+
+
 def _search_artifacts(pdb_lines: list[str]) -> dict[str, int]:
     return _count_distinct_residues(pdb_lines, _is_artifact_line)
 
@@ -459,6 +543,7 @@ def _collect_ligand_like_residues(pdb_lines: list[str]) -> dict[str, int]:
     Excludes:
     - waters
     - metals
+    - cofactors (e.g. FAD, NAD, heme)
     - common crystallization artifacts (e.g. SO4)
     - protein-like nonstandard residues (e.g. MSE)
     """
@@ -472,6 +557,8 @@ def _collect_ligand_like_residues(pdb_lines: list[str]) -> dict[str, int]:
         if _is_water_line(line):
             continue
         if _is_metal_line(line):
+            continue
+        if _is_cofactor_line(line):
             continue
         if _is_artifact_line(line):
             continue
@@ -493,6 +580,7 @@ def analyze_pdb_components(pdb_path: Path) -> dict[str, Any]:
     Analyze a PDB file and summarize:
     - metals
     - waters
+    - cofactors (FAD, NAD, heme, PLP, …)
     - crystallization / buffer artifacts
     - ligand candidates
     - non-standard polymer residues
@@ -501,6 +589,7 @@ def analyze_pdb_components(pdb_path: Path) -> dict[str, Any]:
 
     metals = _search_metals(pdb_lines)
     waters = _search_waters(pdb_lines)
+    cofactors = _search_cofactors(pdb_lines)
     artifacts = _search_artifacts(pdb_lines)
     ligands = _collect_ligand_like_residues(pdb_lines)
     nonstandard_residues = _search_nonstandard_residues(pdb_lines)
@@ -509,10 +598,12 @@ def analyze_pdb_components(pdb_path: Path) -> dict[str, Any]:
         "input_pdb": str(pdb_path),
         "metals": metals,
         "waters": waters,
+        "cofactors": cofactors,
         "artifacts": artifacts,
         "ligands": ligands,
         "nonstandard_residues": nonstandard_residues,
         "has_metals": len(metals) > 0,
+        "has_cofactors": len(cofactors) > 0,
         "has_waters": len(waters) > 0,
         "has_artifacts": len(artifacts) > 0,
         "has_ligands": len(ligands) > 0,
@@ -530,23 +621,19 @@ def split_pdb_components(
     Split one PDB into:
     - <PDBID>_protein.pdb
     - <PDBID>_water.pdb
+    - <PDBID>_cofactor.pdb
     - <PDBID>_ligand.pdb
     - <PDBID>_metals.pdb
     - <PDBID>_artifact.pdb
 
-    Classification
-    --------------
-    - protein:
-        ATOM lines + protein-like nonstandard HETATM residues
-        optionally restricted to protein chain(s) relevant for residue_range
-    - water:
-        HETATM water residues
-    - metals:
-        HETATM metal residues
-    - artifact:
-        HETATM crystallization / buffer / salt artifacts such as SO4
-    - ligand:
-        remaining HETATM residues after exclusions
+    Classification priority (HETATM records)
+    -----------------------------------------
+    1. water   – HOH / WAT / SOL / …
+    2. metal   – single-atom ions (ZN, MG, …)
+    3. protein-like – MSE, SEP, PTR, …
+    4. cofactor – FAD, NAD, HEM, PLP, ATP, …
+    5. artifact – SO4, GOL, EDO, …
+    6. ligand  – everything else
 
     Notes
     -----
@@ -562,6 +649,7 @@ def split_pdb_components(
 
     protein_path = output_dir / f"{protein_stem}_protein.pdb"
     water_path = output_dir / f"{protein_stem}_water.pdb"
+    cofactor_path = output_dir / f"{protein_stem}_cofactor.pdb"
     ligand_path = output_dir / f"{protein_stem}_ligand.pdb"
     metals_path = output_dir / f"{protein_stem}_metals.pdb"
     artifact_path = output_dir / f"{protein_stem}_artifact.pdb"
@@ -579,6 +667,7 @@ def split_pdb_components(
 
     protein_lines: list[str] = []
     water_lines: list[str] = []
+    cofactor_lines: list[str] = []
     ligand_lines: list[str] = []
     metals_lines: list[str] = []
     artifact_lines: list[str] = []
@@ -601,6 +690,8 @@ def split_pdb_components(
             if relevant_chain_id_set and _chain_id(line) not in relevant_chain_id_set:
                 continue
             protein_lines.append(line)
+        elif _is_cofactor_line(line):
+            cofactor_lines.append(line)
         elif _is_artifact_line(line):
             artifact_lines.append(line)
         else:
@@ -608,9 +699,27 @@ def split_pdb_components(
 
     protein_path.write_text("".join(protein_lines), encoding="utf-8")
     water_path.write_text("".join(water_lines), encoding="utf-8")
+    cofactor_path.write_text("".join(cofactor_lines), encoding="utf-8")
     ligand_path.write_text("".join(ligand_lines), encoding="utf-8")
     metals_path.write_text("".join(metals_lines), encoding="utf-8")
     artifact_path.write_text("".join(artifact_lines), encoding="utf-8")
+
+    # Write one PDB file per distinct HETATM residue type (cofactor + ligand
+    # buckets) so the user can visually inspect and manually decide which
+    # residues are cofactors and which are the target ligand.
+    per_resname_lines: dict[str, list[str]] = {}
+    for line in cofactor_lines + ligand_lines:
+        resname = _resname(line)
+        per_resname_lines.setdefault(resname, []).append(line)
+
+    per_hetatm_dir = output_dir / "per_hetatm"
+    per_hetatm_paths: dict[str, str] = {}
+    if per_resname_lines:
+        per_hetatm_dir.mkdir(parents=True, exist_ok=True)
+        for resname, lines in per_resname_lines.items():
+            per_file = per_hetatm_dir / f"{protein_stem}_{resname}.pdb"
+            per_file.write_text("".join(lines), encoding="utf-8")
+            per_hetatm_paths[resname] = str(per_file)
 
     summary = analyze_pdb_components(pdb_path)
     summary.update(
@@ -618,13 +727,16 @@ def split_pdb_components(
             "output_dir": str(output_dir),
             "protein_pdb": str(protein_path),
             "water_pdb": str(water_path),
+            "cofactor_pdb": str(cofactor_path),
             "ligand_pdb": str(ligand_path),
             "metals_pdb": str(metals_path),
             "artifact_pdb": str(artifact_path),
+            "per_hetatm_pdbs": per_hetatm_paths,
             "relevant_chain_ids": list(relevant_chain_ids),
             "residue_range": residue_range,
             "n_protein_lines": len(protein_lines),
             "n_water_lines": len(water_lines),
+            "n_cofactor_lines": len(cofactor_lines),
             "n_ligand_lines": len(ligand_lines),
             "n_metals_lines": len(metals_lines),
             "n_artifact_lines": len(artifact_lines),

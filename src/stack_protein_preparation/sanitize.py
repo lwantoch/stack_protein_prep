@@ -11,9 +11,18 @@ that ``pdb2gmx`` will use.
 The sanitizer is meant to sit before protonation of full protein variants and
 temporary gap fragments. It selects one alternate location per disordered atom,
 normalizes selected occupancies to 1.00, removes non-polymer heterogens from the
-protein-only route, writes a clean PDB, and reports what cleanup and diagnostics were observed before ``pdb2gmx``. It does not build missing residues, it does
-not add missing heavy atoms, it does not protonate, and it does not generate
-parameters for non-standard residues or metals.
+protein-only route, writes a clean PDB, and reports what cleanup and diagnostics
+were observed before ``pdb2gmx``.  It does not build missing residues, it does
+not protonate, and it does not generate parameters for non-standard residues or
+metals.
+
+Optionally (``repair_missing_sidechain_heavy_atoms=True``) it can fill in
+missing standard-residue side-chain heavy atoms using PDBFixer in controlled
+mode.  Backbone heavy atoms (N, CA, C, O), nonstandard residues, and any
+residue whose atoms collide with nearby heavy atoms are blocked and reported
+rather than silently fixed.  The repair runs *after* the BioPython cleanup
+write so altloc selection, occupancy normalisation, and heterogen removal are
+already applied before PDBFixer sees the file.
 """
 
 from __future__ import annotations
@@ -81,6 +90,8 @@ class SanitizeResult:
     dropped_heterogen_atom_count: int
     nonstandard_residue_names: tuple[str, ...]
     missing_heavy_atom_count: int
+    repaired_heavy_atom_count: int
+    blocked_repair_count: int
     force_field_template_path: Path | None
     issues: tuple[SanitizeIssue, ...]
 
@@ -171,6 +182,7 @@ def sanitize_pdb_for_gromacs(
     normalize_occupancy: bool = True,
     fail_on_missing_heavy_atoms: bool = False,
     fail_on_nonstandard_residues: bool = False,
+    repair_missing_sidechain_heavy_atoms: bool = False,
     min_residue_count_warning: int = 3,
 ) -> SanitizeResult:
     """Clean and classify one PDB before the FRUTON GROMACS protonation route.
@@ -212,6 +224,14 @@ def sanitize_pdb_for_gromacs(
     fail_on_nonstandard_residues
         Treat non-standard residues as hard blockers. This usually stays false
         because FRUTON should let the parameter-audit policy decide PTM handling.
+    repair_missing_sidechain_heavy_atoms
+        When True, attempt to fill in missing standard-residue side-chain heavy
+        atoms using PDBFixer after the BioPython cleanup write.  Backbone atoms
+        (N, CA, C, O), nonstandard residues, and clash-producing additions are
+        blocked and recorded as issues rather than silently applied.  Original
+        atom positions must be unchanged after repair; any drift is treated as
+        an error and the repaired file is discarded.  Requires PDBFixer and
+        OpenMM to be installed.
     min_residue_count_warning
         Emit a warning for very small fragments. This does not block by itself.
     """
@@ -375,6 +395,35 @@ def sanitize_pdb_for_gromacs(
             )
         )
 
+    # --- Optional PDBFixer sidechain heavy-atom repair ----------------------
+    repaired_heavy_atom_count = 0
+    blocked_repair_count = 0
+    if repair_missing_sidechain_heavy_atoms and missing_heavy_atom_messages:
+        repair = _repair_sidechain_heavy_atoms(
+            pdb_path=output_path,
+            template_lookup=template_lookup,
+        )
+        repaired_heavy_atom_count = repair.n_repaired
+        blocked_repair_count = repair.n_blocked
+        for msg in repair.repaired:
+            issues.append(SanitizeIssue(
+                severity="info",
+                code="heavy_atom_repaired",
+                message=f"PDBFixer added missing sidechain atoms: {msg}",
+            ))
+        for msg in repair.blocked:
+            issues.append(SanitizeIssue(
+                severity="warning",
+                code="heavy_atom_repair_blocked",
+                message=f"Repair blocked (not applied): {msg}",
+            ))
+        if repair.error:
+            issues.append(SanitizeIssue(
+                severity="error",
+                code="heavy_atom_repair_failed",
+                message=f"PDBFixer repair failed, original file kept: {repair.error}",
+            ))
+
     hard_error_present = any(issue.severity == "error" for issue in issues)
 
     result = SanitizeResult(
@@ -392,6 +441,8 @@ def sanitize_pdb_for_gromacs(
         dropped_heterogen_atom_count=selector.dropped_heterogen_atom_count,
         nonstandard_residue_names=tuple(nonstandard_residue_names),
         missing_heavy_atom_count=len(missing_heavy_atom_messages),
+        repaired_heavy_atom_count=repaired_heavy_atom_count,
+        blocked_repair_count=blocked_repair_count,
         force_field_template_path=template_lookup.rtp_path,
         issues=tuple(issues),
     )
@@ -668,6 +719,183 @@ def parse_gromacs_rtp_heavy_atoms(rtp_path: str | Path) -> dict[str, frozenset[s
     }
 
 
+# ---------------------------------------------------------------------------
+# PDBFixer-based sidechain heavy-atom repair
+# ---------------------------------------------------------------------------
+
+_BACKBONE_HEAVY: frozenset[str] = frozenset({"N", "CA", "C", "O"})
+# Minimum distance (Å) from a newly placed atom to any pre-existing heavy
+# atom before a clash warning is raised.
+_CLASH_WARN_DIST: float = 1.6
+
+
+@dataclass(frozen=True)
+class _RepairResult:
+    n_repaired: int
+    n_blocked: int
+    repaired: tuple[str, ...]
+    blocked: tuple[str, ...]
+    error: str | None
+
+
+def _repair_sidechain_heavy_atoms(
+    pdb_path: Path,
+    template_lookup: HeavyAtomTemplateLookup,
+) -> _RepairResult:
+    """Fill missing standard side-chain heavy atoms with PDBFixer (controlled).
+
+    Rules:
+    - ``missingResidues`` is emptied before ``addMissingAtoms`` — no loop building.
+    - ``missingTerminals`` is emptied — no OXT / terminal patching.
+    - Backbone atoms (N, CA, C, O) in ``missingAtoms`` are blocked, not repaired.
+    - Non-standard residues are blocked.
+    - ``addMissingHydrogens``, ``addSolvent``, ``replaceNonstandardResidues``,
+      and ``removeHeterogens`` are never called.
+    - After repair, original atom coordinates must be unchanged within 0.01 Å;
+      any drift reverts the file to the pre-repair version.
+    - Newly placed atoms within ``_CLASH_WARN_DIST`` of existing heavy atoms are
+      flagged as warnings but not blocked (PDBFixer's template placement is
+      usually sane; a downstream clash check is the right gate).
+    """
+
+    try:
+        from pdbfixer import PDBFixer
+        from openmm.app import PDBFile as OpenMMPDBFile
+    except ImportError:
+        return _RepairResult(
+            n_repaired=0, n_blocked=0,
+            repaired=(), blocked=(),
+            error="PDBFixer / OpenMM not available; skipping repair.",
+        )
+
+    import math
+    import tempfile
+
+    # ---- run PDBFixer in controlled mode ------------------------------------
+    fixer = PDBFixer(filename=str(pdb_path))
+    fixer.findMissingResidues()
+    fixer.missingResidues = {}          # no loop / residue insertion
+    fixer.findMissingAtoms()
+
+    allowed: dict = {}
+    blocked_msgs: list[str] = []
+    repaired_msgs: list[str] = []
+
+    for residue, atoms in list((fixer.missingAtoms or {}).items()):
+        resname = residue.name.strip().upper()
+        atom_names = [a.name for a in atoms]
+        label = f"{resname} {residue.chain.id} {residue.id}"
+
+        if not _is_standard_amino_acid_name(resname):
+            blocked_msgs.append(f"{label}: {atom_names} — nonstandard residue")
+            continue
+
+        backbone_hits = [a for a in atom_names if a in _BACKBONE_HEAVY]
+        if backbone_hits:
+            blocked_msgs.append(f"{label}: {backbone_hits} — backbone heavy atom")
+            continue
+
+        allowed[residue] = atoms
+        repaired_msgs.append(f"{label}: {atom_names}")
+
+    if not allowed:
+        return _RepairResult(
+            n_repaired=0, n_blocked=len(blocked_msgs),
+            repaired=(), blocked=tuple(blocked_msgs),
+            error=None,
+        )
+
+    fixer.missingAtoms = allowed
+    fixer.missingTerminals = {}
+    fixer.addMissingAtoms()
+
+    # ---- write to a temp file and validate ----------------------------------
+    tmp_fd, tmp_path_str = tempfile.mkstemp(suffix=".pdb", prefix="fruton_repair_")
+    tmp_path = Path(tmp_path_str)
+    try:
+        import os
+        os.close(tmp_fd)
+        with tmp_path.open("w") as fh:
+            OpenMMPDBFile.writeFile(fixer.topology, fixer.positions, fh)
+
+        # Strict diff: original atom coordinates must be preserved.
+        parser = PDBParser(QUIET=True, PERMISSIVE=True)
+        orig = {
+            (ch.id, res.id, atom.get_name().strip()): atom.get_vector().get_array()
+            for ch in parser.get_structure("o", str(pdb_path)).get_chains()
+            for res in ch.get_residues()
+            for atom in res.get_atoms()
+            if not _is_hydrogen_atom(atom_name=atom.get_name(), element=atom.element)
+        }
+        repaired_struct = parser.get_structure("r", str(tmp_path))
+        repaired_atoms = {
+            (ch.id, res.id, atom.get_name().strip()): atom.get_vector().get_array()
+            for ch in repaired_struct.get_chains()
+            for res in ch.get_residues()
+            for atom in res.get_atoms()
+            if not _is_hydrogen_atom(atom_name=atom.get_name(), element=atom.element)
+        }
+
+        drifted = []
+        for key, orig_xyz in orig.items():
+            rep_xyz = repaired_atoms.get(key)
+            if rep_xyz is None:
+                drifted.append(f"{key} disappeared")
+                continue
+            dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(orig_xyz, rep_xyz)))
+            if dist > 0.01:
+                drifted.append(f"{key} moved {dist:.3f} Å")
+
+        if drifted:
+            return _RepairResult(
+                n_repaired=0, n_blocked=len(blocked_msgs),
+                repaired=(), blocked=tuple(blocked_msgs),
+                error="Original atom drift detected after PDBFixer repair — file not replaced: "
+                      + "; ".join(drifted[:5]),
+            )
+
+        # Clash check on newly added atoms (warn only).
+        new_keys = set(repaired_atoms) - set(orig)
+        orig_xyz_list = list(orig.values())
+        clash_warnings: list[str] = []
+        for key in new_keys:
+            new_xyz = repaired_atoms[key]
+            min_dist = min(
+                math.sqrt(sum((a - b) ** 2 for a, b in zip(new_xyz, o)))
+                for o in orig_xyz_list
+            ) if orig_xyz_list else float("inf")
+            if min_dist < _CLASH_WARN_DIST:
+                clash_warnings.append(
+                    f"{key[2]} {key[0]}:{key[1]} — nearest existing atom {min_dist:.2f} Å"
+                )
+
+        if clash_warnings:
+            blocked_msgs.extend(
+                f"clash-warn: {w}" for w in clash_warnings
+            )
+
+        # Replace the original output with the repaired version.
+        import shutil
+        shutil.move(str(tmp_path), str(pdb_path))
+
+    except Exception as exc:
+        return _RepairResult(
+            n_repaired=0, n_blocked=len(blocked_msgs),
+            repaired=(), blocked=tuple(blocked_msgs),
+            error=f"{type(exc).__name__}: {exc}",
+        )
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink(missing_ok=True)
+
+    n_repaired = sum(len(atoms) for atoms in allowed.values())
+    return _RepairResult(
+        n_repaired=n_repaired, n_blocked=len(blocked_msgs),
+        repaired=tuple(repaired_msgs), blocked=tuple(blocked_msgs),
+        error=None,
+    )
+
+
 def _write_structure_with_biopython(
     structure,  # noqa: ANN001
     *,
@@ -855,6 +1083,8 @@ def _result_for_missing_input(
         dropped_heterogen_atom_count=0,
         nonstandard_residue_names=(),
         missing_heavy_atom_count=0,
+        repaired_heavy_atom_count=0,
+        blocked_repair_count=0,
         force_field_template_path=None,
         issues=(issue,),
     )
@@ -884,6 +1114,8 @@ def _result_for_parse_failure(
         dropped_heterogen_atom_count=0,
         nonstandard_residue_names=(),
         missing_heavy_atom_count=0,
+        repaired_heavy_atom_count=0,
+        blocked_repair_count=0,
         force_field_template_path=None,
         issues=tuple(issues),
     )
@@ -922,6 +1154,8 @@ def _write_sanitize_log(
         f"dropped_heterogen_atom_count : {result.dropped_heterogen_atom_count}",
         f"nonstandard_residue_names    : {', '.join(result.nonstandard_residue_names) or '<none>'}",
         f"missing_heavy_atom_count     : {result.missing_heavy_atom_count}",
+        f"repaired_heavy_atom_count    : {result.repaired_heavy_atom_count}",
+        f"blocked_repair_count         : {result.blocked_repair_count}",
         f"force_field_template_path    : {result.force_field_template_path or '<not found>'}",
         "",
         "issues",

@@ -314,11 +314,30 @@ def _classify_gap(
     return "internal"
 
 
+def _parse_chain_qualified_range(
+    residue_range: str,
+) -> tuple[str, int, str, int] | None:
+    """Return (start_chain, start_resnum, end_chain, end_resnum) for 'A16-B50'.
+
+    Returns None when the range has no chain qualifiers.
+    """
+    m = re.fullmatch(r"([A-Za-z])(-?\d+)-([A-Za-z])(-?\d+)", str(residue_range).strip())
+    if m:
+        return m.group(1).upper(), int(m.group(2)), m.group(3).upper(), int(m.group(4))
+    return None
+
+
 def _parse_residue_range(residue_range: str) -> tuple[int, int]:
     """
-    Parse residue range like '33-480'.
+    Parse residue range like '33-480' or 'A16-B50' (chain-qualified).
     """
-    match = re.fullmatch(r"\s*(-?\d+)\s*-\s*(-?\d+)\s*", str(residue_range).strip())
+    stripped = str(residue_range).strip()
+    # Chain-qualified format: A33-B480 — strip chain letters, keep residue numbers
+    m = re.fullmatch(r"[A-Za-z](-?\d+)-[A-Za-z](-?\d+)", stripped)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    # Legacy format: 33-480
+    match = re.fullmatch(r"\s*(-?\d+)\s*-\s*(-?\d+)\s*", stripped)
     if match is None:
         raise ValueError(f"Invalid residue range: {residue_range!r}")
 
@@ -341,14 +360,11 @@ def _choose_relevant_chain_ids_from_range(
 
     Strategy
     --------
-    - compute overlap between requested range and observed protein residue numbers
-      for each chain
-    - keep all chains tied for best overlap
-    - if no chain overlaps, keep all chains with protein residues
+    - When the range has explicit chain qualifiers (A16-B50), return those chains.
+    - Otherwise compute overlap between requested range and observed protein residue
+      numbers for each chain; keep all chains tied for best overlap.
+    - If no chain overlaps, keep all chains with protein residues.
     """
-    start_residue, end_residue = _parse_residue_range(residue_range)
-    requested_range = set(range(start_residue, end_residue + 1))
-
     residue_numbers_by_chain: dict[str, set[int]] = {}
 
     for chain in pdb.topology.chains():
@@ -361,6 +377,20 @@ def _choose_relevant_chain_ids_from_range(
 
     if not residue_numbers_by_chain:
         return ()
+
+    # When the range has explicit chain qualifiers (A16-B50), return those chains directly.
+    chain_qual = _parse_chain_qualified_range(residue_range)
+    if chain_qual is not None:
+        start_chain, _, end_chain, _ = chain_qual
+        explicit_chains = tuple(
+            c for c in sorted({start_chain, end_chain})
+            if c in residue_numbers_by_chain
+        )
+        if explicit_chains:
+            return explicit_chains
+
+    start_residue, end_residue = _parse_residue_range(residue_range)
+    requested_range = set(range(start_residue, end_residue + 1))
 
     score_rows: list[tuple[str, int, int]] = []
     for chain_id, residue_number_set in sorted(residue_numbers_by_chain.items()):

@@ -192,6 +192,56 @@ def pdb_has_insertion_codes(pdb_path: Path) -> bool:
     return False
 
 
+def _python_delinsertion(pdb_text: str) -> str:
+    """Pure-Python replacement for pdb_delinsertion from pdb-tools.
+
+    For each chain, maps every unique (resnum_str, icode) tuple to a new
+    sequential integer starting from the first residue number in that chain.
+    Insertion-code letters are removed (column 27 set to space).
+    """
+    lines = pdb_text.splitlines(keepends=True)
+
+    chain_order: dict[str, list[tuple[str, str]]] = {}
+    for line in lines:
+        if not (line.startswith("ATOM  ") or line.startswith("HETATM")):
+            continue
+        if len(line) < 27:
+            continue
+        chain = line[21]
+        resnum_str = line[22:26]
+        icode = line[26]
+        key = (resnum_str, icode)
+        if chain not in chain_order:
+            chain_order[chain] = []
+        if key not in chain_order[chain]:
+            chain_order[chain].append(key)
+
+    chain_renum: dict[str, dict[tuple[str, str], str]] = {}
+    for chain, keys in chain_order.items():
+        chain_renum[chain] = {}
+        try:
+            counter = int(keys[0][0].strip())
+        except (ValueError, IndexError):
+            counter = 1
+        for key in keys:
+            chain_renum[chain][key] = f"{counter:4d}"
+            counter += 1
+
+    result: list[str] = []
+    for line in lines:
+        if (line.startswith("ATOM  ") or line.startswith("HETATM")) and len(line) >= 27:
+            chain = line[21]
+            resnum_str = line[22:26]
+            icode = line[26]
+            key = (resnum_str, icode)
+            if chain in chain_renum and key in chain_renum[chain]:
+                new_resnum = chain_renum[chain][key]
+                line = line[:22] + new_resnum + " " + line[27:]
+        result.append(line)
+
+    return "".join(result)
+
+
 def run_pdb_delinsertion(
     input_pdb_path: Path,
     output_pdb_path: Path,
@@ -227,10 +277,20 @@ def run_pdb_delinsertion(
             check=False,
         )
     except FileNotFoundError:
-        message = "pdb_delinsertion executable not found in PATH"
-        logger.exception(message)
-        _print_result(STATUS_FAILED, message)
-        return False, message
+        logger.info("pdb_delinsertion not found in PATH; using Python fallback")
+        pdb_text = input_pdb_path.read_text(encoding="utf-8", errors="replace")
+        delinsertion_output = _python_delinsertion(pdb_text)
+        if not delinsertion_output.strip():
+            message = "Python delinsertion produced empty output"
+            logger.error(message)
+            _print_result(STATUS_FAILED, message)
+            return False, message
+        output_pdb_path.parent.mkdir(parents=True, exist_ok=True)
+        output_pdb_path.write_text(delinsertion_output, encoding="utf-8")
+        message = "pdb_delinsertion completed (Python fallback)"
+        logger.info(message)
+        _print_result(STATUS_SUCCESS, message)
+        return True, message
 
     logger.info("Return code: %s", result.returncode)
     _log_block(logger, "stdout", result.stdout)

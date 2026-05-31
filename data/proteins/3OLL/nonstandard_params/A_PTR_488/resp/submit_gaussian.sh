@@ -1,49 +1,26 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Gaussian HPC submission — 3OLL | PTR RESP
+# Gaussian HPC submission — PTR
 # =============================================================================
-# Submits two jobs from step02_gaussian/ to CESGA:
-#   1. PTR_opt  HF/6-31G* geometry optimisation
-#   2. PTR_esp  HF/6-31G* ESP single-point (submitted with --dependency=afterok
-#               on PTR_opt, so it uses the optimised geometry via Geom=AllCheck)
-#
-# Run ONLY after commands.sh has completed successfully.
-# After all jobs complete: bash run_after_gaussian.sh
+# Delegates to the central CESGA Gaussian submission script.
+# Run ONLY after bash commands.sh has completed successfully.
+# After all jobs complete:  bash run_after_gaussian.sh
 # =============================================================================
 set -euo pipefail
 
-REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
-WORKER="${REPO_ROOT}/scripts/CESGA_SLURM/run_gaussian.sh"
-LOG_DIR="${REPO_ROOT}/scripts/CESGA_SLURM/logs"
-mkdir -p "$LOG_DIR"
-
-STEP02="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/step02_gaussian"
-
-# ---- 1. Geometry optimisation -----------------------------------------------
-JOB_OPT=$(sbatch --parsable \
-    --job-name="PTR_opt" \
-    --partition=compute \
-    --nodes=1 --ntasks=1 --cpus-per-task=16 \
-    --mem=32G --time=24:00:00 \
-    --output="${LOG_DIR}/PTR_opt_%j.out" \
-    --error="${LOG_DIR}/PTR_opt_%j.err" \
-    --requeue \
-    --wrap="bash ${WORKER} ${STEP02}/PTR_opt.com")
-echo "Submitted opt:  job ${JOB_OPT}"
-
-# ---- 2. ESP single-point (depends on opt finishing) -------------------------
-JOB_ESP=$(sbatch --parsable \
-    --job-name="PTR_esp" \
-    --dependency=afterok:${JOB_OPT} \
-    --partition=compute \
-    --nodes=1 --ntasks=1 --cpus-per-task=16 \
-    --mem=32G --time=24:00:00 \
-    --output="${LOG_DIR}/PTR_esp_%j.out" \
-    --error="${LOG_DIR}/PTR_esp_%j.err" \
-    --requeue \
-    --wrap="bash ${WORKER} ${STEP02}/PTR_esp.com")
-echo "Submitted esp:  job ${JOB_ESP}  (depends on ${JOB_OPT})"
-
-echo ""
-echo "Monitor with: squeue -u \$USER"
-echo "After both complete: bash run_after_gaussian.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
+    CENTRAL="${REPO_ROOT}/scripts/CESGA_SLURM/submit_gaussian.sh"
+else
+    CENTRAL=""
+    DIR="$SCRIPT_DIR"
+    for _ in 1 2 3 4 5 6 7 8; do
+        if [[ -f "${DIR}/scripts/CESGA_SLURM/submit_gaussian.sh" ]]; then
+            CENTRAL="${DIR}/scripts/CESGA_SLURM/submit_gaussian.sh"
+            break
+        fi
+        DIR="$(dirname "$DIR")"
+    done
+fi
+[[ -n "${CENTRAL:-}" && -f "$CENTRAL" ]] || { echo "ERROR: central submit_gaussian.sh not found" >&2; exit 2; }
+exec bash "$CENTRAL" -r "$SCRIPT_DIR/step02_gaussian" --partition short --time 06:00:00 --mem 4000M --cpus 32 --gpus 1 "$@"

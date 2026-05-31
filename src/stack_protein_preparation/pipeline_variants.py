@@ -292,7 +292,4 @@ def _blocks_complete_model_generation(
         pipeline_record.get(HAS_METALS_COLUMN_NAME, "")
     ).strip().lower()
 
-    if has_metals == "yes":
-        return True, "metal-containing structure"
-
     return False, ""

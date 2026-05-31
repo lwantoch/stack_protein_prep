@@ -109,6 +109,32 @@ def _is_atom_or_hetatm_record(line: str) -> bool:
     return line.startswith("ATOM  ") or line.startswith("HETATM")
 
 
+def _read_backbone_nonstd_hetatm(
+    protein_component_path: Path,
+    exclude_resnames: set[str],
+) -> list[str]:
+    """Return HETATM lines from the original protein component that are
+    backbone non-standard residues (e.g. PTR, SEP) — i.e. HETATM records
+    that are NOT water, metals, or explicit ligand residues.
+
+    pdb2gmx silently strips these during protonation; this function recovers
+    them so they appear in the final prepared structure.
+    """
+    _WATER_NAMES = {"HOH", "WAT", "SOL"}
+    if not protein_component_path.is_file():
+        return []
+    result: list[str] = []
+    for raw_line in protein_component_path.open("r", encoding="utf-8", errors="replace"):
+        line = raw_line.rstrip("\n")
+        if not line.startswith("HETATM"):
+            continue
+        resname = line[17:20].strip().upper() if len(line) >= 20 else ""
+        if resname in _WATER_NAMES or resname in exclude_resnames:
+            continue
+        result.append(line)
+    return result
+
+
 def _read_atom_lines_from_pdb(pdb_path: str | Path) -> list[str]:
     pdb_path = Path(pdb_path)
 
@@ -234,6 +260,7 @@ def build_prepared_structure(
     water_input_path: str | Path | None = None,
     ligand_input_path: str | Path | None = None,
     metals_input_path: str | Path | None = None,
+    backbone_nonstd_input_path: str | Path | None = None,
     *,
     structure_variant: str = "single",
 ) -> PreparedStructureSummary:
@@ -293,6 +320,20 @@ def build_prepared_structure(
         else None
     )
 
+    backbone_nonstd_lines: list[str] = []
+    if backbone_nonstd_input_path is not None:
+        _bnp = Path(backbone_nonstd_input_path)
+        _exclude = set()
+        if ligand_atom_lines:
+            for _l in ligand_atom_lines:
+                if len(_l) >= 20:
+                    _exclude.add(_l[17:20].strip().upper())
+        if metals_atom_lines:
+            for _l in metals_atom_lines:
+                if len(_l) >= 20:
+                    _exclude.add(_l[17:20].strip().upper())
+        backbone_nonstd_lines = _read_backbone_nonstd_hetatm(_bnp, _exclude)
+
     # When there are multiple protein fragments, assign each a unique chain ID so
     # that pdb2gmx (and BioPython) recognise each segment as an independent chain
     # with its own N- and C-termini.  A single-fragment input keeps its original
@@ -306,7 +347,21 @@ def build_prepared_structure(
         protein_chain_ids = [None]
 
     ordered_sections: list[list[str]] = []
-    ordered_sections.extend(protein_sections)
+    if protein_sections and backbone_nonstd_lines:
+        # Insert backbone non-standard residues (e.g. PTR) into the first
+        # protein section sorted by (chain, resnum) so they appear at the
+        # correct sequence position.
+        def _sort_key(l: str) -> tuple[str, int]:
+            try:
+                return (l[21], int(l[22:26]))
+            except (IndexError, ValueError):
+                return ("", 0)
+        merged = list(protein_sections[0]) + backbone_nonstd_lines
+        merged.sort(key=_sort_key)
+        ordered_sections.append(merged)
+        ordered_sections.extend(protein_sections[1:])
+    else:
+        ordered_sections.extend(protein_sections)
     section_chain_ids: list[str | None] = list(protein_chain_ids)
 
     if water_atom_lines:
@@ -353,6 +408,7 @@ def build_prepared_structure_for_variant(
     water_input_path: str | Path | None = None,
     ligand_input_path: str | Path | None = None,
     metals_input_path: str | Path | None = None,
+    backbone_nonstd_input_path: str | Path | None = None,
 ) -> PreparedStructureSummary:
     pdb_directory = Path(pdb_directory)
 
@@ -402,6 +458,7 @@ def build_prepared_structure_for_variant(
         water_input_path=resolved_water_input_path,
         ligand_input_path=resolved_ligand_input_path,
         metals_input_path=resolved_metals_input_path,
+        backbone_nonstd_input_path=backbone_nonstd_input_path,
         structure_variant=structure_variant,
     )
 

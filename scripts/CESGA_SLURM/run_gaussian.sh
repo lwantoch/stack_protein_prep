@@ -104,11 +104,15 @@ module load cesga/2020 g16/c1
 command -v g16 >/dev/null || { echo "ERROR: g16 not found in PATH" >&2; exit 2; }
 
 # -------- scratch --------
-export GAUSS_SCRDIR="/scratch/${USER}/gauss_${SLURM_JOB_ID:-local}_$$"
+# CESGA sets TMPDIR=/scratch/<jobid> per job; use that instead of /scratch/<user>
+# which requires a pre-created directory. Fall back to /tmp only for local runs.
+_SCRATCH_BASE="${TMPDIR:-/tmp}"
+export GAUSS_SCRDIR="${_SCRATCH_BASE}/gauss_${SLURM_JOB_ID:-local}_$$"
 mkdir -p "$GAUSS_SCRDIR"
-trap 'rm -rf "$GAUSS_SCRDIR"' EXIT
 
 INPUT_TO_RUN="$INPUT_ABS"
+# Temp files created below (stripped/restart/patched) are cleaned up at exit.
+trap 'rm -rf "$GAUSS_SCRDIR" "${WORKDIR}/${BASE}.stripped.com" "${WORKDIR}/${BASE}.gpu.com" "${WORKDIR}/${BASE}.patched.com" "${WORKDIR}/${BASE}.restart.com" 2>/dev/null; true' EXIT
 
 # -------- strip CESGA-forbidden link0 directives (always) --------
 # MCPB.py and antechamber may write %NProcShared / %Mem into the input.
@@ -125,10 +129,58 @@ for ln in open(inp, encoding="utf-8", errors="replace"):
         continue
     if s.lower().startswith("%mem="):
         continue
+    if s.lower().startswith("%cpu="):
+        continue
+    if s.lower().startswith("%gpucpu="):
+        continue
     out.append(ln)
 open(outp, "w", encoding="utf-8").write("".join(out))
 PY
 INPUT_TO_RUN="$TMP_STRIPPED"
+
+# -------- inject GPU link0 directives --------
+# SLURM sets CUDA_VISIBLE_DEVICES to allocated GPU device IDs.
+# Gaussian 16 requires %CPU and %GPUCPU when running on GPUs.
+# This block is a no-op for CPU-only jobs (copies file unchanged).
+_N_CPUS="${SLURM_CPUS_PER_TASK:-1}"
+_CUDA_DEVS="${CUDA_VISIBLE_DEVICES:-}"
+TMP_GPU="${WORKDIR}/${BASE}.gpu.com"
+python3 - "$INPUT_TO_RUN" "$TMP_GPU" "$_N_CPUS" "$_CUDA_DEVS" <<'PY'
+import sys, re, shutil
+
+inp, outp, n_cpus_str, cuda_devs = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+n_cpus = max(1, int(n_cpus_str))
+
+gpu_devs = []
+if cuda_devs and cuda_devs not in ("NoDevFiles", ""):
+    gpu_devs = [x.strip() for x in cuda_devs.split(",") if x.strip().isdigit()]
+
+if not gpu_devs:
+    shutil.copy(inp, outp)
+    sys.exit(0)
+
+cpu_list = ",".join(str(i) for i in range(n_cpus))
+gpu_list = ",".join(gpu_devs)
+
+lines = open(inp, encoding="utf-8", errors="replace").read().splitlines(True)
+out = []
+injected = False
+
+for ln in lines:
+    if ln.strip() == "--Link1--":
+        injected = False
+    if not injected and re.match(r"^#", ln.lstrip()):
+        j = len(out) - 1
+        while j >= 0 and out[j].strip() != "--Link1--" and not out[j].lstrip().startswith("%"):
+            j -= 1
+        pos = j + 1
+        out = out[:pos] + [f"%CPU={cpu_list}\n", f"%GPUCPU={gpu_list}={cpu_list}\n"] + out[pos:]
+        injected = True
+    out.append(ln)
+
+open(outp, "w", encoding="utf-8").write("".join(out))
+PY
+INPUT_TO_RUN="$TMP_GPU"
 
 # -------- restart logic --------
 CHK_GUESS="${WORKDIR}/${BASE}.chk"

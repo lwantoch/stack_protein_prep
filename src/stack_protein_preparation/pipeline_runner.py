@@ -128,6 +128,7 @@ def _clear_component_output_files(pdb_id: str, components_dir: Path) -> None:
         "protein",
         "protein_monomer",
         "ligand",
+        "cofactor",
         "water",
         "metals",
         "nonstandard_residues",
@@ -224,16 +225,22 @@ def _get_sanitize_result_output_path(
 
 
 def _summarize_sanitize_issues(sanitize_result: Any) -> str:
-    """Return a compact one-line summary of sanitizer issues."""
+    """Return a compact one-line summary of sanitizer issues, with counts."""
 
     issue_list = list(getattr(sanitize_result, "issues", ()) or ())
     if not issue_list:
         return "<none>"
 
-    return " | ".join(
-        f"{getattr(issue, 'severity', '')}:{getattr(issue, 'code', '')}"
-        for issue in issue_list
-    )
+    # Count occurrences of each severity:code pair, preserving first-seen order.
+    seen: dict[str, int] = {}
+    for issue in issue_list:
+        key = f"{getattr(issue, 'severity', '')}:{getattr(issue, 'code', '')}"
+        seen[key] = seen.get(key, 0) + 1
+
+    parts = []
+    for key, count in seen.items():
+        parts.append(key if count == 1 else f"{key} ×{count}")
+    return " | ".join(parts)
 
 
 def _run_parameter_audit_for_protein(
@@ -345,6 +352,29 @@ def _variant_audit_accepts_end_model(audit_result: Any) -> bool:
     return True
 
 
+def _compute_actual_protein_range(pdb_path: Path) -> str:
+    """Return 'first-last' residue range from ATOM records in *pdb_path*.
+
+    Reads only standard ATOM records (not HETATM) to determine the min and max
+    residue sequence numbers present in the prepared structure.  Returns an
+    empty string if the file cannot be read or contains no ATOM records.
+    """
+    resnums: list[int] = []
+    try:
+        for line in pdb_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.startswith("ATOM  "):
+                continue
+            try:
+                resnums.append(int(line[22:26]))
+            except (ValueError, IndexError):
+                pass
+    except OSError:
+        return ""
+    if not resnums:
+        return ""
+    return f"{min(resnums)}-{max(resnums)}"
+
+
 def _build_prepared_structure_for_variant(
     pdb_id: str,
     pdb_dir: Path,
@@ -352,17 +382,18 @@ def _build_prepared_structure_for_variant(
     final_protein_input_path: Path | None = None,
     final_protein_input_paths: list[Path] | None = None,
 ) -> Path:
-    water_input_path = pdb_dir / "components" / f"{pdb_id}_water.pdb"
     ligand_input_path = pdb_dir / "components" / f"{pdb_id}_ligand.pdb"
     metals_input_path = pdb_dir / "components" / f"{pdb_id}_metals.pdb"
 
+    protein_component_path = pdb_dir / "components" / f"{pdb_id}_protein.pdb"
     kwargs: dict[str, object] = {
         "pdb_directory": pdb_dir,
         "pdb_id": pdb_id,
         "structure_variant": variant_label,
-        "water_input_path": water_input_path if water_input_path.exists() else None,
+        "water_input_path": None,
         "ligand_input_path": ligand_input_path if ligand_input_path.exists() else None,
         "metals_input_path": metals_input_path if metals_input_path.exists() else None,
+        "backbone_nonstd_input_path": protein_component_path if protein_component_path.exists() else None,
     }
 
     if final_protein_input_paths:
@@ -375,6 +406,106 @@ def _build_prepared_structure_for_variant(
         kwargs["protein_input_path"] = final_protein_input_path
 
     summary = build_prepared_structure_for_variant(**kwargs)
+    return summary.output_pdb_path
+
+
+def _build_prepared_wat_structure_for_variant(
+    pdb_id: str,
+    pdb_dir: Path,
+    variant_label: str,
+    final_protein_input_path: Path | None = None,
+    final_protein_input_paths: list[Path] | None = None,
+) -> Path | None:
+    """Build the protein + crystal-water companion model (<PDBID>_WAT.pdb).
+
+    Returns the output path when the water component is present and non-empty,
+    or None when no crystal waters are available.
+    """
+    from stack_protein_preparation.prepared_structure import (
+        build_prepared_structure,
+        get_prepared_structure_output_path,
+        sanitize_variant_label,
+    )
+
+    water_path = pdb_dir / "components" / f"{pdb_id}_water.pdb"
+    if not water_path.exists() or water_path.stat().st_size == 0:
+        return None
+
+    ligand_input_path = pdb_dir / "components" / f"{pdb_id}_ligand.pdb"
+    metals_input_path = pdb_dir / "components" / f"{pdb_id}_metals.pdb"
+    protein_component_path = pdb_dir / "components" / f"{pdb_id}_protein.pdb"
+
+    safe_variant = sanitize_variant_label(variant_label)
+    wat_output_path = pdb_dir / "prepared" / safe_variant / f"{pdb_id}_WAT.pdb"
+
+    kwargs: dict[str, object] = {
+        "output_pdb_path": wat_output_path,
+        "water_input_path": water_path,
+        "ligand_input_path": ligand_input_path if ligand_input_path.exists() else None,
+        "metals_input_path": metals_input_path if metals_input_path.exists() else None,
+        "backbone_nonstd_input_path": protein_component_path if protein_component_path.exists() else None,
+        "structure_variant": variant_label,
+    }
+
+    if final_protein_input_paths:
+        kwargs["protein_input_paths"] = final_protein_input_paths
+    else:
+        if final_protein_input_path is None:
+            raise ValueError(
+                "Either final_protein_input_path or final_protein_input_paths must be provided."
+            )
+        kwargs["protein_input_path"] = final_protein_input_path
+
+    summary = build_prepared_structure(**kwargs)
+    return summary.output_pdb_path
+
+
+def _build_prepared_cofactor_structure_for_variant(
+    pdb_id: str,
+    pdb_dir: Path,
+    variant_label: str,
+    final_protein_input_path: Path | None = None,
+    final_protein_input_paths: list[Path] | None = None,
+) -> Path | None:
+    """Build the protein + cofactor companion model (<PDBID>_cofactor.pdb).
+
+    Uses the auto-detected cofactor component.  Returns None when no cofactors
+    were extracted.  Manual inspection of components/per_hetatm/ is recommended
+    to verify the auto-classification.
+    """
+    from stack_protein_preparation.prepared_structure import (
+        build_prepared_structure,
+        sanitize_variant_label,
+    )
+
+    cofactor_path = pdb_dir / "components" / f"{pdb_id}_cofactor.pdb"
+    if not cofactor_path.exists() or cofactor_path.stat().st_size == 0:
+        return None
+
+    protein_component_path = pdb_dir / "components" / f"{pdb_id}_protein.pdb"
+
+    safe_variant = sanitize_variant_label(variant_label)
+    cof_output_path = pdb_dir / "prepared" / safe_variant / f"{pdb_id}_cofactor.pdb"
+
+    kwargs: dict[str, object] = {
+        "output_pdb_path": cof_output_path,
+        "water_input_path": None,
+        "ligand_input_path": cofactor_path,
+        "metals_input_path": None,
+        "backbone_nonstd_input_path": protein_component_path if protein_component_path.exists() else None,
+        "structure_variant": variant_label,
+    }
+
+    if final_protein_input_paths:
+        kwargs["protein_input_paths"] = final_protein_input_paths
+    else:
+        if final_protein_input_path is None:
+            raise ValueError(
+                "Either final_protein_input_path or final_protein_input_paths must be provided."
+            )
+        kwargs["protein_input_path"] = final_protein_input_path
+
+    summary = build_prepared_structure(**kwargs)
     return summary.output_pdb_path
 
 
@@ -512,20 +643,18 @@ def _append_parameter_audit_summary(
     """Write the compact parameter-audit decision into the FRUTON log."""
 
     _log(
-        f"step_12:parameter_audit:{pdb_id}",
+        f"parameter_audit:{pdb_id}",
         [
-            f"status                       : {getattr(audit_result, 'status', '')}",
-            f"input_pdb_path               : {getattr(audit_result, 'input_pdb_path', '')}",
-            f"manifest_path                : {getattr(audit_result, 'manifest_path', '')}",
-            f"log_path                     : {getattr(audit_result, 'log_path', '')}",
-            f"gromacs_probe_success        : {getattr(audit_result, 'gromacs_probe_success', '')}",
-            f"can_use_current_force_field  : {getattr(audit_result, 'can_use_current_force_field', '')}",
-            f"requires_repair              : {getattr(audit_result, 'requires_repair', '')}",
-            f"requires_external_parameters : {getattr(audit_result, 'requires_external_parameters', '')}",
-            f"requires_qm_parameters       : {getattr(audit_result, 'requires_qm_parameters', '')}",
-            f"requires_metal_parameters    : {getattr(audit_result, 'requires_metal_parameters', '')}",
-            f"supported_nonstandard        : {', '.join(getattr(audit_result, 'supported_nonstandard_residue_names', ())) or '(none)'}",
-            f"unsupported_residues         : {', '.join(getattr(audit_result, 'unsupported_residue_names', ())) or '(none)'}",
+            f"  {pdb_id}",
+            f"  status      :  {getattr(audit_result, 'status', '')}  "
+            f"│  gromacs_probe: {getattr(audit_result, 'gromacs_probe_success', '')}  "
+            f"can_use_ff: {getattr(audit_result, 'can_use_current_force_field', '')}",
+            f"  flags       :  repair: {getattr(audit_result, 'requires_repair', '')}  "
+            f"ext_params: {getattr(audit_result, 'requires_external_parameters', '')}  "
+            f"qm: {getattr(audit_result, 'requires_qm_parameters', '')}  "
+            f"metal: {getattr(audit_result, 'requires_metal_parameters', '')}",
+            f"  supported   :  {', '.join(getattr(audit_result, 'supported_nonstandard_residue_names', ())) or '(none)'}",
+            f"  unsupported :  {', '.join(getattr(audit_result, 'unsupported_residue_names', ())) or '(none)'}",
         ],
     )
 
@@ -555,19 +684,16 @@ def _run_standard_residue_repair_for_protonation_input(
         allow_nonstandard_residues=False,
     )
     _log(
-        "standard_residue_repair:result",
+        "standard_residue_repair",
         [
-            f"pdb_id                            : {pdb_id}",
-            f"variant_label                     : {variant_label}",
-            f"input_pdb                         : {input_pdb}",
-            f"used_output_path                  : {getattr(repair_result, 'used_output_path', '')}",
-            f"repair_log_path                   : {getattr(repair_result, 'log_path', '')}",
-            f"status                            : {getattr(repair_result, 'status', '')}",
-            f"repair_attempted                  : {getattr(repair_result, 'repair_attempted', '')}",
-            f"repair_success                    : {getattr(repair_result, 'repair_success', '')}",
-            f"missing_heavy_atom_count_before   : {getattr(repair_result, 'missing_heavy_atom_count_before', '')}",
-            f"missing_heavy_atom_count_after    : {getattr(repair_result, 'missing_heavy_atom_count_after', '')}",
-            f"message                           : {getattr(repair_result, 'message', '')}",
+            f"  {pdb_id}  /  {variant_label}",
+            f"  status    :  {getattr(repair_result, 'status', '')}  "
+            f"│  attempted: {getattr(repair_result, 'repair_attempted', '')}  "
+            f"success: {getattr(repair_result, 'repair_success', '')}",
+            f"  missing   :  before: {getattr(repair_result, 'missing_heavy_atom_count_before', '')}  "
+            f"after: {getattr(repair_result, 'missing_heavy_atom_count_after', '')}",
+            f"  message   :  {getattr(repair_result, 'message', '')}",
+            f"  output    :  {getattr(repair_result, 'used_output_path', '')}",
         ],
     )
     return repair_result
@@ -620,23 +746,27 @@ def _run_sanitize_for_protonation_input(
         fail_on_nonstandard_residues=False,
     )
 
+    _atom_in = getattr(sanitize_result, 'atom_count_in', '')
+    _atom_out = getattr(sanitize_result, 'atom_count_out', '')
+    _altloc = getattr(sanitize_result, 'selected_altloc_count', '')
+    _occ = getattr(sanitize_result, 'normalized_occupancy_count', '')
+    _missing = getattr(sanitize_result, 'missing_heavy_atom_count', '')
+    _repaired = getattr(sanitize_result, 'repaired_heavy_atom_count', 0)
+    _blocked = getattr(sanitize_result, 'blocked_repair_count', 0)
+    _nonstd = ', '.join(getattr(sanitize_result, 'nonstandard_residue_names', ())) or '(none)'
     _log(
-        "protonation_sanitize:result",
+        "sanitize:protonation_input",
         [
-            f"pdb_id                            : {pdb_id}",
-            f"variant_label                     : {variant_label}",
-            f"input_pdb_path                    : {input_pdb}",
-            f"sanitized_output_path             : {getattr(sanitize_result, 'output_pdb_path', '')}",
-            f"sanitize_log_path                 : {getattr(sanitize_result, 'log_path', '')}",
-            f"status                            : {getattr(sanitize_result, 'status', '')}",
-            f"can_run_gromacs                   : {getattr(sanitize_result, 'can_run_gromacs', '')}",
-            f"atom_count_in                     : {getattr(sanitize_result, 'atom_count_in', '')}",
-            f"atom_count_out                    : {getattr(sanitize_result, 'atom_count_out', '')}",
-            f"selected_altloc_count             : {getattr(sanitize_result, 'selected_altloc_count', '')}",
-            f"normalized_occupancy_count        : {getattr(sanitize_result, 'normalized_occupancy_count', '')}",
-            f"missing_heavy_atom_count          : {getattr(sanitize_result, 'missing_heavy_atom_count', '')}",
-            f"nonstandard_residue_names         : {', '.join(getattr(sanitize_result, 'nonstandard_residue_names', ())) or '(none)'}",
-            f"issues                            : {_summarize_sanitize_issues(sanitize_result)}",
+            f"  {pdb_id}  /  {variant_label}",
+            f"  status       :  {getattr(sanitize_result, 'status', '')}  "
+            f"(gromacs_ok: {getattr(sanitize_result, 'can_run_gromacs', '')})",
+            f"  atoms        :  {_atom_in} → {_atom_out}"
+            f"  │  altloc: {_altloc}  occ_norm: {_occ}",
+            f"  heavy atoms  :  missing: {_missing}  repaired: {_repaired}  blocked: {_blocked}",
+            f"  nonstandard  :  {_nonstd}",
+            f"  issues       :  {_summarize_sanitize_issues(sanitize_result)}",
+            f"  input        :  {input_pdb}",
+            f"  output       :  {getattr(sanitize_result, 'output_pdb_path', '')}",
         ],
     )
 
@@ -677,22 +807,27 @@ def _run_sanitize_for_representative_protein(
         fail_on_nonstandard_residues=False,
     )
 
+    _atom_in = getattr(sanitize_result, 'atom_count_in', '')
+    _atom_out = getattr(sanitize_result, 'atom_count_out', '')
+    _altloc = getattr(sanitize_result, 'selected_altloc_count', '')
+    _occ = getattr(sanitize_result, 'normalized_occupancy_count', '')
+    _missing = getattr(sanitize_result, 'missing_heavy_atom_count', '')
+    _repaired = getattr(sanitize_result, 'repaired_heavy_atom_count', 0)
+    _blocked = getattr(sanitize_result, 'blocked_repair_count', 0)
+    _nonstd = ', '.join(getattr(sanitize_result, 'nonstandard_residue_names', ())) or '(none)'
     _log(
-        "step_11:sanitize:result",
+        "sanitize:representative_protein",
         [
-            f"pdb_id                            : {pdb_id}",
-            f"input_pdb_path                    : {input_pdb}",
-            f"sanitized_output_path             : {getattr(sanitize_result, 'output_pdb_path', '')}",
-            f"sanitize_log_path                 : {getattr(sanitize_result, 'log_path', '')}",
-            f"status                            : {getattr(sanitize_result, 'status', '')}",
-            f"can_run_gromacs                   : {getattr(sanitize_result, 'can_run_gromacs', '')}",
-            f"atom_count_in                     : {getattr(sanitize_result, 'atom_count_in', '')}",
-            f"atom_count_out                    : {getattr(sanitize_result, 'atom_count_out', '')}",
-            f"selected_altloc_count             : {getattr(sanitize_result, 'selected_altloc_count', '')}",
-            f"normalized_occupancy_count        : {getattr(sanitize_result, 'normalized_occupancy_count', '')}",
-            f"missing_heavy_atom_count          : {getattr(sanitize_result, 'missing_heavy_atom_count', '')}",
-            f"nonstandard_residue_names         : {', '.join(getattr(sanitize_result, 'nonstandard_residue_names', ())) or '(none)'}",
-            f"issues                            : {_summarize_sanitize_issues(sanitize_result)}",
+            f"  {pdb_id}  /  representative_protein",
+            f"  status       :  {getattr(sanitize_result, 'status', '')}  "
+            f"(gromacs_ok: {getattr(sanitize_result, 'can_run_gromacs', '')})",
+            f"  atoms        :  {_atom_in} → {_atom_out}"
+            f"  │  altloc: {_altloc}  occ_norm: {_occ}",
+            f"  heavy atoms  :  missing: {_missing}  repaired: {_repaired}  blocked: {_blocked}",
+            f"  nonstandard  :  {_nonstd}",
+            f"  issues       :  {_summarize_sanitize_issues(sanitize_result)}",
+            f"  input        :  {input_pdb}",
+            f"  output       :  {getattr(sanitize_result, 'output_pdb_path', '')}",
         ],
     )
 
@@ -738,23 +873,27 @@ def _run_sanitize_for_prepared_variant(
         fail_on_nonstandard_residues=False,
     )
 
+    _atom_in = getattr(sanitize_result, 'atom_count_in', '')
+    _atom_out = getattr(sanitize_result, 'atom_count_out', '')
+    _altloc = getattr(sanitize_result, 'selected_altloc_count', '')
+    _occ = getattr(sanitize_result, 'normalized_occupancy_count', '')
+    _missing = getattr(sanitize_result, 'missing_heavy_atom_count', '')
+    _repaired = getattr(sanitize_result, 'repaired_heavy_atom_count', 0)
+    _blocked = getattr(sanitize_result, 'blocked_repair_count', 0)
+    _nonstd = ', '.join(getattr(sanitize_result, 'nonstandard_residue_names', ())) or '(none)'
     _log(
-        "step_12:sanitize_prepared_variant:result",
+        "sanitize:prepared_variant",
         [
-            f"pdb_id                            : {pdb_id}",
-            f"variant_label                     : {variant_label}",
-            f"prepared_output_path              : {prepared_output_path}",
-            f"sanitized_output_path             : {getattr(sanitize_result, 'output_pdb_path', '')}",
-            f"sanitize_log_path                 : {getattr(sanitize_result, 'log_path', '')}",
-            f"status                            : {getattr(sanitize_result, 'status', '')}",
-            f"can_run_gromacs                   : {getattr(sanitize_result, 'can_run_gromacs', '')}",
-            f"atom_count_in                     : {getattr(sanitize_result, 'atom_count_in', '')}",
-            f"atom_count_out                    : {getattr(sanitize_result, 'atom_count_out', '')}",
-            f"selected_altloc_count             : {getattr(sanitize_result, 'selected_altloc_count', '')}",
-            f"normalized_occupancy_count        : {getattr(sanitize_result, 'normalized_occupancy_count', '')}",
-            f"missing_heavy_atom_count          : {getattr(sanitize_result, 'missing_heavy_atom_count', '')}",
-            f"nonstandard_residue_names         : {', '.join(getattr(sanitize_result, 'nonstandard_residue_names', ())) or '(none)'}",
-            f"issues                            : {_summarize_sanitize_issues(sanitize_result)}",
+            f"  {pdb_id}  /  {variant_label}",
+            f"  status       :  {getattr(sanitize_result, 'status', '')}  "
+            f"(gromacs_ok: {getattr(sanitize_result, 'can_run_gromacs', '')})",
+            f"  atoms        :  {_atom_in} → {_atom_out}"
+            f"  │  altloc: {_altloc}  occ_norm: {_occ}",
+            f"  heavy atoms  :  missing: {_missing}  repaired: {_repaired}  blocked: {_blocked}",
+            f"  nonstandard  :  {_nonstd}",
+            f"  issues       :  {_summarize_sanitize_issues(sanitize_result)}",
+            f"  input        :  {prepared_output_path}",
+            f"  output       :  {getattr(sanitize_result, 'output_pdb_path', '')}",
         ],
     )
 
@@ -770,24 +909,20 @@ def _append_parameter_audit_variant_summary(
 ) -> None:
     """Write compact final variant-audit decision into the FRUTON log."""
 
+    _accepted_tag = "ACCEPTED" if accepted else "REJECTED"
     _log(
-        f"step_13:parameter_audit_variant:{pdb_id}:{variant_label}",
+        f"parameter_audit_variant:{pdb_id}:{variant_label}",
         [
-            f"pdb_id                       : {pdb_id}",
-            f"variant_label                : {variant_label}",
-            f"accepted_as_end_model        : {accepted}",
-            f"status                       : {getattr(audit_result, 'status', '')}",
-            f"input_pdb_path               : {getattr(audit_result, 'input_pdb_path', '')}",
-            f"manifest_path                : {getattr(audit_result, 'manifest_path', '')}",
-            f"log_path                     : {getattr(audit_result, 'log_path', '')}",
-            f"gromacs_probe_success        : {getattr(audit_result, 'gromacs_probe_success', '')}",
-            f"can_use_current_force_field  : {getattr(audit_result, 'can_use_current_force_field', '')}",
-            f"requires_repair              : {getattr(audit_result, 'requires_repair', '')}",
-            f"requires_external_parameters : {getattr(audit_result, 'requires_external_parameters', '')}",
-            f"requires_qm_parameters       : {getattr(audit_result, 'requires_qm_parameters', '')}",
-            f"requires_metal_parameters    : {getattr(audit_result, 'requires_metal_parameters', '')}",
-            f"supported_nonstandard        : {', '.join(getattr(audit_result, 'supported_nonstandard_residue_names', ())) or '(none)'}",
-            f"unsupported_residues         : {', '.join(getattr(audit_result, 'unsupported_residue_names', ())) or '(none)'}",
+            f"  {pdb_id}  /  {variant_label}  →  {_accepted_tag}",
+            f"  status      :  {getattr(audit_result, 'status', '')}  "
+            f"│  gromacs_probe: {getattr(audit_result, 'gromacs_probe_success', '')}  "
+            f"can_use_ff: {getattr(audit_result, 'can_use_current_force_field', '')}",
+            f"  flags       :  repair: {getattr(audit_result, 'requires_repair', '')}  "
+            f"ext_params: {getattr(audit_result, 'requires_external_parameters', '')}  "
+            f"qm: {getattr(audit_result, 'requires_qm_parameters', '')}  "
+            f"metal: {getattr(audit_result, 'requires_metal_parameters', '')}",
+            f"  supported   :  {', '.join(getattr(audit_result, 'supported_nonstandard_residue_names', ())) or '(none)'}",
+            f"  unsupported :  {', '.join(getattr(audit_result, 'unsupported_residue_names', ())) or '(none)'}",
         ],
     )
 
@@ -1093,6 +1228,7 @@ def _apply_accepted_variant_audit_decision(
         PREPARED_ALPHAFOLD_OUTPUT_PATH_COLUMN_NAME,
         PREPARED_GAPS_OUTPUT_PATH_COLUMN_NAME,
         PREPARED_MODELLER_OUTPUT_PATH_COLUMN_NAME,
+        PREPARED_STRUCTURE_ACTUAL_RANGE_COLUMN_NAME,
         PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME,
         PREPARED_STRUCTURE_PROTEIN_INPUT_PATH_COLUMN_NAME,
         PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
@@ -1117,9 +1253,13 @@ def _apply_accepted_variant_audit_decision(
     pipeline_record[PREPARED_STRUCTURE_PROTEIN_INPUT_PATH_COLUMN_NAME] = (
         representative_variant_result.get("final_protein_input_paths", "")
     )
-    pipeline_record[PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME] = (
-        representative_variant_result.get("prepared_output_path", "")
-    )
+    _representative_output_path = representative_variant_result.get("prepared_output_path", "")
+    pipeline_record[PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME] = _representative_output_path
+
+    if _representative_output_path:
+        _actual_range = _compute_actual_protein_range(Path(_representative_output_path))
+        if _actual_range:
+            pipeline_record[PREPARED_STRUCTURE_ACTUAL_RANGE_COLUMN_NAME] = _actual_range
 
     for result in accepted_variant_result_list:
         variant_label = result.get("variant_label", "")

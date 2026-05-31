@@ -810,6 +810,222 @@ def write_parameter_audit_log(
     return log_path
 
 
+@dataclass(frozen=True, slots=True)
+class TleapProbeResult:
+    """Raw outcome of a tleap parameter-load probe for non-standard residues.
+
+    tleap does not reliably return a non-zero exit code on failure, so the
+    ``success`` flag is derived from the absence of FATAL / ERROR markers in
+    the combined stdout text.  The full output is retained so the caller can
+    inspect it in the audit log.
+    """
+
+    command: tuple[str, ...]
+    cwd: Path
+    returncode: int | None
+    success: bool
+    stdout: str
+    stderr: str
+    timeout_seconds: int
+    error_message: str
+    residue_names: tuple[str, ...]
+    frcmod_paths: tuple[str, ...]
+    mol2_paths: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RespParameterProbeResult:
+    """Aggregated result of probing derived RESP frcmod+mol2 files with tleap.
+
+    ``parameters_complete`` is True when frcmod and mol2 files exist for every
+    unsupported residue.  ``tleap_success`` is True when the probe loaded all
+    of them without FATAL/ERROR markers.  Both must be True for the model to be
+    fully accepted without a pending-Gaussian caveat.
+    """
+
+    parameters_complete: bool   # all frcmod+mol2 files found on disk
+    tleap_success: bool         # tleap loaded them without fatal errors
+    tleap_probe: TleapProbeResult | None
+    residue_names: tuple[str, ...]
+    missing_residues: tuple[str, ...]  # residues whose files were not found
+
+
+def probe_amber_resp_parameters(
+    *,
+    unsupported_residue_names: tuple[str, ...],
+    frcmod_paths: dict[str, Path],
+    mol2_paths: dict[str, Path],
+    timeout_seconds: int = 120,
+) -> RespParameterProbeResult:
+    """Probe derived RESP frcmod+mol2 files with tleap to verify they load.
+
+    The probe runs tleap in a temporary directory and loads the frcmod and mol2
+    for every unsupported residue.  tleap does not consistently return a
+    non-zero exit code on failure, so success is inferred from the absence of
+    FATAL/ERROR markers in the combined output.
+
+    Parameters
+    ----------
+    unsupported_residue_names:
+        Residue names that failed the GROMACS pdb2gmx probe (the names for
+        which derived parameters are expected).
+    frcmod_paths:
+        Mapping from residue name → absolute path of the derived frcmod file.
+    mol2_paths:
+        Mapping from residue name → absolute path of the derived mol2 file.
+    timeout_seconds:
+        Wall-clock limit for the tleap subprocess.
+
+    Returns
+    -------
+    RespParameterProbeResult
+        ``parameters_complete`` is True only when every unsupported residue has
+        both a frcmod and a mol2 file on disk.  ``tleap_success`` is True when
+        the probe loaded them all without fatal errors.
+    """
+
+    missing: list[str] = []
+    for resname in unsupported_residue_names:
+        if resname not in frcmod_paths or not frcmod_paths[resname].is_file():
+            missing.append(resname)
+        elif resname not in mol2_paths or not mol2_paths[resname].is_file():
+            missing.append(resname)
+
+    if missing:
+        return RespParameterProbeResult(
+            parameters_complete=False,
+            tleap_success=False,
+            tleap_probe=None,
+            residue_names=unsupported_residue_names,
+            missing_residues=tuple(missing),
+        )
+
+    tleap_executable = shutil.which("tleap")
+    if tleap_executable is None:
+        dummy_probe = TleapProbeResult(
+            command=(),
+            cwd=Path("."),
+            returncode=None,
+            success=False,
+            stdout="",
+            stderr="",
+            timeout_seconds=timeout_seconds,
+            error_message="tleap not found in PATH",
+            residue_names=unsupported_residue_names,
+            frcmod_paths=tuple(str(frcmod_paths[r]) for r in unsupported_residue_names),
+            mol2_paths=tuple(str(mol2_paths[r]) for r in unsupported_residue_names),
+        )
+        return RespParameterProbeResult(
+            parameters_complete=True,
+            tleap_success=False,
+            tleap_probe=dummy_probe,
+            residue_names=unsupported_residue_names,
+            missing_residues=(),
+        )
+
+    leap_lines = [
+        "source leaprc.protein.ff14SB",
+        "source leaprc.water.tip3p",
+    ]
+    frcmod_list: list[str] = []
+    mol2_list: list[str] = []
+    for resname in unsupported_residue_names:
+        frcmod_abs = str(frcmod_paths[resname].resolve())
+        mol2_abs = str(mol2_paths[resname].resolve())
+        leap_lines.append(f"loadamberparams {frcmod_abs}")
+        leap_lines.append(f'{resname} = loadmol2 {mol2_abs}')
+        leap_lines.append(f"check {resname}")
+        frcmod_list.append(frcmod_abs)
+        mol2_list.append(mol2_abs)
+    leap_lines.append("quit")
+    leap_script = "\n".join(leap_lines) + "\n"
+
+    with tempfile.TemporaryDirectory(prefix="fruton_resp_probe_") as tmp_dir_str:
+        tmp_dir = Path(tmp_dir_str)
+        leap_in = tmp_dir / "probe.leap"
+        leap_in.write_text(leap_script, encoding="utf-8")
+
+        command = (tleap_executable, "-s", "-f", str(leap_in))
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=tmp_dir,
+                text=True,
+                capture_output=True,
+                timeout=timeout_seconds,
+                check=False,
+            )
+            combined = completed.stdout + completed.stderr
+            fatal = _tleap_has_fatal(combined)
+            probe = TleapProbeResult(
+                command=command,
+                cwd=tmp_dir,
+                returncode=completed.returncode,
+                success=not fatal,
+                stdout=completed.stdout,
+                stderr=completed.stderr,
+                timeout_seconds=timeout_seconds,
+                error_message="" if not fatal else _tleap_error_summary(combined),
+                residue_names=unsupported_residue_names,
+                frcmod_paths=tuple(frcmod_list),
+                mol2_paths=tuple(mol2_list),
+            )
+        except subprocess.TimeoutExpired as exc:
+            probe = TleapProbeResult(
+                command=command,
+                cwd=tmp_dir,
+                returncode=None,
+                success=False,
+                stdout=str(exc.stdout or ""),
+                stderr=str(exc.stderr or ""),
+                timeout_seconds=timeout_seconds,
+                error_message=f"tleap timed out after {timeout_seconds} seconds",
+                residue_names=unsupported_residue_names,
+                frcmod_paths=tuple(frcmod_list),
+                mol2_paths=tuple(mol2_list),
+            )
+        except OSError as exc:
+            probe = TleapProbeResult(
+                command=command,
+                cwd=tmp_dir,
+                returncode=None,
+                success=False,
+                stdout="",
+                stderr="",
+                timeout_seconds=timeout_seconds,
+                error_message=f"{type(exc).__name__}: {exc}",
+                residue_names=unsupported_residue_names,
+                frcmod_paths=tuple(frcmod_list),
+                mol2_paths=tuple(mol2_list),
+            )
+
+    return RespParameterProbeResult(
+        parameters_complete=True,
+        tleap_success=probe.success,
+        tleap_probe=probe,
+        residue_names=unsupported_residue_names,
+        missing_residues=(),
+    )
+
+
+def _tleap_has_fatal(output: str) -> bool:
+    lower = output.lower()
+    fatal_markers = ("fatal:", "error reading", "could not open", "couldn't be loaded")
+    return any(marker in lower for marker in fatal_markers)
+
+
+def _tleap_error_summary(output: str, max_lines: int = 10) -> str:
+    lines = [
+        line.rstrip()
+        for line in output.splitlines()
+        if line.strip() and any(
+            tok in line.lower()
+            for tok in ("fatal", "error", "could not", "couldn't")
+        )
+    ]
+    return "\n".join(lines[-max_lines:]) if lines else _stderr_tail(output, max_lines)
+
+
 def result_to_pipeline_fields(result: ParameterAuditResult) -> dict[str, str]:
     """Return flat string fields suitable for future FRUTON pipeline records.
 

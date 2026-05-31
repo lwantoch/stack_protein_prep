@@ -202,7 +202,8 @@ class _FirstModelProteinOnlySelect(Select):
 
 
 def _debug(message: str) -> None:
-    print(f"[filler] {message}")
+    if os.environ.get("FRUTON_DEBUG"):
+        print(f"[filler] {message}")
 
 
 def _normalize_chain_id(chain_id: str) -> str:
@@ -869,13 +870,16 @@ def analyze_fill_decision_from_template_alignment(
         gap_region.gap_length >= 8 for gap_region in internal_gap_regions
     )
     if has_alphafold_gap:
+        has_small_gap = any(
+            gap_region.gap_length < 8 for gap_region in internal_gap_regions
+        )
         return FillDecision(
-            should_run_modeller=False,
+            should_run_modeller=has_small_gap,
             overall_classification="alphafold_candidate",
             gap_regions=internal_gap_regions,
             skip_reason=(
-                "At least one internal gap is 8 residues or longer. "
-                "Using AlphaFold fallback if possible."
+                "At least one internal gap is 8 residues or longer — AlphaFold candidate. "
+                + ("Modeller will also fill the smaller gap(s)." if has_small_gap else "")
             ),
             alphafold_candidate=True,
         )

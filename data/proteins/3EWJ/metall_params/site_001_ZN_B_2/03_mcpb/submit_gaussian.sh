@@ -1,31 +1,26 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Gaussian HPC submission — 3EWJ | ZN MCPB
+# Gaussian HPC submission — 3EWJ_ZN_B_2
 # =============================================================================
-# Submits three Gaussian jobs from step02_gaussian/ to CESGA as a job array:
-#   3EWJ_ZN_B_2_small_opt.com   geometry optimisation (small model)
-#   3EWJ_ZN_B_2_small_fc.com    force constants / Hessian (small model)
-#   3EWJ_ZN_B_2_large_mk.com    RESP charges (large model)
-#
-# All three jobs run in parallel (no inter-job dependencies).
-# Run ONLY after commands.sh has completed successfully.
-#
-# Usage:
-#   bash submit_gaussian.sh              # submit all missing jobs
-#   bash submit_gaussian.sh --only-failed  # resubmit only failed jobs
-#
-# After all jobs complete: bash run_after_gaussian.sh
-# (run_after_gaussian.sh will run formchk on small_opt.chk automatically)
+# Delegates to the central CESGA Gaussian submission script.
+# Run ONLY after bash commands.sh has completed successfully.
+# After all jobs complete:  bash run_after_gaussian.sh
 # =============================================================================
 set -euo pipefail
 
-REPO_ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
-CENTRAL="${REPO_ROOT}/scripts/CESGA_SLURM/submit_gaussian.sh"
-
-exec bash "$CENTRAL" \
-    -r "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/step02_gaussian" \
-    --partition compute \
-    --time 24:00:00 \
-    --mem 32G \
-    --cpus 16 \
-    "$@"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
+    CENTRAL="${REPO_ROOT}/scripts/CESGA_SLURM/submit_gaussian.sh"
+else
+    CENTRAL=""
+    DIR="$SCRIPT_DIR"
+    for _ in 1 2 3 4 5 6 7 8; do
+        if [[ -f "${DIR}/scripts/CESGA_SLURM/submit_gaussian.sh" ]]; then
+            CENTRAL="${DIR}/scripts/CESGA_SLURM/submit_gaussian.sh"
+            break
+        fi
+        DIR="$(dirname "$DIR")"
+    done
+fi
+[[ -n "${CENTRAL:-}" && -f "$CENTRAL" ]] || { echo "ERROR: central submit_gaussian.sh not found" >&2; exit 2; }
+exec bash "$CENTRAL" -r "$SCRIPT_DIR/step02_gaussian" --partition short --time 06:00:00 --mem 4000M --cpus 32 --gpus 1 "$@"

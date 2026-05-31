@@ -19,12 +19,6 @@
 # =============================================================================
 set -euo pipefail
 
-# -- Generate formatted checkpoint (required by MCPB.py -s 2) ----------------
-# formchk must be available (module load cesga/2020 g16/c1 on CESGA login node)
-command -v formchk >/dev/null || { echo "ERROR: formchk not found. Load g16 module first." >&2; exit 2; }
-formchk step02_gaussian/3EWJ_ZN_B_2_small_opt.chk \
-        step02_gaussian/3EWJ_ZN_B_2_small_opt.fchk
-
 # -- Create step03 directory and assemble all required inputs ----------------
 mkdir -p step03_amber_params
 

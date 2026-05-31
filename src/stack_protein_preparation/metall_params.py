@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Any
 
 from stack_protein_preparation.metal_hydrogen_cleanup import (
+    STANDARD_AMINO_ACID_NAMES as _STD_AA_NAMES,
     remove_metal_coordinating_hydrogens,
 )
 from stack_protein_preparation.metalls_check import (
@@ -48,6 +49,7 @@ from stack_protein_preparation.metalls_check import (
     is_true_metal_atom,
     read_pdb_atom_records,
 )
+from stack_protein_preparation.pdb_components import WATER_NAMES as _WATER_NAMES
 
 # Spin multiplicity is unambiguous only for closed-shell d10 ions.
 # All others depend on oxidation state and ligand field — left as TODO in the scaffold.
@@ -152,6 +154,119 @@ def _read_pdb_payload_lines(pdb_path: Path) -> list[str]:
 
 _METAL_RESNAMES: frozenset[str] = frozenset(METAL_RESIDUE_IDENTITY.keys())
 
+# Residue names that are never "non-standard organic ligands" in the MCPB
+# context — they are either standard amino acids, water molecules, or metal
+# ions, all of which are handled by MCPB natively.
+_NON_NAA_RESNAMES: frozenset[str] = (
+    frozenset(_STD_AA_NAMES) | frozenset(_WATER_NAMES) | _METAL_RESNAMES
+)
+
+# ---------------------------------------------------------------------------
+# GROMACS → AMBER atom name mapping
+# ---------------------------------------------------------------------------
+# GROMACS (amber99sb-ildn) numbers methylene hydrogens from 1 (HB1/HB2),
+# but AMBER (ff99SB) numbers them from 2 (HB2/HB3).  The mismatch causes
+# MCPB.py to raise KeyError during the residue libdict lookup.
+# ILE additionally uses CD/HD[1-3] in GROMACS vs CD1/HD1[1-3] in AMBER.
+_GROMACS_TO_AMBER_ATOM: dict[str, dict[str, str]] = {
+    "ARG": {"HB1": "HB2", "HB2": "HB3", "HG1": "HG2", "HG2": "HG3",
+            "HD1": "HD2", "HD2": "HD3"},
+    "ASN": {"HB1": "HB2", "HB2": "HB3"},
+    "ASP": {"HB1": "HB2", "HB2": "HB3"},
+    "CYS": {"HB1": "HB2", "HB2": "HB3"},
+    "GLN": {"HB1": "HB2", "HB2": "HB3", "HG1": "HG2", "HG2": "HG3"},
+    "GLU": {"HB1": "HB2", "HB2": "HB3", "HG1": "HG2", "HG2": "HG3"},
+    "GLY": {"HA1": "HA2", "HA2": "HA3"},
+    "HID": {"HB1": "HB2", "HB2": "HB3"},
+    "HIE": {"HB1": "HB2", "HB2": "HB3"},
+    "HIP": {"HB1": "HB2", "HB2": "HB3"},
+    "HIS": {"HB1": "HB2", "HB2": "HB3"},
+    "ILE": {"HG11": "HG12", "HG12": "HG13",
+            "HD1": "HD11", "HD2": "HD12", "HD3": "HD13", "CD": "CD1"},
+    "LEU": {"HB1": "HB2", "HB2": "HB3"},
+    "LYS": {"HB1": "HB2", "HB2": "HB3", "HG1": "HG2", "HG2": "HG3",
+            "HD1": "HD2", "HD2": "HD3", "HE1": "HE2", "HE2": "HE3"},
+    "MET": {"HB1": "HB2", "HB2": "HB3", "HG1": "HG2", "HG2": "HG3"},
+    "PHE": {"HB1": "HB2", "HB2": "HB3"},
+    "PRO": {"HB1": "HB2", "HB2": "HB3", "HG1": "HG2", "HG2": "HG3",
+            "HD1": "HD2", "HD2": "HD3"},
+    "SER": {"HB1": "HB2", "HB2": "HB3"},
+    "TRP": {"HB1": "HB2", "HB2": "HB3"},
+    "TYR": {"HB1": "HB2", "HB2": "HB3"},
+}
+
+
+def _find_naa_resnames_in_contacts(contacts: list[Any]) -> list[str]:
+    """Return unique non-standard organic ligand residue names from *contacts*.
+
+    A contact is a non-standard ligand if its *donor_residue_name* is not a
+    standard amino acid, not water, and not a metal ion.  The returned list
+    preserves the order of first appearance and has no duplicates.
+    """
+    seen: list[str] = []
+    for c in contacts:
+        rn = c.donor_residue_name.strip().upper()
+        if rn not in _NON_NAA_RESNAMES and rn not in seen:
+            seen.append(rn)
+    return seen
+
+
+def _extract_residue_pdb(
+    mcpb_pdb: Path,
+    resname: str,
+    output_pdb: Path,
+) -> bool:
+    """Extract all ATOM/HETATM lines matching *resname* from *mcpb_pdb* into
+    *output_pdb*.  Returns True if at least one line was written."""
+    lines = [
+        ln for ln in mcpb_pdb.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+        if ln.startswith(("ATOM  ", "HETATM")) and ln[17:20].strip().upper() == resname.upper()
+    ]
+    if not lines:
+        return False
+    output_pdb.write_text("".join(lines) + "END\n", encoding="utf-8")
+    return True
+
+
+def _generate_naa_mol2(
+    resname: str,
+    pdb_path: Path,
+    mol2_path: Path,
+    net_charge: int = 0,
+) -> bool:
+    """Try to generate a GAFF2 mol2 for *resname* using antechamber.
+
+    Returns True if antechamber produced the mol2 file, False otherwise
+    (antechamber not found, failed, or no pdb to work from).
+    """
+    if not pdb_path.is_file() or pdb_path.stat().st_size == 0:
+        return False
+    antechamber = shutil.which("antechamber")
+    if antechamber is None:
+        return False
+    try:
+        result = subprocess.run(
+            [
+                antechamber,
+                "-i", str(pdb_path),
+                "-fi", "pdb",
+                "-o", str(mol2_path),
+                "-fo", "mol2",
+                "-c", "bcc",
+                "-nc", str(net_charge),
+                "-at", "gaff2",
+                "-s", "2",
+                "-pf", "y",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=300,
+            cwd=str(mol2_path.parent),
+        )
+        return mol2_path.is_file() and mol2_path.stat().st_size > 0
+    except Exception:
+        return False
+
 
 def _is_metal_hetatm_line(line: str) -> bool:
     """Return True if *line* is a HETATM record for a bare metal ion."""
@@ -234,6 +349,137 @@ def _combined_mcpb_pdb(
         for line in metal_lines:
             fh.write(line)
         fh.write("END\n")
+
+
+def _renumber_pdb_atoms(pdb_path: Path) -> None:
+    """Rewrite *pdb_path* in-place with sequential atom serial numbers starting
+    from 1.
+
+    Only ATOM and HETATM lines are renumbered; all other lines (REMARK, TER,
+    CONECT, END, …) are written through unchanged.  This is needed when
+    *pdb_path* is assembled from multiple source PDB files whose serial
+    counters all start at 1, producing duplicate serials that confuse
+    MCPB.py -s 1.
+    """
+    lines = pdb_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    serial = 1
+    out_lines: list[str] = []
+    for line in lines:
+        if line.startswith(("ATOM  ", "HETATM")):
+            # PDB columns 7-11 (0-based 6:11) are the serial number field
+            out_lines.append(f"{line[:6]}{serial:5d}{line[11:]}")
+            serial += 1
+        else:
+            out_lines.append(line)
+    pdb_path.write_text("".join(out_lines), encoding="utf-8")
+
+
+def _rename_gromacs_to_amber_atoms(pdb_path: Path) -> None:
+    """Rename GROMACS (amber99sb-ildn) atom names to AMBER (ff99SB) in-place.
+
+    GROMACS numbers methylene H's from 1 (HB1/HB2); MCPB.py's ff99SB library
+    expects them from 2 (HB2/HB3).  Also fixes ILE CD→CD1 and HD[1-3]→HD1[1-3].
+    Only ATOM/HETATM lines for residues listed in _GROMACS_TO_AMBER_ATOM are
+    touched; all other lines pass through unchanged.
+    """
+    lines = pdb_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    out_lines: list[str] = []
+    for line in lines:
+        if line.startswith(("ATOM  ", "HETATM")):
+            resname = line[17:20].strip()
+            rename_map = _GROMACS_TO_AMBER_ATOM.get(resname)
+            if rename_map:
+                atom_name = line[12:16].strip()
+                new_name = rename_map.get(atom_name)
+                if new_name is not None:
+                    # PDB atom-name field is 4 chars (cols 12-15, 0-indexed).
+                    # 1-3 char names carry a leading space; 4-char names fill the field.
+                    if len(new_name) < 4:
+                        new_field = f" {new_name:<3s}"
+                    else:
+                        new_field = f"{new_name:<4s}"
+                    line = line[:12] + new_field + line[16:]
+        out_lines.append(line)
+    pdb_path.write_text("".join(out_lines), encoding="utf-8")
+
+
+def _rename_his_by_protonation(pdb_path: Path) -> None:
+    """Rename HIS residues to HID/HIE/HIP in-place based on which H atoms are present.
+
+    GROMACS outputs all histidines as ``HIS`` regardless of protonation state.
+    MCPB.py's AMBER ff99SB chargedict expects ``HID`` (δ-protonated), ``HIE``
+    (ε-protonated), or ``HIP`` (doubly protonated).
+
+    Detection: for each HIS residue, check for HD1 (δ N-H) and HE2 (ε N-H).
+    """
+    lines = pdb_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+
+    # Collect per-residue H atom sets: key = (chain, resseq, icode)
+    his_atoms: dict[tuple[str, str, str], set[str]] = {}
+    for line in lines:
+        if line.startswith(("ATOM  ", "HETATM")) and line[17:20].strip() == "HIS":
+            key = (line[21].strip(), line[22:26].strip(), line[26].strip())
+            atom = line[12:16].strip()
+            his_atoms.setdefault(key, set()).add(atom)
+
+    # Determine new residue name for each HIS key
+    his_rename: dict[tuple[str, str, str], str] = {}
+    for key, atoms in his_atoms.items():
+        has_hd1 = "HD1" in atoms
+        has_he2 = "HE2" in atoms
+        if has_hd1 and has_he2:
+            his_rename[key] = "HIP"
+        elif has_hd1:
+            his_rename[key] = "HID"
+        else:
+            his_rename[key] = "HIE"  # default: ε-protonated (most common)
+
+    if not his_rename:
+        return
+
+    out_lines: list[str] = []
+    for line in lines:
+        if line.startswith(("ATOM  ", "HETATM")) and line[17:20].strip() == "HIS":
+            key = (line[21].strip(), line[22:26].strip(), line[26].strip())
+            new_rn = his_rename.get(key, "HIE")
+            line = line[:17] + f"{new_rn:<3s}" + line[20:]
+        out_lines.append(line)
+    pdb_path.write_text("".join(out_lines), encoding="utf-8")
+
+
+def _generate_water_mol2(mol2_path: Path, water_pdb: Path) -> bool:
+    """Generate a mol2 for a coordinating water using antechamber (GAFF2/BCC).
+
+    Extracts the first HOH record from *water_pdb* and runs antechamber.
+    Returns True on success.
+    """
+    if not water_pdb.is_file() or water_pdb.stat().st_size == 0:
+        return False
+    antechamber = shutil.which("antechamber")
+    if antechamber is None:
+        return False
+    try:
+        result = subprocess.run(
+            [
+                antechamber,
+                "-i", str(water_pdb),
+                "-fi", "pdb",
+                "-o", str(mol2_path),
+                "-fo", "mol2",
+                "-c", "bcc",
+                "-nc", "0",
+                "-at", "gaff2",
+                "-s", "2",
+                "-pf", "y",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=str(mol2_path.parent),
+        )
+        return mol2_path.is_file() and mol2_path.stat().st_size > 0
+    except Exception:
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -387,6 +633,7 @@ def _write_mcpb_in(
     ion_mol2file: str,
     formal_charge: int | None,
     spin_guess: int | None,
+    naa_mol2files: list[str] | None = None,
 ) -> None:
     """Write a first-pass MCPB.py ``.in`` scaffold.
 
@@ -439,6 +686,15 @@ def _write_mcpb_in(
             "# Spin: 1=singlet, 2=doublet, 3=triplet, …"
         )
 
+    # naa_mol2files — non-standard organic ligands in the coordination shell
+    naa_block = ""
+    if naa_mol2files:
+        naa_list = " ".join(naa_mol2files)
+        naa_block = (
+            "\n# mol2 file(s) for non-standard organic ligand(s) in the QM region.\n"
+            f"naa_mol2files {naa_list}\n"
+        )
+
     content = f"""\
 # MCPB.py input file — first-pass scaffold generated by FRUTON
 # Review carefully before running. Remaining TODOs are marked explicitly.
@@ -454,7 +710,7 @@ cut_off {cut_off:.1f}
 
 {mol2_comment}
 ion_mol2files {ion_mol2file}
-
+{naa_block}
 # 1 = optimise only H positions in the large model (recommended).
 large_opt 1
 
@@ -472,9 +728,27 @@ water_model tip3p
     output_path.write_text(content, encoding="utf-8")
 
 
-def _write_commands_sh(output_path: Path, pdb_id: str, group_name: str, mol2_filename: str) -> None:
+def _write_commands_sh(
+    output_path: Path,
+    pdb_id: str,
+    group_name: str,
+    mol2_filename: str,
+    naa_mol2files: list[str] | None = None,
+) -> None:
     """Write the step-1 script: creates step01_gen_inputs/, runs MCPB.py -s 1,
     then stages .com files into step02_gaussian/."""
+    # Build copy line for naa mol2 files (if any)
+    naa_copy_lines = ""
+    naa_note = ""
+    if naa_mol2files:
+        naa_files_str = " ".join(naa_mol2files)
+        naa_copy_lines = f"cp {naa_files_str} step01_gen_inputs/\n"
+        naa_note = (
+            "\n# NOTE: Non-standard ligand mol2 file(s) must exist before running:\n"
+            + "".join(f"#   {f}\n" for f in naa_mol2files)
+            + "# Generate with antechamber if needed (see comments in the .in file).\n"
+        )
+
     content = f"""\
 #!/usr/bin/env bash
 # =============================================================================
@@ -489,11 +763,11 @@ def _write_commands_sh(output_path: Path, pdb_id: str, group_name: str, mol2_fil
 #   3. Once all Gaussian jobs complete:  bash run_after_gaussian.sh
 # =============================================================================
 set -euo pipefail
-
+{naa_note}
 # -- Create step01 directory and copy all required inputs --------------------
 mkdir -p step01_gen_inputs
 cp {pdb_id}.in {pdb_id}_mcpb.pdb {mol2_filename} step01_gen_inputs/
-
+{naa_copy_lines}
 # -- Run MCPB.py step 1 (generates Gaussian input files and model PDBs) ------
 cd step01_gen_inputs
 MCPB.py -i {pdb_id}.in -s 1
@@ -518,36 +792,80 @@ echo "Review each .com file, then run:  bash submit_gaussian.sh"
 
 
 def _write_submit_gaussian_sh(output_path: Path, group_name: str) -> None:
-    """Write a SLURM submission template; changes into step02_gaussian/ before submitting."""
+    """Write a CESGA-compatible MCPB Gaussian submission script.
+
+    MCPB requires three Gaussian jobs in a specific order:
+      - small_opt  (geometry optimisation → writes .chk)
+      - large_mk   (MK ESP, independent of small_opt)
+      - small_fc   (frequency/force-constants → reads small_opt.chk)
+
+    small_opt and large_mk are submitted immediately; small_fc is submitted
+    with ``--dependency=afterok:<small_opt_job_id>`` so SLURM holds it until
+    small_opt succeeds.  This avoids the "submit all, let one fail, resubmit"
+    anti-pattern.
+    """
     content = f"""\
 #!/usr/bin/env bash
 # =============================================================================
 # Gaussian HPC submission — {group_name}
 # =============================================================================
-# Submits three independent Gaussian jobs from step02_gaussian/.
+# Submits the three MCPB Gaussian jobs with the correct SLURM dependency:
+#   small_opt  ──┐ (parallel)
+#   large_mk     │
+#   small_fc  ←──┘ afterok:small_opt  (needs small_opt.chk)
+#
 # Run ONLY after bash commands.sh has completed successfully.
-# Edit --ntasks, --mem, --time to match your cluster.
 # After all jobs complete:  bash run_after_gaussian.sh
 # =============================================================================
 set -euo pipefail
-cd step02_gaussian
-GRP="{group_name}"
 
-# --- 1. Geometry optimisation (small model) ---------------------------------
-sbatch --job-name="${{GRP}}_opt" --ntasks=8 --mem=16G --time=04:00:00 \\
-    --wrap="g16 < ${{GRP}}_small_opt.com > ${{GRP}}_small_opt.log \\
-         && formchk ${{GRP}}_small_opt.chk ${{GRP}}_small_opt.fchk"
+SCRIPT_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
+# Locate the central CESGA submission script.
+# Priority: $FRUTON_SCRIPTS env var (set this when working from $LUSTRE
+# where the git repo is not present), then git-based discovery, then
+# directory walk-up.
+if [[ -n "${{FRUTON_SCRIPTS:-}}" && -f "${{FRUTON_SCRIPTS}}/submit_gaussian.sh" ]]; then
+    CENTRAL="${{FRUTON_SCRIPTS}}/submit_gaussian.sh"
+elif REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null)"; then
+    CENTRAL="${{REPO_ROOT}}/scripts/CESGA_SLURM/submit_gaussian.sh"
+else
+    CENTRAL=""
+    DIR="$SCRIPT_DIR"
+    for _ in 1 2 3 4 5 6 7 8; do
+        if [[ -f "${{DIR}}/scripts/CESGA_SLURM/submit_gaussian.sh" ]]; then
+            CENTRAL="${{DIR}}/scripts/CESGA_SLURM/submit_gaussian.sh"
+            break
+        fi
+        DIR="$(dirname "$DIR")"
+    done
+fi
+[[ -n "${{CENTRAL:-}}" && -f "$CENTRAL" ]] || {{ echo "ERROR: central submit_gaussian.sh not found. Set FRUTON_SCRIPTS=/path/to/scripts/CESGA_SLURM" >&2; exit 2; }}
 
-# --- 2. Force-constant calculation (small model) ----------------------------
-sbatch --job-name="${{GRP}}_fc" --ntasks=8 --mem=16G --time=04:00:00 \\
-    --wrap="g16 < ${{GRP}}_small_fc.com > ${{GRP}}_small_fc.log"
+GAUSS_DIR="$SCRIPT_DIR/step02_gaussian"
+SLURM_OPTS=(--partition short --time 06:00:00 --mem 4G --cpus 32 --gpus 1)
 
-# --- 3. RESP charges (large model) ------------------------------------------
-sbatch --job-name="${{GRP}}_mk" --ntasks=8 --mem=32G --time=08:00:00 \\
-    --wrap="g16 < ${{GRP}}_large_mk.com > ${{GRP}}_large_mk.log"
+# 1. small_opt — geometry optimisation (produces .chk needed by small_fc)
+OPT_OUT=$(bash "$CENTRAL" "$GAUSS_DIR/{group_name}_small_opt.com" "${{SLURM_OPTS[@]}}" "$@")
+echo "$OPT_OUT"
+OPT_JOB=$(echo "$OPT_OUT" | grep -oP '(?<=Submitted batch job )\\d+' || true)
+if [[ -z "$OPT_JOB" ]]; then
+    echo "WARNING: could not parse small_opt job ID — small_fc will be submitted without dependency" >&2
+fi
 
-echo "Submitted 3 Gaussian jobs.  Monitor with:  squeue -u \\$USER"
-echo "After all complete (from 03_mcpb/):  bash run_after_gaussian.sh"
+# 2. large_mk — ESP calculation, independent of small_opt
+bash "$CENTRAL" "$GAUSS_DIR/{group_name}_large_mk.com" "${{SLURM_OPTS[@]}}" "$@"
+
+# 3. small_fc — force constants, depends on small_opt.chk
+if [[ -n "$OPT_JOB" ]]; then
+    bash "$CENTRAL" "$GAUSS_DIR/{group_name}_small_fc.com" "${{SLURM_OPTS[@]}}" \
+        --dependency "afterok:$OPT_JOB" "$@"
+else
+    bash "$CENTRAL" "$GAUSS_DIR/{group_name}_small_fc.com" "${{SLURM_OPTS[@]}}" "$@"
+fi
+
+echo ""
+echo "Submitted: small_opt (job $OPT_JOB), large_mk, small_fc (afterok:$OPT_JOB)"
+echo "Once all complete:  bash run_after_gaussian.sh"
 """
     output_path.write_text(content, encoding="utf-8")
     output_path.chmod(0o755)
@@ -629,7 +947,9 @@ def _write_metal_mol2(
     """
     atom_type = element.capitalize()
     charge_int = formal_charge
-    subst_name = f"{element}{charge_int}+" if charge_int > 0 else element
+    # subst_name must match the PDB residue name (e.g. "ZN") so that MCPB.py's
+    # chargedict lookup (keyed by residue name) finds the charge from this mol2.
+    subst_name = element
     content = (
         "@<TRIPOS>MOLECULE\n"
         f"{element}\n"
@@ -724,8 +1044,8 @@ Fields that require manual chemistry input carry ``TODO`` placeholders:
 ## Gaussian
 
 Gaussian is a licensed external program; FRUTON does not run it automatically.
-``submit_gaussian.sh`` provides a SLURM template — adjust ``--ntasks``,
-``--mem``, and ``--time`` to match your cluster's policies.
+``submit_gaussian.sh`` provides a SLURM template — adjust ``--cpus``,
+``--gpus``, ``--mem``, and ``--time`` to match your cluster's policies.
 
 All three Gaussian jobs are independent and can be submitted simultaneously.
 Steps 2-4 require all three to finish before starting.
@@ -916,6 +1236,19 @@ def _process_one_site(
         # mcpb_pdb = env_after_cleanup already contains env + metal (bad H removed)
         shutil.copy(env_after_cleanup, mcpb_pdb)
 
+        # Renumber atom serials sequentially from 1 to avoid duplicate-serial
+        # errors in MCPB.py -s 1 that arise when multiple source PDB files are
+        # concatenated (each starting at serial 1).
+        _renumber_pdb_atoms(mcpb_pdb)
+
+        # Rename GROMACS-style atom names (HB1/HB2 methylene H's) to AMBER
+        # convention (HB2/HB3) so MCPB.py's ff99SB libdict lookups succeed.
+        _rename_gromacs_to_amber_atoms(mcpb_pdb)
+
+        # Rename HIS → HID/HIE/HIP based on H atoms present (GROMACS writes
+        # all histidines as HIS; MCPB.py's ff99SB chargedict uses HID/HIE/HIP).
+        _rename_his_by_protonation(mcpb_pdb)
+
         ion_serial = _find_metal_serial_in_pdb(mcpb_pdb, element)
 
         metal_identity = METAL_RESIDUE_IDENTITY.get(element)
@@ -936,6 +1269,23 @@ def _process_one_site(
         else:
             mol2_filename = "TODO.mol2"
 
+        # Detect non-standard organic ligands in the coordination shell and
+        # attempt to generate GAFF2 mol2 files via antechamber (BCC charges).
+        naa_resnames = _find_naa_resnames_in_contacts(contacts_list)
+        naa_mol2files: list[str] = []
+        for naa_rn in naa_resnames:
+            naa_pdb = mcpb_dir / f"{naa_rn}.pdb"
+            naa_mol2 = mcpb_dir / f"{naa_rn}.mol2"
+            extracted = _extract_residue_pdb(mcpb_pdb, naa_rn, naa_pdb)
+            if extracted:
+                _generate_naa_mol2(naa_rn, naa_pdb, naa_mol2)
+            naa_mol2files.append(f"{naa_rn}.mol2")
+
+        # Coordinating water is handled by MCPB.py via the water_model keyword
+        # (tip3p in the .in scaffold).  It must NOT appear in naa_mol2files —
+        # that would override tip3p with incompatible GAFF2 atom types and break
+        # MCPB.py steps 2-4.
+
         group_name = f"{pdb_id}_{element}_{chain}_{resseq}"
         mcpb_in = mcpb_dir / f"{pdb_id}.in"
         _write_mcpb_in(
@@ -949,12 +1299,21 @@ def _process_one_site(
             ion_mol2file=mol2_filename,
             formal_charge=formal_charge,
             spin_guess=spin_guess,
+            naa_mol2files=naa_mol2files if naa_mol2files else None,
         )
-        _write_commands_sh(mcpb_dir / "commands.sh", pdb_id, group_name, mol2_filename)
+        _write_commands_sh(
+            mcpb_dir / "commands.sh",
+            pdb_id,
+            group_name,
+            mol2_filename,
+            naa_mol2files=naa_mol2files if naa_mol2files else None,
+        )
         _write_submit_gaussian_sh(mcpb_dir / "submit_gaussian.sh", group_name)
         _write_run_after_gaussian_sh(mcpb_dir / "run_after_gaussian.sh", pdb_id, group_name)
         _write_mcpb_readme(mcpb_dir / "README.md", pdb_id, group_name)
         site_result["mcpb_scaffold_generated"] = True
+        site_result["formal_charge"] = formal_charge
+        site_result["spin_multiplicity"] = spin_guess
 
     # ------------------------------------------------------------------
     # logs — pipeline log for this site

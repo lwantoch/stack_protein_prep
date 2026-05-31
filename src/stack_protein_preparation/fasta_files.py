@@ -272,11 +272,30 @@ def convert_residue_name_to_one_letter(residue_name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _parse_chain_qualified_range(
+    residue_range: str,
+) -> tuple[str, int, str, int] | None:
+    """Return (start_chain, start_resnum, end_chain, end_resnum) for 'A16-B50'.
+
+    Returns None when the range has no chain qualifiers.
+    """
+    m = re.fullmatch(r"([A-Za-z])(-?\d+)-([A-Za-z])(-?\d+)", str(residue_range).strip())
+    if m:
+        return m.group(1).upper(), int(m.group(2)), m.group(3).upper(), int(m.group(4))
+    return None
+
+
 def parse_residue_range(residue_range: str) -> tuple[int, int]:
     """
-    Parse a residue range like '33-480'.
+    Parse a residue range like '33-480' or 'A16-B50' (chain-qualified).
     """
-    match = re.fullmatch(r"\s*(-?\d+)\s*-\s*(-?\d+)\s*", str(residue_range).strip())
+    stripped = str(residue_range).strip()
+    # Chain-qualified format: A33-B480 — strip chain letters, keep residue numbers
+    m = re.fullmatch(r"[A-Za-z](-?\d+)-[A-Za-z](-?\d+)", stripped)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    # Legacy format: 33-480
+    match = re.fullmatch(r"\s*(-?\d+)\s*-\s*(-?\d+)\s*", stripped)
     if match is None:
         raise ValueError(f"Invalid residue range: {residue_range!r}")
 
@@ -344,6 +363,17 @@ def choose_relevant_chain_ids_from_range(
 
     if not residue_numbers_by_chain:
         return ()
+
+    # When the range has explicit chain qualifiers (A16-B50), return those chains directly.
+    chain_qual = _parse_chain_qualified_range(residue_range)
+    if chain_qual is not None:
+        start_chain, _, end_chain, _ = chain_qual
+        explicit_chains = tuple(
+            c for c in sorted({start_chain, end_chain})
+            if c in residue_numbers_by_chain
+        )
+        if explicit_chains:
+            return explicit_chains
 
     range_start, range_end = parse_residue_range(residue_range)
     requested_range = set(range(range_start, range_end + 1))

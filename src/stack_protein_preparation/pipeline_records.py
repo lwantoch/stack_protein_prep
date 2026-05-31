@@ -19,6 +19,7 @@ from stack_protein_preparation.pipeline_state import (
     FILLER_MODEL_SOURCE_COLUMN_NAME,
     FILLER_STATUS_COLUMN_NAME,
     HAS_GAPS_COLUMN_NAME,
+    HAS_COFACTORS_COLUMN_NAME,
     HAS_LIGANDS_COLUMN_NAME,
     HAS_METALS_COLUMN_NAME,
     HAS_NONSTANDARD_RESIDUES_COLUMN_NAME,
@@ -139,6 +140,7 @@ def merge_existing_and_new_pipeline_records(
 def _clear_component_fields(pipeline_record: dict[str, str]) -> None:
     pipeline_record[HAS_METALS_COLUMN_NAME] = ""
     pipeline_record[HAS_LIGANDS_COLUMN_NAME] = ""
+    pipeline_record[HAS_COFACTORS_COLUMN_NAME] = ""
     pipeline_record[HAS_NONSTANDARD_RESIDUES_COLUMN_NAME] = ""
 
 
@@ -199,6 +201,9 @@ def _set_component_flags(
     )
     pipeline_record[HAS_LIGANDS_COLUMN_NAME] = (
         "yes" if bool(component_summary.get("has_ligands", False)) else "no"
+    )
+    pipeline_record[HAS_COFACTORS_COLUMN_NAME] = (
+        "yes" if bool(component_summary.get("has_cofactors", False)) else "no"
     )
     pipeline_record[HAS_NONSTANDARD_RESIDUES_COLUMN_NAME] = (
         "yes"

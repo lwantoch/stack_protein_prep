@@ -17,6 +17,7 @@ created.
 
 from __future__ import annotations
 
+import io
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,7 @@ from stack_protein_preparation.pipeline_state import (
     PREPARED_DIRECTORY_COLUMN_NAME,
     PREPARED_GAPS_OUTPUT_PATH_COLUMN_NAME,
     PREPARED_MODELLER_OUTPUT_PATH_COLUMN_NAME,
+    PREPARED_STRUCTURE_ACTUAL_RANGE_COLUMN_NAME,
     PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME,
     PREPARED_STRUCTURE_PROTEIN_INPUT_PATH_COLUMN_NAME,
     PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
@@ -350,6 +352,7 @@ OVERVIEW_COLUMN_NAME_LIST = [
     FILLER_STATUS_COLUMN_NAME,
     PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
     PREPARED_STRUCTURE_VARIANT_COLUMN_NAME,
+    PREPARED_STRUCTURE_ACTUAL_RANGE_COLUMN_NAME,
 ]
 
 PREPARATION_COLUMN_NAME_LIST = [
@@ -691,14 +694,21 @@ def _resolve_logo_path(
         candidate_path_list.append(Path(logo_path).expanduser())
 
     output_path = Path(output_path).expanduser()
+
+    # Repo-relative path: works from $LUSTRE when __file__ is on $STORE.
+    # tests/src/stack_protein_preparation/ → repo root is 3 levels up.
+    _here = Path(__file__).resolve().parent
+    _repo_root = _here.parent.parent
     for filename in LOGO_FILENAME_CANDIDATE_LIST:
         candidate_path_list.extend(
             [
-                output_path.parent / filename,
+                _repo_root / "data" / filename,          # repo's data/ — always on $STORE
+                _repo_root / "data" / "assets" / filename,
+                output_path.parent / filename,           # next to pipeline.xlsx
                 output_path.parent.parent / filename,
+                output_path.parent / "assets" / filename,
                 Path.cwd() / "data" / filename,
                 Path.cwd() / filename,
-                Path("/mnt/data") / filename,
             ]
         )
 
@@ -732,7 +742,12 @@ def _add_logo_to_worksheet(
         return False
 
     try:
-        logo_image = OpenpyxlImage(str(logo_path))
+        # Read bytes into memory first so openpyxl embeds the data directly
+        # into the xlsx archive rather than re-opening the path at save time.
+        # This guarantees the logo is present when the file is opened on any
+        # machine (e.g. downloaded from CESGA $LUSTRE to a local PC).
+        logo_bytes = io.BytesIO(Path(logo_path).read_bytes())
+        logo_image = OpenpyxlImage(logo_bytes)
     except Exception:
         return False
 
@@ -1378,6 +1393,29 @@ def write_pipeline_to_xlsx(
     ensure_all_records_have_all_columns(working_record_list)
     normalized_record_list = normalize_record_values(working_record_list)
     unique_sorted_record_list = create_unique_sorted_record_list(normalized_record_list)
+
+    # Convert absolute path values to paths relative to the xlsx output directory.
+    # This makes the workbook portable when the results folder is downloaded.
+    _xlsx_dir = Path(output_path).parent
+    for _rec in unique_sorted_record_list:
+        for _col, _val in list(_rec.items()):
+            if not isinstance(_val, str):
+                continue
+            _stripped = _val.strip()
+            if not _stripped or _stripped.startswith("."):
+                continue
+            # Heuristic: treat as path if it looks like an absolute filesystem path
+            if _stripped.startswith("/") or (_stripped[1:3] in (":\\", ":/") if len(_stripped) > 2 else False):
+                try:
+                    _abs = Path(_stripped)
+                    if _abs.is_absolute():
+                        try:
+                            _rel = _abs.relative_to(_xlsx_dir)
+                            _rec[_col] = str(_rel)
+                        except ValueError:
+                            pass  # path not under xlsx_dir — keep as-is
+                except Exception:
+                    pass
 
     output_path = Path(output_path)
     resolved_logo_path = _resolve_logo_path(

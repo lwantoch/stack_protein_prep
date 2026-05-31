@@ -23,6 +23,7 @@ biopython = ">=1.87,<2"
 modeller = "*"
 pip = "*"
 pdbfixer = ">=1.12,<2"
+pymol-open-source = "*"
 
 [pypi-dependencies]
 openpyxl = ">=3.1.5,<4"
