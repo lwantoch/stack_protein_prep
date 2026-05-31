@@ -315,9 +315,14 @@ fi
 
 echo "OK: Normal termination"
 
-# -------- auto-formchk for _small_opt jobs --------
-# MCPB.py -s 2 requires a formatted checkpoint (.fchk).
-# Convert automatically here so the pipeline step can copy it directly.
+# -------- auto-formchk for MCPB checkpoint files --------
+# MCPB.py -s 2 (Seminario) reads Cartesian Force Constants from small_opt.fchk.
+# The small_opt job writes geometry to small_opt.chk; the subsequent small_fc
+# frequency job appends force constants to the SAME small_opt.chk
+# (%Chk=..._small_opt.chk in the fc input). We therefore re-run formchk after
+# both jobs: after small_opt (geometry only) and again after small_fc (geometry
+# + force constants). The second run overwrites the first, giving MCPB.py the
+# complete fchk it needs.
 if [[ "$BASE" == *_small_opt ]]; then
   CHK_FILE="${WORKDIR}/${BASE}.chk"
   FCHK_FILE="${WORKDIR}/${BASE}.fchk"
@@ -327,5 +332,20 @@ if [[ "$BASE" == *_small_opt ]]; then
     echo "OK: formchk complete"
   else
     echo "WARNING: $CHK_FILE not found — skipping formchk" >&2
+  fi
+fi
+
+# small_fc writes force constants back into small_opt.chk — regenerate the
+# fchk so it contains the Cartesian Force Constants MCPB.py -s 2 requires.
+if [[ "$BASE" == *_small_fc ]]; then
+  OPT_BASE="${BASE%_fc}_opt"
+  CHK_FILE="${WORKDIR}/${OPT_BASE}.chk"
+  FCHK_FILE="${WORKDIR}/${OPT_BASE}.fchk"
+  if [[ -f "$CHK_FILE" ]]; then
+    echo "Regenerating formchk after small_fc: $CHK_FILE → $FCHK_FILE"
+    formchk "$CHK_FILE" "$FCHK_FILE"
+    echo "OK: formchk complete (with force constants)"
+  else
+    echo "WARNING: $CHK_FILE not found — skipping post-fc formchk" >&2
   fi
 fi
