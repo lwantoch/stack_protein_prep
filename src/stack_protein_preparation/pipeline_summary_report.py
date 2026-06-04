@@ -92,15 +92,16 @@ def _extract_chart_data(pipeline_record_list: list[dict]) -> list[dict]:
             n_gaps = 0
 
         gap_sizes_raw = str(rec.get("gap_sizes", "") or "")
-        total_gap_length = 0
+        gap_sizes_list: list[int] = []
         if gap_sizes_raw and gap_sizes_raw.lower() != "none":
             for part in gap_sizes_raw.split("|"):
                 part = part.strip()
                 if part and part.lower() != "none":
                     try:
-                        total_gap_length += int(part)
+                        gap_sizes_list.append(int(part))
                     except (ValueError, TypeError):
                         pass
+        total_gap_length = sum(gap_sizes_list)
 
         has_cofactors = str(rec.get("has_cofactors", "") or "").strip().lower() == "yes"
         has_nonstd = str(rec.get("has_nonstandard_residues", "") or "").strip().lower() == "yes"
@@ -126,6 +127,7 @@ def _extract_chart_data(pipeline_record_list: list[dict]) -> list[dict]:
                 "pdb_id": pdb_id,
                 "has_insertions": has_insertions,
                 "n_gaps": n_gaps,
+                "gap_sizes_list": gap_sizes_list,
                 "total_gap_length": total_gap_length,
                 "has_cofactors": has_cofactors,
                 "has_nonstd": has_nonstd,
@@ -208,12 +210,22 @@ def _render_chart_pngs(
         x = np.arange(nc, dtype=float)
 
         ins = np.array([int(d["has_insertions"]) for d in chunk], dtype=float)
-        gn = np.array([d["n_gaps"] for d in chunk], dtype=float)
-        gr = np.array([d["total_gap_length"] for d in chunk], dtype=float)
         met = np.array([int(d["has_transition_metal"]) for d in chunk], dtype=float)
         cof = np.array([int(d["has_cofactors"]) for d in chunk], dtype=float)
         nst = np.array([int(d["has_nonstd"]) for d in chunk], dtype=float)
         nres = np.array([d["n_residues"] for d in chunk], dtype=float)
+        gap_layers = [d["gap_sizes_list"] for d in chunk]
+        max_gap_layers = max((len(g) for g in gap_layers), default=0)
+        # Colour ramp: dark navy → lighter steel blue, one shade per gap layer
+        _navy = np.array([0x28 / 255, 0x32 / 255, 0x5A / 255])
+        _light = np.array([0x7A / 255, 0xA0 / 255, 0xD0 / 255])
+        def _gap_color(layer_idx: int) -> str:
+            t = layer_idx / max(max_gap_layers - 1, 1)
+            rgb = _navy + t * (_light - _navy)
+            return "#{:02X}{:02X}{:02X}".format(
+                int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255)
+            )
+        total_gap = np.array([d["total_gap_length"] for d in chunk], dtype=float)
 
         fig_w = max(14, nc * 0.72) if landscape else max(9, nc * 1.3)
         fig_h = 5.5 if landscape else 5.2
@@ -239,8 +251,16 @@ def _render_chart_pngs(
         ax2.set_ylim(0, nres_max * 1.55)
 
         ax.bar(x + offsets[0], ins, bar_w, color=c_ins, zorder=2)
-        ax.bar(x + offsets[1], gn, bar_w, color=c_gapn, zorder=2)
-        ax.bar(x + offsets[1], gr, bar_w, bottom=gn, color=c_gapr, zorder=2)
+        # Gaps: one stacked segment per individual gap, darkest at bottom
+        gap_bottoms = np.zeros(nc)
+        for layer_idx in range(max_gap_layers):
+            heights = np.array(
+                [g[layer_idx] if layer_idx < len(g) else 0 for g in gap_layers],
+                dtype=float,
+            )
+            ax.bar(x + offsets[1], heights, bar_w, bottom=gap_bottoms,
+                   color=_gap_color(layer_idx), zorder=2)
+            gap_bottoms += heights
         ax.bar(x + offsets[2], met, bar_w, color=c_met, zorder=2)
         ax.bar(x + offsets[3], cof, bar_w, color=c_cof, zorder=2)
         ax.bar(x + offsets[4], nst, bar_w, color=c_nst, zorder=2)
@@ -252,7 +272,7 @@ def _render_chart_pngs(
         ax.tick_params(axis="y", labelcolor=_IDIS_TEXT, labelsize=8, length=0)
         ax.tick_params(axis="x", colors=_IDIS_TEXT, length=0)
 
-        feat_max = max(float((gn + gr).max()) if nc else 1.0, 1.0)
+        feat_max = max(float(total_gap.max()) if nc else 1.0, 1.0)
         ax.set_ylim(0, feat_max * 1.55)
 
         suffix = f" - page {chunk_idx + 1}" if len(chunks) > 1 else ""
@@ -277,8 +297,8 @@ def _render_chart_pngs(
 
         legend_handles = [
             mpatches.Patch(color=c_ins, label="Insertions"),
-            mpatches.Patch(color=c_gapn, label="Gaps (count)"),
-            mpatches.Patch(color=c_gapr, label="Gap residues (stacked)"),
+            mpatches.Patch(color=_gap_color(0), label="Gap 1 (length, darkest)"),
+            mpatches.Patch(color=_gap_color(max(max_gap_layers - 1, 0)), label="Gap N (length, lightest)"),
             mpatches.Patch(color=c_met, label="Transition metals"),
             mpatches.Patch(color=c_cof, label="Cofactors"),
             mpatches.Patch(color=c_nst, label="Non-standard residues"),
