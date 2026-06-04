@@ -42,9 +42,9 @@ from typing import Any
 class SlurmConfig:
     partition: str = "short"
     time: str = "06:00:00"
-    mem: str = "4000M"   # per-CPU (--mem-per-cpu); 16 CPUs × 4000M = 64 GB
-    cpus: int = 32
-    gpus: int = 1
+    mem: str = "32G"
+    cpus: int = 16
+    gpus: int = 0
 
     def resource_args(self) -> list[str]:
         args = [
@@ -52,7 +52,7 @@ class SlurmConfig:
             "--nodes=1",
             "--ntasks=1",
             f"--cpus-per-task={self.cpus}",
-            f"--mem-per-cpu={self.mem}",
+            f"--mem={self.mem}",
             f"--time={self.time}",
         ]
         if self.gpus > 0:

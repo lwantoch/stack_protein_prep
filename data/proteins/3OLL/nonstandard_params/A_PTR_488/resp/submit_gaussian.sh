@@ -23,4 +23,4 @@ else
     done
 fi
 [[ -n "${CENTRAL:-}" && -f "$CENTRAL" ]] || { echo "ERROR: central submit_gaussian.sh not found" >&2; exit 2; }
-exec bash "$CENTRAL" -r "$SCRIPT_DIR/step02_gaussian" --partition short --time 06:00:00 --mem 4000M --cpus 32 --gpus 1 "$@"
+exec bash "$CENTRAL" -r "$SCRIPT_DIR/step02_gaussian" --partition short --time 06:00:00 --mem 32G --cpus 16 "$@"

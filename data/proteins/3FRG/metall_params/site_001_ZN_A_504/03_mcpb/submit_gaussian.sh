@@ -26,7 +26,6 @@ exec bash "$CENTRAL" \
     -r "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/step02_gaussian" \
     --partition short \
     --time 06:00:00 \
-    --mem 4000M \
-    --cpus 32 \
-    --gpus 1 \
+    --mem 32G \
+    --cpus 16 \
     "$@"

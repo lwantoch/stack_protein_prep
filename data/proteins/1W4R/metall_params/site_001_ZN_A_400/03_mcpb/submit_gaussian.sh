@@ -29,7 +29,7 @@ fi
 [[ -n "${CENTRAL:-}" && -f "$CENTRAL" ]] || { echo "ERROR: central submit_gaussian.sh not found" >&2; exit 2; }
 
 GAUSS_DIR="$SCRIPT_DIR/step02_gaussian"
-SLURM_OPTS=(--partition short --time 06:00:00 --mem 4000M --cpus 32 --gpus 1)
+SLURM_OPTS=(--partition short --time 06:00:00 --mem 32G --cpus 16)
 
 # 1. small_opt — geometry optimisation (produces .chk needed by small_fc)
 OPT_OUT=$(bash "$CENTRAL" "$GAUSS_DIR/1W4R_ZN_A_400_small_opt.com" "${SLURM_OPTS[@]}" "$@")

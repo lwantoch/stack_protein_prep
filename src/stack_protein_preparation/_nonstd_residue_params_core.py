@@ -604,7 +604,7 @@ else
     done
 fi
 [[ -n "${{CENTRAL:-}}" && -f "$CENTRAL" ]] || {{ echo "ERROR: central submit_gaussian.sh not found. Set FRUTON_SCRIPTS=/path/to/scripts/CESGA_SLURM" >&2; exit 2; }}
-exec bash "$CENTRAL" -r "$SCRIPT_DIR/step02_gaussian" --partition short --time 06:00:00 --mem 2000M --cpus 24 --gpus 0 "$@"
+exec bash "$CENTRAL" -r "$SCRIPT_DIR/step02_gaussian" --partition short --time 06:00:00 --mem 32G --cpus 16 "$@"
 """
     output_path.write_text(content, encoding="utf-8")
     output_path.chmod(0o755)

@@ -43,9 +43,9 @@ DISP=""
 # -----------------------------
 SLURM_PARTITION="short"
 SLURM_TIME="06:00:00"
-SLURM_MEM="4G"
-SLURM_CPUS=32
-SLURM_GPUS=1
+SLURM_MEM="32G"
+SLURM_CPUS=16
+SLURM_GPUS=0
 SLURM_DEPENDENCY=""
 
 JOBNAME_SINGLE="gauss1"
@@ -90,15 +90,15 @@ Array control:
 Slurm resources:
   --partition NAME    default: short
   --time HH:MM:SS     default: 06:00:00
-  --mem MEM           total job memory, default: 4G
-  --cpus N            CPUs per task, default: 32
+  --mem MEM           total job memory, default: 32G
+  --cpus N            CPUs per task, default: 16
   --cpus-per-task N   alias for --cpus
-  --gpus N            A100 GPUs, default: 1
+  --gpus N            A100 GPUs, default: 0 (CPU-only)
   --dependency DEP    Slurm dependency, for example afterok:123456
 
 Examples:
   ./submit_gaussian.sh calc/job.com
-  ./submit_gaussian.sh calc/job.com --mem 4G --cpus 32 --gpus 1
+  ./submit_gaussian.sh calc/job.com --mem 32G --cpus 16
   ./submit_gaussian.sh calc/job.com --dependency afterok:123456
   ./submit_gaussian.sh -r -p "*.com" step02_gaussian --only-failed --restart -P 20
 EOF

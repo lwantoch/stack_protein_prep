@@ -245,7 +245,7 @@ fi
 [[ -n "${{CENTRAL:-}}" && -f "$CENTRAL" ]] || {{ echo "ERROR: central submit_gaussian.sh not found. Set FRUTON_SCRIPTS=/path/to/scripts/CESGA_SLURM" >&2; exit 2; }}
 
 GAUSS_DIR="$SCRIPT_DIR/step02_gaussian"
-SLURM_OPTS=(--partition short --time 06:00:00 --mem 4G --cpus 32 --gpus 1)
+SLURM_OPTS=(--partition short --time 06:00:00 --mem 32G --cpus 16)
 
 # 1. small_opt — geometry optimisation (produces .chk needed by small_fc)
 OPT_OUT=$(bash "$CENTRAL" "$GAUSS_DIR/{group_name}_small_opt.com" "${{SLURM_OPTS[@]}}" "$@")

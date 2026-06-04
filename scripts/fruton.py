@@ -1573,16 +1573,16 @@ def _parse_args() -> argparse.Namespace:
         help="Slurm time limit per Gaussian job (default: 06:00:00; short partition max is 6 h)",
     )
     slurm.add_argument(
-        "--slurm-mem", default="2000M", metavar="MEM",
-        help="Memory per CPU per Gaussian job, passed as --mem-per-cpu (default: 2000M; 24 CPUs × 2000M = 48 GB)",
+        "--slurm-mem", default="32G", metavar="MEM",
+        help="Total memory per Gaussian job (default: 32G)",
     )
     slurm.add_argument(
-        "--slurm-cpus", type=int, default=24, metavar="N",
-        help="CPUs per Gaussian job (default: 24)",
+        "--slurm-cpus", type=int, default=16, metavar="N",
+        help="CPUs per Gaussian job (default: 16)",
     )
     slurm.add_argument(
         "--slurm-gpus", type=int, default=0, metavar="N",
-        help="GPUs per Gaussian job (default: 0; CPU-only Gaussian run)",
+        help="GPUs per Gaussian job (default: 0; CPU-only)",
     )
     return parser.parse_args()
 
