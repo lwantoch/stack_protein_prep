@@ -1,7 +1,4 @@
-"""
-/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pipeline_state.py
-
-Central state definition for the protein preparation pipeline.
+"""Central state definition for the protein preparation pipeline.
 
 Purpose
 -------

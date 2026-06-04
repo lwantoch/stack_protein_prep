@@ -1,5 +1,4 @@
-# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/prepared_structure.py
-
+"""Data types and summary dataclass for prepared protein structure variants."""
 from __future__ import annotations
 
 from dataclasses import dataclass

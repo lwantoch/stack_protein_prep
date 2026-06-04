@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Metal-center parametrization preparation module.
 
 Purpose
@@ -26,6 +24,7 @@ Public API
 ----------
 :func:`run_metal_parametrization_for_protein_dir`
 """
+from __future__ import annotations
 
 import json
 import os

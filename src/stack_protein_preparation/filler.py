@@ -1,3 +1,4 @@
+"""Fill missing residues in PDB structures using MODELLER or AlphaFold2 grafting."""
 from __future__ import annotations
 
 import importlib.util

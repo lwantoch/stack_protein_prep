@@ -1,3 +1,4 @@
+"""Attach ACE/NME capping residues to artificial chain termini produced by internal gaps."""
 from __future__ import annotations
 
 import json

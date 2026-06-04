@@ -1,7 +1,4 @@
-"""
-/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/finalize_tsv.py
-
-Build a dedicated finalize-numbering TSV for the final protein model against UniProt.
+"""Build a dedicated finalize-numbering TSV for the final protein model against UniProt.
 
 Purpose
 -------

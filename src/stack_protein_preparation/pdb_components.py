@@ -1,9 +1,4 @@
-# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pdb_components.py
-
-"""
-/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/pdb_components.py
-
-Analyze and split PDB components into protein, water, metals, ligands, and
+"""Analyze and split PDB components into protein, water, metals, ligands, and
 non-ligand crystallization artifacts.
 
 Responsibilities

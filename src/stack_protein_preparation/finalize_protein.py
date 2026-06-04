@@ -1,9 +1,4 @@
-# /home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/finalize_protein.py
-
-"""
-/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/finalize_protein.py
-
-Finalize the prepared protein structure by renumbering residues according to a
+"""Finalize the prepared protein structure by renumbering residues according to a
 dedicated finalize-numbering TSV.
 
 Design

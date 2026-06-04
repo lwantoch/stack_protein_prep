@@ -1,3 +1,4 @@
+"""Remove or reorient hydrogen atoms that point toward coordinated metal ions."""
 from __future__ import annotations
 
 import csv

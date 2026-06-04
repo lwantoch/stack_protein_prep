@@ -1,7 +1,4 @@
-"""
-/home/grheco/repositorios/stack_protein_prep/src/stack_protein_preparation/sequence_alignment.py
-
-Run pairwise sequence alignments with MAFFT for local protein FASTA files.
+"""Run pairwise sequence alignments with MAFFT for local protein FASTA files.
 
 Responsibilities
 ----------------

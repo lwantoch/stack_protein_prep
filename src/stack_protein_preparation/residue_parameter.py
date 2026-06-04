@@ -367,6 +367,52 @@ def build_residue_parameter_candidate(
         )
         _raise_if_command_failed(command_results[-1], "parmchk2")
 
+        # Re-run parmchk2 on a prepin→mol2 conversion so that bonds at the
+        # ff14SB/GAFF2 interface (e.g. 2C-s4 after prepgen renames backbone atoms)
+        # get parameters. parmchk2 -f prepi only queries the GAFF2 database and
+        # silently skips ff14SB atom types, leaving cross-type bonds unparametrized.
+        _prepin_as_mol2_path = output_dir / f"{_residue_name(residue_spec)}_from_prepin.mol2"
+        command_results.append(
+            _run_command(
+                command=(
+                    _require_executable("antechamber"),
+                    "-i",
+                    prepin_path.name,
+                    "-fi",
+                    "prepi",
+                    "-o",
+                    _prepin_as_mol2_path.name,
+                    "-fo",
+                    "mol2",
+                    "-at",
+                    atom_type_set,
+                ),
+                cwd=output_dir,
+                stdout_path=output_dir / "antechamber_prepin_mol2_stdout.log",
+                stderr_path=output_dir / "antechamber_prepin_mol2_stderr.log",
+            )
+        )
+        if command_results[-1].returncode == 0 and _prepin_as_mol2_path.exists():
+            command_results.append(
+                _run_command(
+                    command=(
+                        _require_executable("parmchk2"),
+                        "-i",
+                        _prepin_as_mol2_path.name,
+                        "-f",
+                        "mol2",
+                        "-o",
+                        frcmod_path.name,
+                        "-s",
+                        _parmchk2_atom_type_flag(atom_type_set),
+                    ),
+                    cwd=output_dir,
+                    stdout_path=output_dir / "parmchk2_mol2_stdout.log",
+                    stderr_path=output_dir / "parmchk2_mol2_stderr.log",
+                )
+            )
+            _raise_if_command_failed(command_results[-1], "parmchk2 (mol2 re-run)")
+
         needs_revision = _frcmod_needs_revision(frcmod_path)
         if needs_revision:
             status = "warning"
