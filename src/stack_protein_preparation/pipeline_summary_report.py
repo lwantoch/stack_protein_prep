@@ -8,17 +8,43 @@ from pathlib import Path
 from typing import Any
 
 _IDIS_NAVY = "#28325A"
+_IDIS_NAVY_2 = "#323264"
 _IDIS_TEXT = "#252A3F"
 _IDIS_MUTED = "#697086"
 _IDIS_LINE = "#D8DCE7"
 _IDIS_PANEL = "#F5F7FB"
+_IDIS_PANEL_2 = "#EEF1F7"
 _IDIS_GOLD = "#8A730F"
 _FRUTON_RED = "#E60014"
 _FRUTON_RED_SOFT = "#FDECEE"
+_FRUTON_YELLOW = "#FAE646"
+_FRUTON_YELLOW_SOFT = "#FFF8CF"
 _FRUTON_GREEN = "#50961E"
+_FRUTON_GREEN_SOFT = "#EAF4E3"
+_AUDIT_WARN = "#FFF3C4"
+_AUDIT_FAIL = "#F9D7DB"
+_AUDIT_OK = "#E7F3E1"
+
+_FRUTON_EXPANSION = (
+    "Framework for Reconstruction, UniProt alignment, and "
+    "Topology-Oriented protein Normalization"
+)
 
 _TRANSITION_METAL_ELEMENTS = frozenset(
     {"ZN", "CU", "FE", "MN", "CO", "NI", "MO", "CD", "HG", "PD", "PT"}
+)
+
+_IDIS_LOGO_NAMES = (
+    "logo_idis.png",
+    "logo_IDIS_2020-1.png",
+    "logo_IDIS_2020-1(1).png",
+    "idis_logo.png",
+)
+_FRUTON_LOGO_NAMES = (
+    "logo.png",
+    "logo(1).png",
+    "fruton_logo.png",
+    "FRUTON_logo.png",
 )
 
 
@@ -26,14 +52,16 @@ def _timestamp() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-def _hex_to_rgb_float(hex_color: str) -> tuple[float, float, float]:
-    h = hex_color.lstrip("#")
-    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-    return r / 255.0, g / 255.0, b / 255.0
-
-
 def _parse_residue_count(range_str: str) -> int:
-    """Parse a residue range string like '16-243' or 'A16-B50' to residue count."""
+    """Parse a residue range string like '16-243' or 'A16-B50' to residue count.
+
+    The summary chart uses this number only as a scale cue, not as a strict
+    biological residue count. FRUTON range fields may contain plain numeric
+    ranges, chain-prefixed ranges, or empty values depending on how far the
+    input record travelled through the pipeline. Invalid or absent values are
+    converted to zero so the report can still be written for failed or partial
+    runs. This keeps report generation independent from upstream validation.
+    """
     if not range_str or "-" not in range_str:
         return 0
     parts = range_str.split("-", 1)
@@ -114,36 +142,57 @@ def _render_chart_pngs(
     landscape: bool = False,
     chunk_size: int = 20,
 ) -> list[bytes]:
-    """Per-protein grouped bar chart with twin y-axis (residue count background bars).
+    """Render FRUTON-style per-protein feature charts as PNG byte strings.
 
-    Returns one PNG bytes object per page chunk.
+    The chart intentionally avoids grid lines so it visually matches the cleaner
+    FRUTON report pages. Residue count is shown as a pale navy background bar on
+    a secondary axis, while audit features use the same navy, red, gold, green,
+    and muted tones used by the per-protein reports and manual. The landscape
+    chunking behavior is kept unchanged: large datasets are split into rotated
+    pages so labels remain readable. The returned PNGs are temporary rendering
+    artefacts and are not part of the pipeline state.
     """
     import matplotlib
+
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
+    import matplotlib.pyplot as plt
     import numpy as np
 
     if not chart_data:
         fig, ax = plt.subplots(figsize=(8, 4))
-        ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
+        fig.patch.set_facecolor("white")
+        ax.set_facecolor("white")
+        ax.text(
+            0.5,
+            0.5,
+            "No data",
+            ha="center",
+            va="center",
+            color=_IDIS_MUTED,
+            transform=ax.transAxes,
+        )
+        ax.set_xticks([])
+        ax.set_yticks([])
+        for spine in ax.spines.values():
+            spine.set_visible(False)
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+        fig.savefig(buf, format="png", dpi=180, bbox_inches="tight")
         plt.close(fig)
         return [buf.getvalue()]
 
-    _C_INS  = "#E07B28"   # orange — insertions
-    _C_GAPN = "#2C5BAA"   # blue   — gap count (bottom segment)
-    _C_GAPR = "#7BA8D6"   # light blue — gap residues (stacked)
-    _C_MET  = "#E60014"   # red    — transition metals
-    _C_COF  = "#50961E"   # green  — cofactors
-    _C_NST  = "#7B3FA0"   # purple — non-standard residues
-    _C_BG   = _IDIS_NAVY  # navy   — residue count background bar
+    c_ins = _IDIS_GOLD
+    c_gapn = _IDIS_NAVY
+    c_gapr = "#B8A85A"
+    c_met = _FRUTON_RED
+    c_cof = _FRUTON_GREEN
+    c_nst = "#A33A46"
+    c_bg = _IDIS_NAVY
 
     bar_w = 0.13
     bar_gap = 0.015
     offsets = np.array([-2, -1, 0, 1, 2]) * (bar_w + bar_gap)
-    bg_bar_w = 5 * bar_w + 4 * bar_gap + 0.06   # full group width + small padding
+    bg_bar_w = 5 * bar_w + 4 * bar_gap + 0.06
 
     n_total = len(chart_data)
     chunks = (
@@ -158,81 +207,99 @@ def _render_chart_pngs(
         pdb_ids = [d["pdb_id"] for d in chunk]
         x = np.arange(nc, dtype=float)
 
-        ins  = np.array([int(d["has_insertions"])      for d in chunk], dtype=float)
-        gn   = np.array([d["n_gaps"]                   for d in chunk], dtype=float)
-        gr   = np.array([d["total_gap_length"]          for d in chunk], dtype=float)
-        met  = np.array([int(d["has_transition_metal"]) for d in chunk], dtype=float)
-        cof  = np.array([int(d["has_cofactors"])        for d in chunk], dtype=float)
-        nst  = np.array([int(d["has_nonstd"])           for d in chunk], dtype=float)
-        nres = np.array([d["n_residues"]                for d in chunk], dtype=float)
+        ins = np.array([int(d["has_insertions"]) for d in chunk], dtype=float)
+        gn = np.array([d["n_gaps"] for d in chunk], dtype=float)
+        gr = np.array([d["total_gap_length"] for d in chunk], dtype=float)
+        met = np.array([int(d["has_transition_metal"]) for d in chunk], dtype=float)
+        cof = np.array([int(d["has_cofactors"]) for d in chunk], dtype=float)
+        nst = np.array([int(d["has_nonstd"]) for d in chunk], dtype=float)
+        nres = np.array([d["n_residues"] for d in chunk], dtype=float)
 
         fig_w = max(14, nc * 0.72) if landscape else max(9, nc * 1.3)
         fig_h = 5.5 if landscape else 5.2
 
         fig, ax = plt.subplots(figsize=(fig_w, fig_h))
         ax2 = ax.twinx()
+        fig.patch.set_facecolor("white")
+        ax.set_facecolor("white")
 
-        # Draw background (residue count) on ax2 behind the feature bars
         ax2.set_zorder(1)
         ax.set_zorder(2)
         ax.patch.set_visible(False)
 
-        ax2.bar(x, nres, bg_bar_w, alpha=0.18, color=_C_BG, zorder=0)
+        ax2.bar(x, nres, bg_bar_w, alpha=0.12, color=c_bg, zorder=0)
         ax2.set_ylabel("Starting range residues", fontsize=8, color=_IDIS_MUTED, labelpad=6)
-        ax2.tick_params(axis="y", labelcolor=_IDIS_MUTED, labelsize=7)
+        ax2.tick_params(axis="y", labelcolor=_IDIS_MUTED, labelsize=7, length=0)
         ax2.spines["top"].set_visible(False)
+        ax2.spines["left"].set_visible(False)
         ax2.spines["right"].set_color(_IDIS_LINE)
+        ax2.spines["right"].set_linewidth(0.6)
         ax2.yaxis.grid(False)
         nres_max = max(float(nres.max()) if nc else 1.0, 1.0)
         ax2.set_ylim(0, nres_max * 1.55)
 
-        # Feature bars on primary axis
-        ax.bar(x + offsets[0], ins,  bar_w, color=_C_INS,  zorder=2)
-        ax.bar(x + offsets[1], gn,   bar_w, color=_C_GAPN, zorder=2)
-        ax.bar(x + offsets[1], gr,   bar_w, bottom=gn, color=_C_GAPR, zorder=2)
-        ax.bar(x + offsets[2], met,  bar_w, color=_C_MET,  zorder=2)
-        ax.bar(x + offsets[3], cof,  bar_w, color=_C_COF,  zorder=2)
-        ax.bar(x + offsets[4], nst,  bar_w, color=_C_NST,  zorder=2)
+        ax.bar(x + offsets[0], ins, bar_w, color=c_ins, zorder=2)
+        ax.bar(x + offsets[1], gn, bar_w, color=c_gapn, zorder=2)
+        ax.bar(x + offsets[1], gr, bar_w, bottom=gn, color=c_gapr, zorder=2)
+        ax.bar(x + offsets[2], met, bar_w, color=c_met, zorder=2)
+        ax.bar(x + offsets[3], cof, bar_w, color=c_cof, zorder=2)
+        ax.bar(x + offsets[4], nst, bar_w, color=c_nst, zorder=2)
 
         fs_tick = 7 if nc > 15 else 9
         ax.set_xticks(x)
         ax.set_xticklabels(pdb_ids, fontsize=fs_tick, rotation=45, ha="right")
-        ax.set_ylabel("Count / presence (0 or 1)", fontsize=9, color=_IDIS_TEXT, labelpad=6)
-        ax.tick_params(axis="y", labelcolor=_IDIS_TEXT, labelsize=8)
+        ax.set_ylabel("Count / presence", fontsize=9, color=_IDIS_TEXT, labelpad=6)
+        ax.tick_params(axis="y", labelcolor=_IDIS_TEXT, labelsize=8, length=0)
+        ax.tick_params(axis="x", colors=_IDIS_TEXT, length=0)
 
         feat_max = max(float((gn + gr).max()) if nc else 1.0, 1.0)
         ax.set_ylim(0, feat_max * 1.55)
 
-        suffix = f" — page {chunk_idx + 1}" if len(chunks) > 1 else ""
+        suffix = f" - page {chunk_idx + 1}" if len(chunks) > 1 else ""
         ax.set_title(
-            f"Per-protein feature summary  ·  {n_total} protein(s){suffix}",
-            fontsize=10, fontweight="bold", color=_IDIS_NAVY, pad=8,
+            f"Per-protein feature summary - {n_total} protein(s){suffix}",
+            fontsize=10,
+            fontweight="bold",
+            color=_IDIS_NAVY,
+            pad=8,
         )
 
+        ax.axhline(0, color=_IDIS_LINE, linewidth=0.8, zorder=1)
+        ax.grid(False)
+        ax.yaxis.grid(False)
+        ax.xaxis.grid(False)
+        ax.set_axisbelow(False)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
-        ax.spines["left"].set_color(_IDIS_LINE)
+        ax.spines["left"].set_visible(False)
         ax.spines["bottom"].set_color(_IDIS_LINE)
-        ax.yaxis.grid(True, color="#E0E0E0", linewidth=0.5, zorder=1)
-        ax.set_axisbelow(True)
+        ax.spines["bottom"].set_linewidth(0.8)
 
         legend_handles = [
-            mpatches.Patch(color=_C_INS,  label="Insertions"),
-            mpatches.Patch(color=_C_GAPN, label="Gaps (count)"),
-            mpatches.Patch(color=_C_GAPR, label="Gap residues (stacked)"),
-            mpatches.Patch(color=_C_MET,  label="Transition metals"),
-            mpatches.Patch(color=_C_COF,  label="Cofactors"),
-            mpatches.Patch(color=_C_NST,  label="Non-standard residues"),
-            mpatches.Patch(color=_C_BG, alpha=0.35, label="Starting range residues (right axis)"),
+            mpatches.Patch(color=c_ins, label="Insertions"),
+            mpatches.Patch(color=c_gapn, label="Gaps (count)"),
+            mpatches.Patch(color=c_gapr, label="Gap residues (stacked)"),
+            mpatches.Patch(color=c_met, label="Transition metals"),
+            mpatches.Patch(color=c_cof, label="Cofactors"),
+            mpatches.Patch(color=c_nst, label="Non-standard residues"),
+            mpatches.Patch(color=c_bg, alpha=0.30, label="Starting range residues"),
         ]
-        ax.legend(handles=legend_handles, fontsize=7, loc="upper left",
-                  framealpha=0.88, ncol=2, borderpad=0.6)
+        legend = ax.legend(
+            handles=legend_handles,
+            fontsize=7,
+            loc="upper left",
+            framealpha=0.96,
+            ncol=2,
+            borderpad=0.6,
+        )
+        legend.get_frame().set_edgecolor(_IDIS_LINE)
+        legend.get_frame().set_linewidth(0.5)
+        legend.get_frame().set_facecolor("white")
 
-        fig.patch.set_facecolor("white")
         fig.tight_layout()
 
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+        fig.savefig(buf, format="png", dpi=180, bbox_inches="tight")
         plt.close(fig)
         results.append(buf.getvalue())
 
@@ -246,12 +313,15 @@ def _compute_stats(
 ) -> dict:
     total = len(pipeline_record_list)
     prepared = sum(
-        1 for r in pipeline_record_list
+        1
+        for r in pipeline_record_list
         if str(r.get("prepared_structure.status", "") or "").strip().lower() == "success"
     )
     failed = sum(
-        1 for r in pipeline_record_list
-        if str(r.get("prepared_structure.status", "") or "").strip().lower() in {"failed", "error"}
+        1
+        for r in pipeline_record_list
+        if str(r.get("prepared_structure.status", "") or "").strip().lower()
+        in {"failed", "error"}
     )
     with_gaps = sum(1 for d in chart_data if d["n_gaps"] > 0)
     with_metals = sum(1 for d in chart_data if d["has_transition_metal"])
@@ -268,10 +338,6 @@ def _compute_stats(
         "with_cofactors": with_cofactors,
         "gaussian_pending": gaussian_pending,
     }
-
-
-_IDIS_LOGO_NAMES = ("logo_idis.png", "logo_IDIS_2020-1.png", "idis_logo.png")
-_FRUTON_LOGO_NAMES = ("logo.png", "fruton_logo.png", "FRUTON_logo.png", "logo(1).png")
 
 
 def _logo_search_roots(protein_data_dir: Path | None) -> list[Path]:
@@ -322,6 +388,18 @@ def _find_logo(
     return None
 
 
+def _status_background(metric: str, value: int) -> str:
+    if metric in {"prepared"}:
+        return _AUDIT_OK if value else _IDIS_PANEL
+    if metric in {"failed", "with_nonstd", "gaussian_pending"}:
+        return _AUDIT_FAIL if value else _IDIS_PANEL
+    if metric in {"with_gaps", "with_metals"}:
+        return _AUDIT_WARN if value else _IDIS_PANEL
+    if metric in {"with_cofactors"}:
+        return _FRUTON_GREEN_SOFT if value else _IDIS_PANEL
+    return _IDIS_PANEL
+
+
 def generate_pipeline_summary_report(
     pipeline_record_list: list[dict],
     output_path: Path,
@@ -330,33 +408,44 @@ def generate_pipeline_summary_report(
     protein_data_dir: Path | None = None,
     run_timestamp: str | None = None,
 ) -> dict:
-    """Return {"status": "success", "report_path": str} or {"status": "failed", "message": str}"""
+    """Write a FRUTON-style PDF summary report for a full pipeline run.
+
+    The function is intentionally importable and does not configure logging,
+    parse command-line arguments, or inspect global pipeline state. It receives
+    already-flattened pipeline records, computes only the small set of summary
+    values needed for the PDF, and writes one ReportLab document. Page rotation
+    logic is preserved: compact datasets keep the chart on the portrait summary
+    page, while larger datasets are split into landscape chart pages. The return
+    value follows the existing lightweight status dictionary used by the caller.
+    """
     try:
         from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
         from reportlab.lib.pagesizes import A4, landscape as rl_landscape
+        from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib.units import cm
+        from reportlab.lib.utils import ImageReader
         from reportlab.platypus import (
             BaseDocTemplate,
             Frame,
-            PageTemplate,
+            Image,
             NextPageTemplate,
             PageBreak,
+            PageTemplate,
+            Paragraph,
             Spacer,
             Table,
             TableStyle,
-            Image,
-            Paragraph,
         )
-        from reportlab.lib.styles import ParagraphStyle
-        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
     except ImportError as exc:
         return {"status": "failed", "message": f"reportlab not available: {exc}"}
 
     ts = run_timestamp or _timestamp()
-    margin = 1.5 * cm
-
     page_w, page_h = A4
     land_w, land_h = rl_landscape(A4)
+    margin_x = 1.45 * cm
+    bottom_margin = 1.20 * cm
+    top_margin = 2.25 * cm
 
     idis_logo_path = _find_logo("IDIS_LOGO_PATH", _IDIS_LOGO_NAMES, protein_data_dir)
     fruton_logo_path = _find_logo("FRUTON_LOGO_PATH", _FRUTON_LOGO_NAMES, protein_data_dir)
@@ -366,159 +455,243 @@ def generate_pipeline_summary_report(
 
     n_proteins = len(chart_data)
     use_landscape_charts = n_proteins > 15
-    _CHART_CHUNK = 20
+    chart_chunk_size = 20
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    usable_w = page_w - 2 * margin
-    land_usable_w = land_w - 2 * margin
+    usable_w = page_w - 2 * margin_x
+    land_usable_w = land_w - 2 * margin_x
 
-    # --- Paragraph styles ---
+    style_kicker = ParagraphStyle(
+        "FrutonKicker",
+        fontName="Helvetica-Bold",
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor(_IDIS_GOLD),
+        alignment=TA_LEFT,
+    )
+    style_title = ParagraphStyle(
+        "FrutonTitle",
+        fontName="Helvetica-Bold",
+        fontSize=20,
+        leading=23,
+        textColor=colors.HexColor(_IDIS_NAVY),
+        alignment=TA_LEFT,
+        spaceAfter=2,
+    )
+    style_subtitle = ParagraphStyle(
+        "FrutonSubtitle",
+        fontName="Helvetica",
+        fontSize=9,
+        leading=11,
+        textColor=colors.HexColor(_IDIS_MUTED),
+        alignment=TA_LEFT,
+    )
     style_normal = ParagraphStyle(
-        "FrutonNormal", fontName="Helvetica", fontSize=9,
+        "FrutonNormal",
+        fontName="Helvetica",
+        fontSize=8.5,
+        leading=10.5,
         textColor=colors.HexColor(_IDIS_TEXT),
+        alignment=TA_LEFT,
     )
-    style_header_center = ParagraphStyle(
-        "FrutonHeaderCenter", fontName="Helvetica-Bold", fontSize=13,
-        textColor=colors.white, alignment=TA_CENTER,
-    )
-    style_header_left = ParagraphStyle(
-        "FrutonHeaderLeft", fontName="Helvetica-Bold", fontSize=10,
-        textColor=colors.white, alignment=TA_LEFT,
-    )
-    style_header_right = ParagraphStyle(
-        "FrutonHeaderRight", fontName="Helvetica", fontSize=8,
-        textColor=colors.HexColor(_IDIS_LINE), alignment=TA_RIGHT,
+    style_section = ParagraphStyle(
+        "FrutonSection",
+        fontName="Helvetica-Bold",
+        fontSize=13,
+        leading=15,
+        textColor=colors.HexColor(_IDIS_NAVY),
+        alignment=TA_LEFT,
     )
     style_warning_title = ParagraphStyle(
-        "FrutonWarnTitle", fontName="Helvetica-Bold", fontSize=10, textColor=colors.white,
+        "FrutonWarnTitle",
+        fontName="Helvetica-Bold",
+        fontSize=10,
+        leading=12,
+        textColor=colors.HexColor(_IDIS_NAVY),
+        alignment=TA_LEFT,
     )
     style_warning_body = ParagraphStyle(
-        "FrutonWarnBody", fontName="Helvetica", fontSize=8,
-        textColor=colors.HexColor(_IDIS_TEXT), leftIndent=4,
+        "FrutonWarnBody",
+        fontName="Helvetica",
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor(_IDIS_TEXT),
+        alignment=TA_LEFT,
     )
 
-    _LOGO_H = 32
-
-    def _header_logo(logo_path: Path | None, align: str = "LEFT") -> Any:
+    def _draw_logo(canvas: Any, logo_path: Path | None, x: float, y: float, max_w: float, max_h: float) -> None:
         if logo_path is None:
-            return None
+            return
         try:
-            img = Image(str(logo_path))
-            scale = _LOGO_H / img.imageHeight
-            img.drawWidth = img.imageWidth * scale
-            img.drawHeight = _LOGO_H
-            img.hAlign = align
-            return img
+            reader = ImageReader(str(logo_path))
+            img_w, img_h = reader.getSize()
+            scale = min(max_w / img_w, max_h / img_h)
+            draw_w = img_w * scale
+            draw_h = img_h * scale
+            canvas.drawImage(
+                reader,
+                x,
+                y + (max_h - draw_h) / 2,
+                width=draw_w,
+                height=draw_h,
+                preserveAspectRatio=True,
+                mask="auto",
+            )
         except Exception:
-            return None
+            return
 
-    idis_img = _header_logo(idis_logo_path, "LEFT")
-    fruton_img = _header_logo(fruton_logo_path, "RIGHT")
-    left_cell: Any = idis_img if idis_img is not None else Paragraph("FRUTON", style_header_left)
-    right_cell: Any = fruton_img if fruton_img is not None else Paragraph(ts, style_header_right)
-    col_w = usable_w / 3
-    header_tbl = Table(
-        [[left_cell, Paragraph("Pipeline Summary Report", style_header_center), right_cell]],
-        colWidths=[col_w, col_w, col_w],
+    def _draw_page_chrome(canvas: Any, width: float, height: float, subtitle: str) -> None:
+        canvas.saveState()
+        header_y = height - 1.10 * cm
+        logo_h = 0.62 * cm
+        _draw_logo(canvas, idis_logo_path, margin_x, header_y, 2.4 * cm, logo_h)
+        _draw_logo(canvas, fruton_logo_path, width - margin_x - 2.4 * cm, header_y, 2.4 * cm, logo_h)
+
+        canvas.setFillColor(colors.HexColor(_IDIS_NAVY))
+        canvas.setFont("Helvetica-Bold", 8)
+        canvas.drawCentredString(width / 2, height - 0.58 * cm, "FRUTON pipeline summary audit")
+        canvas.setFillColor(colors.HexColor(_IDIS_MUTED))
+        canvas.setFont("Helvetica", 6.5)
+        canvas.drawCentredString(width / 2, height - 0.82 * cm, subtitle)
+
+        line_y = height - 1.33 * cm
+        line_w = width - 2 * margin_x
+        canvas.setStrokeColor(colors.HexColor(_FRUTON_RED))
+        canvas.setLineWidth(0.75)
+        canvas.line(margin_x, line_y, margin_x + line_w * 0.32, line_y)
+        canvas.setStrokeColor(colors.HexColor(_IDIS_GOLD))
+        canvas.line(margin_x + line_w * 0.32, line_y, margin_x + line_w * 0.64, line_y)
+        canvas.setStrokeColor(colors.HexColor(_IDIS_NAVY))
+        canvas.line(margin_x + line_w * 0.64, line_y, margin_x + line_w, line_y)
+
+        canvas.setFillColor(colors.HexColor(_IDIS_MUTED))
+        canvas.setFont("Helvetica", 6.5)
+        canvas.drawString(margin_x, 0.48 * cm, f"FRUTON - {_FRUTON_EXPANSION}")
+        canvas.drawRightString(width - margin_x, 0.48 * cm, f"page {canvas.getPageNumber()}")
+        canvas.restoreState()
+
+    def _footer_portrait(canvas: Any, doc: Any) -> None:
+        _draw_page_chrome(canvas, page_w, page_h, f"run summary - {ts}")
+
+    def _footer_landscape(canvas: Any, doc: Any) -> None:
+        _draw_page_chrome(canvas, land_w, land_h, f"feature chart - {ts}")
+
+    def _section_heading(text: str, width: float) -> Table:
+        tbl = Table([["", Paragraph(text, style_section)]], colWidths=[0.10 * cm, width - 0.10 * cm])
+        tbl.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (0, 0), colors.HexColor(_FRUTON_RED)),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ]
+            )
+        )
+        return tbl
+
+    story: list[Any] = []
+    story.append(Paragraph("FRUTON - IDIS visual report", style_kicker))
+    story.append(Paragraph("Pipeline preparation summary audit", style_title))
+    story.append(
+        Paragraph(
+            f"Generated: {ts} &nbsp;&middot;&nbsp; proteins: {stats['total']} &nbsp;&middot;&nbsp; "
+            f"chart pages: {'landscape chunks' if use_landscape_charts else 'portrait summary'}",
+            style_subtitle,
+        )
     )
-    header_tbl.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_IDIS_NAVY)),
+    story.append(Spacer(1, 0.28 * cm))
+
+    dashboard_rows = [
+        ["PROTEINS", str(stats["total"]), "PREPARED", str(stats["prepared"])],
+        ["FAILED", str(stats["failed"]), "GAPS", str(stats["with_gaps"])],
+        ["METALS", str(stats["with_metals"]), "NONSTANDARD", str(stats["with_nonstd"])],
+        ["COFACTORS", str(stats["with_cofactors"]), "GAUSSIAN PENDING", str(stats["gaussian_pending"])],
+    ]
+    dashboard_tbl = Table(
+        dashboard_rows,
+        colWidths=[usable_w * 0.22, usable_w * 0.28, usable_w * 0.22, usable_w * 0.28],
+    )
+    dashboard_style: list[Any] = [
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("TEXTCOLOR", (0, 0), (-1, -1), colors.HexColor(_IDIS_TEXT)),
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor(_IDIS_PANEL_2)),
+        ("BACKGROUND", (2, 0), (2, -1), colors.HexColor(_IDIS_PANEL_2)),
+        ("TEXTCOLOR", (0, 0), (0, -1), colors.HexColor(_IDIS_MUTED)),
+        ("TEXTCOLOR", (2, 0), (2, -1), colors.HexColor(_IDIS_MUTED)),
+        ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor(_IDIS_LINE)),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING", (0, 0), (-1, -1), 6),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("LEFTPADDING", (0, 0), (0, -1), 10),
-        ("RIGHTPADDING", (-1, 0), (-1, -1), 10),
-        ("LINEBELOW", (0, 0), (-1, -1), 2, colors.HexColor(_FRUTON_RED)),
-    ]))
-
-    story: list[Any] = [header_tbl]
-    if fruton_img is not None:
-        story.append(Paragraph(
-            f'<font size="7" color="{_IDIS_MUTED}">{ts}</font>',
-            ParagraphStyle("FrutonTS", fontName="Helvetica", fontSize=7,
-                           textColor=colors.HexColor(_IDIS_MUTED), alignment=TA_RIGHT),
-        ))
-    story.append(Spacer(1, 0.35 * cm))
-
-    # Stats table
-    stats_rows = [
-        ["Metric", "Value"],
-        ["Proteins processed", str(stats["total"])],
-        ["Proteins prepared (success)", str(stats["prepared"])],
-        ["Proteins failed", str(stats["failed"])],
-        ["Proteins with gaps", str(stats["with_gaps"])],
-        ["Proteins with transition metals", str(stats["with_metals"])],
-        ["Proteins with non-standard residues", str(stats["with_nonstd"])],
-        ["Proteins with cofactors", str(stats["with_cofactors"])],
-        ["Gaussian pending (HPC required)", str(stats["gaussian_pending"])],
+        ("LEFTPADDING", (0, 0), (-1, -1), 7),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
     ]
-    col_l = usable_w * 0.65
-    col_r = usable_w * 0.35
-    stats_tbl = Table(stats_rows, colWidths=[col_l, col_r])
-    stats_style: list[Any] = [
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(_IDIS_NAVY)),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, 0), 9),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor(_IDIS_PANEL)]),
-        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-        ("FONTSIZE", (0, 1), (-1, -1), 8),
-        ("TEXTCOLOR", (0, 1), (-1, -1), colors.HexColor(_IDIS_TEXT)),
-        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor(_IDIS_LINE)),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-    ]
-    if stats["gaussian_pending"] > 0:
-        stats_style.append(("BACKGROUND", (0, -1), (-1, -1), colors.HexColor(_FRUTON_RED_SOFT)))
-    stats_tbl.setStyle(TableStyle(stats_style))
-    story.append(stats_tbl)
-    story.append(Spacer(1, 0.5 * cm))
+    value_cell_map = {
+        (1, 0): ("total", stats["total"]),
+        (3, 0): ("prepared", stats["prepared"]),
+        (1, 1): ("failed", stats["failed"]),
+        (3, 1): ("with_gaps", stats["with_gaps"]),
+        (1, 2): ("with_metals", stats["with_metals"]),
+        (3, 2): ("with_nonstd", stats["with_nonstd"]),
+        (1, 3): ("with_cofactors", stats["with_cofactors"]),
+        (3, 3): ("gaussian_pending", stats["gaussian_pending"]),
+    }
+    for (col, row), (metric, value) in value_cell_map.items():
+        dashboard_style.append(
+            ("BACKGROUND", (col, row), (col, row), colors.HexColor(_status_background(metric, value)))
+        )
+    dashboard_tbl.setStyle(TableStyle(dashboard_style))
+    story.append(dashboard_tbl)
+    story.append(Spacer(1, 0.42 * cm))
 
-    # Gaussian warning (on stats page before chart pages)
+    story.append(_section_heading("Run interpretation", usable_w))
+    story.append(
+        Paragraph(
+            "This summary report is the dataset-level audit surface. It does not replace "
+            "the per-protein reports; it gives a compact cross-protein view of prepared "
+            "status, gaps, transition metals, cofactors, non-standard residues, and pending "
+            "Gaussian work before the detailed evidence is inspected.",
+            style_normal,
+        )
+    )
+    story.append(Spacer(1, 0.38 * cm))
+
     if gaussian_pending_ids:
-        warn_title_tbl = Table(
-            [[Paragraph("Gaussian HPC runs required before pipeline is complete", style_warning_title)]],
-            colWidths=[usable_w],
-        )
-        warn_title_tbl.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED)),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ]))
-        story.append(warn_title_tbl)
-        pending_lines = [
-            "The following proteins have Gaussian input files prepared but not yet computed on HPC:",
-            "  " + ", ".join(gaussian_pending_ids),
-            "",
-            "To complete parametrization:",
-            "  1. Submit: run submit_gaussian.sh (RESP) or MCPB_submit.sh (metals) for each protein on the HPC cluster",
-            "  2. After Gaussian jobs finish: run run_after_gaussian.sh in each nonstandard_params/<label>/resp/ directory",
-            "  3. Resume the pipeline: fruton.py --from-step 15",
+        story.append(_section_heading("Gaussian continuation required", usable_w))
+        warning_rows = [
+            [Paragraph("Pending proteins", style_warning_title), Paragraph(", ".join(gaussian_pending_ids), style_warning_body)],
+            [Paragraph("Submit", style_warning_title), Paragraph("Run submit_gaussian.sh (RESP) or MCPB_submit.sh (metals) for each affected protein on the HPC cluster.", style_warning_body)],
+            [Paragraph("Resume", style_warning_title), Paragraph("After Gaussian finishes, run run_after_gaussian.sh in each nonstandard_params/<label>/resp/ directory and resume with fruton.py --from-step 15.", style_warning_body)],
         ]
-        warn_body_tbl = Table(
-            [[Paragraph(line if line else " ", style_warning_body)] for line in pending_lines],
-            colWidths=[usable_w],
+        warning_tbl = Table(warning_rows, colWidths=[usable_w * 0.24, usable_w * 0.76])
+        warning_tbl.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED_SOFT)),
+                    ("BOX", (0, 0), (-1, -1), 0.45, colors.HexColor(_FRUTON_RED)),
+                    ("INNERGRID", (0, 0), (-1, -1), 0.25, colors.HexColor(_IDIS_LINE)),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ]
+            )
         )
-        warn_body_tbl.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED_SOFT)),
-            ("TOPPADDING", (0, 0), (-1, -1), 2),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ]))
-        story.append(warn_body_tbl)
-        story.append(Spacer(1, 0.3 * cm))
+        story.append(warning_tbl)
+        story.append(Spacer(1, 0.35 * cm))
 
-    # --- Chart pages ---
     tmp_paths: list[str] = []
     try:
         chart_pngs = _render_chart_pngs(
-            chart_data, landscape=use_landscape_charts, chunk_size=_CHART_CHUNK
+            chart_data,
+            landscape=use_landscape_charts,
+            chunk_size=chart_chunk_size,
         )
         for png_bytes in chart_pngs:
             tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
@@ -527,15 +700,14 @@ def generate_pipeline_summary_report(
             tmp_paths.append(tmp.name)
 
         if not use_landscape_charts:
-            # Single portrait chart embedded on stats page
+            story.append(_section_heading("Per-protein feature chart", usable_w))
             chart_img = Image(tmp_paths[0])
             aspect = chart_img.imageWidth / chart_img.imageHeight
-            chart_img.drawWidth = usable_w * 0.94
+            chart_img.drawWidth = usable_w * 0.96
             chart_img.drawHeight = chart_img.drawWidth / aspect
             chart_img.hAlign = "CENTER"
             story.append(chart_img)
         else:
-            # One landscape page per chart chunk
             for tmp_path in tmp_paths:
                 story.append(NextPageTemplate("landscape"))
                 story.append(PageBreak())
@@ -548,30 +720,26 @@ def generate_pipeline_summary_report(
     except Exception as exc:
         story.append(Paragraph(f"Chart could not be rendered: {exc}", style_normal))
 
-    # --- Page templates ---
-    def _footer_portrait(canvas: Any, doc: Any) -> None:
-        canvas.saveState()
-        canvas.setFont("Helvetica", 7)
-        canvas.setFillColor(colors.HexColor(_IDIS_MUTED))
-        canvas.drawCentredString(page_w / 2, 0.5 * cm, f"Generated by FRUTON  ·  {ts}")
-        canvas.restoreState()
-
-    def _footer_landscape(canvas: Any, doc: Any) -> None:
-        canvas.saveState()
-        canvas.setFont("Helvetica", 7)
-        canvas.setFillColor(colors.HexColor(_IDIS_MUTED))
-        canvas.drawCentredString(land_w / 2, 0.5 * cm, f"Generated by FRUTON  ·  {ts}")
-        canvas.restoreState()
-
     portrait_frame = Frame(
-        margin, margin, page_w - 2 * margin, page_h - 2 * margin, id="portrait_frame"
+        margin_x,
+        bottom_margin,
+        page_w - 2 * margin_x,
+        page_h - top_margin - bottom_margin,
+        id="portrait_frame",
     )
     portrait_template = PageTemplate(
-        id="portrait", frames=[portrait_frame], onPage=_footer_portrait
+        id="portrait",
+        frames=[portrait_frame],
+        onPage=_footer_portrait,
+        pagesize=A4,
     )
 
     land_frame = Frame(
-        margin, margin, land_w - 2 * margin, land_h - 2 * margin, id="landscape_frame"
+        margin_x,
+        bottom_margin,
+        land_w - 2 * margin_x,
+        land_h - top_margin - bottom_margin,
+        id="landscape_frame",
     )
     landscape_template = PageTemplate(
         id="landscape",
@@ -583,17 +751,17 @@ def generate_pipeline_summary_report(
     doc = BaseDocTemplate(
         str(output_path),
         pagesize=A4,
-        leftMargin=margin,
-        rightMargin=margin,
-        topMargin=margin,
-        bottomMargin=margin,
+        leftMargin=margin_x,
+        rightMargin=margin_x,
+        topMargin=top_margin,
+        bottomMargin=bottom_margin,
     )
     doc.addPageTemplates([portrait_template, landscape_template])
     doc.build(story)
 
-    for p in tmp_paths:
+    for tmp_path in tmp_paths:
         try:
-            os.unlink(p)
+            os.unlink(tmp_path)
         except Exception:
             pass
 
