@@ -25,61 +25,147 @@ from openpyxl import Workbook
 from openpyxl.drawing.image import Image as OpenpyxlImage
 from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
 from openpyxl.drawing.xdr import XDRPositiveSize2D
-from openpyxl.utils.units import inch_to_EMU
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
+from openpyxl.utils.units import inch_to_EMU
 
 from stack_protein_preparation.pipeline_state import (
+    create_empty_protein_record,
+)
+from stack_protein_preparation._xlsx_columns import (  # noqa: F401 (re-exported)
     ALIGNMENT_DIRECTORY_COLUMN_NAME,
     AVAILABLE_MODELS_COLUMN_NAME,
+    BODY_FILL,
+    CENTER_ALIGNMENT,
+    CHEMISTRY_COLUMN_NAME_LIST,
+    CHEMISTRY_GROUP_COLUMN_NAME_SET,
+    CHEMISTRY_GROUP_FILL,
+    COMPONENTS_COLUMN_NAME_LIST,
     COMPONENTS_DIRECTORY_COLUMN_NAME,
+    DATA_ALIGNMENT,
+    DATA_FONT,
+    DERIVED_COLUMN_NAME_LIST,
+    FAIL_FILL,
     FASTA_DIRECTORY_COLUMN_NAME,
     FASTA_FILES_DONE_COLUMN_NAME,
     FILLER_DIRECTORY_COLUMN_NAME,
     FILLER_MODEL_PATH_COLUMN_NAME,
     FILLER_MODEL_SOURCE_COLUMN_NAME,
     FILLER_STATUS_COLUMN_NAME,
+    FINAL_MODEL_CREATED_COLUMN_NAME,
+    FINAL_MODEL_PATH_COLUMN_NAME,
+    FINAL_MODEL_TYPE_COLUMN_NAME,
+    FINAL_MODEL_YES_FONT,
+    FONT_NAME,
+    FONT_SIZE,
+    GAP_GROUP_COLUMN_NAME_SET,
+    GAP_GROUP_FILL,
     GAP_SIZES_COLUMN_NAME,
+    GAPS_AND_VARIANTS_COLUMN_NAME_LIST,
+    GOLD_HEX,
+    GRID_BORDER,
+    GRID_HEX,
+    HEADER_ALIGNMENT,
+    HEADER_BORDER,
+    HEADER_FILL,
+    HEADER_FONT,
     HAS_GAPS_COLUMN_NAME,
     HAS_LIGANDS_COLUMN_NAME,
     HAS_METALS_COLUMN_NAME,
-    METALS_ION_TYPE_COLUMN_NAME,
-    METALS_CLASS_COLUMN_NAME,
-    METALS_MODEL_READY_COLUMN_NAME,
     HAS_NONSTANDARD_RESIDUES_COLUMN_NAME,
+    HYPERLINK_COLUMN_NAME_SET,
     INSERTION_CODES_DONE_COLUMN_NAME,
     INTERNAL_CAPPING_INPUT_PATH_COLUMN_NAME,
     INTERNAL_CAPPING_OUTPUT_PATH_COLUMN_NAME,
     INTERNAL_CAPPING_STATUS_COLUMN_NAME,
+    KPI_LABEL_FILL,
+    KPI_LABEL_FONT,
+    KPI_VALUE_FILL,
+    KPI_VALUE_FONT,
+    LIGHT_GRID_HEX,
+    LINK_FONT,
+    LOGO_FILENAME_CANDIDATE_LIST,
+    LOGO_HEIGHT_IN,
+    LOGO_OFFSET_X_IN,
+    LOGO_OFFSET_Y_IN,
+    LOGO_WIDTH_IN,
     METALL_PARAMS_DIRECTORY_COLUMN_NAME,
     METALL_PARAMS_MANIFEST_PATH_COLUMN_NAME,
     METALL_PARAMS_SITE_COUNT_COLUMN_NAME,
     METALL_PARAMS_STATUS_COLUMN_NAME,
+    METALS_CHECK_LOG_PATH_COLUMN_NAME,
+    METALS_CHECK_MANIFEST_PATH_COLUMN_NAME,
+    METALS_CHECK_STATUS_COLUMN_NAME,
+    METALS_CLASS_COLUMN_NAME,
+    METALS_GEOMETRY_FOUND_COLUMN_NAME,
+    METALS_GEOMETRY_MATCH_COLUMN_NAME,
+    METALS_GEOMETRY_PROBABLE_COLUMN_NAME,
+    METALS_ION_TYPE_COLUMN_NAME,
+    METALS_MODEL_READY_COLUMN_NAME,
+    METALS_PARAMETER_REFERENCE_COLUMN_NAME,
+    MODEL_GROUP_COLUMN_NAME_SET,
+    MODEL_GROUP_FILL,
+    MUTED_FONT,
+    NAVY_HEX,
     NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME,
     NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME,
     NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME,
     N_GAPS_COLUMN_NAME,
+    OPTIONAL_KNOWN_EXTRA_COLUMN_NAME_LIST,
+    ORANGE_FILL,
+    ORANGE_HEX,
+    OVERVIEW_COLUMN_NAME_LIST,
+    PARAMETER_AUDIT_JSON_PATH_COLUMN_NAME,
+    PARAMETER_AUDIT_LOG_PATH_COLUMN_NAME,
+    PARAMETER_AUDIT_REQUIRES_METAL_COLUMN_NAME,
+    PARAMETER_AUDIT_REQUIRES_QM_COLUMN_NAME,
+    PARAMETER_AUDIT_REQUIRES_REPAIR_COLUMN_NAME,
+    PARAMETER_AUDIT_STATUS_COLUMN_NAME,
+    PATHS_COLUMN_NAME_LIST,
     PDB_DIRECTORY_COLUMN_NAME,
+    PDB_FONT,
     PDB_ID_COLUMN_NAME,
+    PDB_MISSING_FONT,
     PDB_SYNC_DONE_COLUMN_NAME,
     PREPARED_ALPHAFOLD_OUTPUT_PATH_COLUMN_NAME,
     PREPARED_DIRECTORY_COLUMN_NAME,
     PREPARED_GAPS_OUTPUT_PATH_COLUMN_NAME,
     PREPARED_MODELLER_OUTPUT_PATH_COLUMN_NAME,
+    PREPARED_OUTPUTS_COLUMN_NAME_LIST,
     PREPARED_STRUCTURE_ACTUAL_RANGE_COLUMN_NAME,
     PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME,
     PREPARED_STRUCTURE_PROTEIN_INPUT_PATH_COLUMN_NAME,
     PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
     PREPARED_STRUCTURE_VARIANT_COLUMN_NAME,
+    PREPARATION_COLUMN_NAME_LIST,
     PROTONATION_INPUT_PATH_COLUMN_NAME,
     PROTONATION_INPUT_SOURCE_COLUMN_NAME,
     PROTONATION_OUTPUT_PATH_COLUMN_NAME,
     PROTONATION_STATUS_COLUMN_NAME,
     RANGE_COLUMN_NAME,
+    RED_HEX,
     RETAIN_ALPHAFOLD_VARIANT_COLUMN_NAME,
     RETAIN_GAPS_VARIANT_COLUMN_NAME,
     RETAIN_MODELLER_VARIANT_COLUMN_NAME,
+    REVIEW_FILL,
+    ROW_STRIPE_FILL,
+    SEMANTIC_COLOR_COLUMN_NAME_SET,
     SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
+    SKIP_FILL,
+    STATUS_COLOR_COLUMN_NAME_SET,
+    STATUS_GROUP_COLUMN_NAME_SET,
+    STATUS_GROUP_FILL,
+    STRONG_REVIEW_FILL,
+    SUCCESS_FILL,
+    TITLE_ALIGNMENT,
+    TITLE_FILL,
+    TITLE_FONT,
+    TITLE_FONT_SIZE,
+    UNIPROT_ID_COLUMN_NAME,
+    VARIANT_POLICY_COLUMN_NAME,
+    WHITE_BOLD_FONT,
+    WHITE_HEX,
+    WORKSHEET_LAYOUTS,
     STATE_COLUMN_NAME_LIST,
     STATUS_FAILED,
     STATUS_REQUIRED,
@@ -87,390 +173,26 @@ from stack_protein_preparation.pipeline_state import (
     STATUS_SUCCESS,
     STATUS_WARNING,
     STEP_STATUS_COLUMN_NAME_LIST,
-    UNIPROT_ID_COLUMN_NAME,
-    VARIANT_POLICY_COLUMN_NAME,
-    create_empty_protein_record,
+)
+from stack_protein_preparation._xlsx_formatters import (  # noqa: F401 (re-exported)
+    _set_white_bold,
+    _set_click_hyperlink,
+    _set_row_height,
+    apply_base_data_style,
+    apply_group_body_shading,
+    apply_metal_geometry_pair_color,
+    apply_row_striping,
+    apply_semantic_yes_no_color,
+    apply_status_cell_color,
+    autosize_worksheet_columns,
+    set_worksheet_view_options,
+    style_header_row,
 )
 
-# ---------------------------------------------------------------------------
-# XLSX-only derived columns
-# ---------------------------------------------------------------------------
+# Column names, palette constants, and style objects are defined in
+# _xlsx_columns.py and imported above. Formatting functions are in
+# _xlsx_formatters.py.
 
-FINAL_MODEL_CREATED_COLUMN_NAME = "final_model"
-FINAL_MODEL_TYPE_COLUMN_NAME = "final_model_type"
-FINAL_MODEL_PATH_COLUMN_NAME = "final_model_path"
-
-PARAMETER_AUDIT_STATUS_COLUMN_NAME = "parameter_audit.status"
-PARAMETER_AUDIT_REQUIRES_REPAIR_COLUMN_NAME = "parameter_audit.requires_repair"
-PARAMETER_AUDIT_REQUIRES_QM_COLUMN_NAME = "parameter_audit.requires_qm_parameters"
-PARAMETER_AUDIT_REQUIRES_METAL_COLUMN_NAME = "parameter_audit.requires_metal_parameters"
-PARAMETER_AUDIT_JSON_PATH_COLUMN_NAME = "parameter_audit.json_path"
-PARAMETER_AUDIT_LOG_PATH_COLUMN_NAME = "parameter_audit.log_path"
-
-# Metal check / geometry summary columns.
-# These names are kept local in the XLSX exporter so the workbook can render
-# metal diagnostics as soon as FRUTON writes them, even if older JSON states do
-# not yet carry all fields. They match the names used by ``metalls_check.py``
-# and the updated ``pipeline_state.py``.
-METALS_CHECK_STATUS_COLUMN_NAME = "metals_check.status"
-METALS_ION_TYPE_COLUMN_NAME = "metals.ion_type"
-METALS_CLASS_COLUMN_NAME = "metals.class"
-METALS_PARAMETER_REFERENCE_COLUMN_NAME = "metals.parameter_reference"
-METALS_GEOMETRY_FOUND_COLUMN_NAME = "metals.geometry_found"
-METALS_GEOMETRY_PROBABLE_COLUMN_NAME = "metals.geometry_probable"
-METALS_GEOMETRY_MATCH_COLUMN_NAME = "metals.geometry_match"
-METALS_MODEL_READY_COLUMN_NAME = "metals.model_ready"
-METALS_CHECK_LOG_PATH_COLUMN_NAME = "metals.check_log_path"
-METALS_CHECK_MANIFEST_PATH_COLUMN_NAME = "metals.check_manifest_path"
-
-DERIVED_COLUMN_NAME_LIST = [
-    FINAL_MODEL_CREATED_COLUMN_NAME,
-    FINAL_MODEL_TYPE_COLUMN_NAME,
-    FINAL_MODEL_PATH_COLUMN_NAME,
-]
-
-OPTIONAL_KNOWN_EXTRA_COLUMN_NAME_LIST = [
-    PARAMETER_AUDIT_STATUS_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_REPAIR_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_QM_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_METAL_COLUMN_NAME,
-    PARAMETER_AUDIT_JSON_PATH_COLUMN_NAME,
-    PARAMETER_AUDIT_LOG_PATH_COLUMN_NAME,
-    METALS_CHECK_STATUS_COLUMN_NAME,
-    METALS_PARAMETER_REFERENCE_COLUMN_NAME,
-    METALS_GEOMETRY_FOUND_COLUMN_NAME,
-    METALS_GEOMETRY_PROBABLE_COLUMN_NAME,
-    METALS_GEOMETRY_MATCH_COLUMN_NAME,
-    METALS_CHECK_LOG_PATH_COLUMN_NAME,
-    METALS_CHECK_MANIFEST_PATH_COLUMN_NAME,
-]
-
-LOGO_FILENAME_CANDIDATE_LIST = [
-    "logo_xlsx.png",
-    "logo.png",
-    "fruton_logo.png",
-    "FRUTON_logo.png",
-]
-
-# LibreOffice position/size equivalent for the overview logo.
-# The values match the manually tuned screenshot: X=0.04 in, Y=0.00 in,
-# W=0.74 in, H=0.84 in. OpenXML stores drawing positions in EMUs.
-LOGO_OFFSET_X_IN = 0.04
-LOGO_OFFSET_Y_IN = 0.00
-LOGO_WIDTH_IN = 0.75
-LOGO_HEIGHT_IN = 0.80
-
-
-# ---------------------------------------------------------------------------
-# Palette and style constants
-# ---------------------------------------------------------------------------
-
-FONT_NAME = "Liberation Sans"
-FONT_SIZE = 10
-HEADER_FONT_SIZE = 10
-TITLE_FONT_SIZE = 14
-
-NAVY_HEX = "2F3761"
-GOLD_HEX = "8A730F"
-SOFT_NAVY_HEX = "D5D7DF"
-RED_HEX = "C00000"
-WHITE_HEX = "FFFFFF"
-
-GREEN_HEX = "70AD47"
-SOFT_GREEN_HEX = "D9EAD3"
-SOFT_GOLD_HEX = "C5B987"
-SOFT_RED_HEX = "F4CCCC"
-ORANGE_HEX = "F4B183"
-GREY_HEX = "E7E6E6"
-STRIPE_HEX = "E4E6ED"
-GRID_HEX = "B7B7B7"
-LIGHT_GRID_HEX = "D9D9D9"
-
-TITLE_FILL = PatternFill(start_color=NAVY_HEX, end_color=NAVY_HEX, fill_type="solid")
-HEADER_FILL = PatternFill(start_color=NAVY_HEX, end_color=NAVY_HEX, fill_type="solid")
-KPI_LABEL_FILL = PatternFill(start_color=SOFT_NAVY_HEX, end_color=SOFT_NAVY_HEX, fill_type="solid")
-KPI_VALUE_FILL = PatternFill(start_color=WHITE_HEX, end_color=WHITE_HEX, fill_type="solid")
-BODY_FILL = PatternFill(start_color=SOFT_NAVY_HEX, end_color=SOFT_NAVY_HEX, fill_type="solid")
-ROW_STRIPE_FILL = PatternFill(start_color=STRIPE_HEX, end_color=STRIPE_HEX, fill_type="solid")
-
-FINAL_YES_FILL = PatternFill(start_color=WHITE_HEX, end_color=WHITE_HEX, fill_type="solid")
-FINAL_NO_FILL = PatternFill(start_color=RED_HEX, end_color=RED_HEX, fill_type="solid")
-SUCCESS_FILL = PatternFill(start_color="E8E3CF", end_color="E8E3CF", fill_type="solid")
-REVIEW_FILL = PatternFill(start_color=SOFT_GOLD_HEX, end_color=SOFT_GOLD_HEX, fill_type="solid")
-STRONG_REVIEW_FILL = PatternFill(start_color=GOLD_HEX, end_color=GOLD_HEX, fill_type="solid")
-FAIL_FILL = PatternFill(start_color=SOFT_RED_HEX, end_color=SOFT_RED_HEX, fill_type="solid")
-SOFT_NAVY_FILL = PatternFill(start_color=SOFT_NAVY_HEX, end_color=SOFT_NAVY_HEX, fill_type="solid")
-SKIP_FILL = PatternFill(start_color=SOFT_NAVY_HEX, end_color=SOFT_NAVY_HEX, fill_type="solid")
-NEUTRAL_FILL = PatternFill(start_color=GREY_HEX, end_color=GREY_HEX, fill_type="solid")
-ORANGE_FILL = PatternFill(start_color=ORANGE_HEX, end_color=ORANGE_HEX, fill_type="solid")
-
-MODEL_GROUP_FILL = PatternFill(start_color="F4F6FB", end_color="F4F6FB", fill_type="solid")
-CHEMISTRY_GROUP_FILL = PatternFill(start_color="FBF8EA", end_color="FBF8EA", fill_type="solid")
-GAP_GROUP_FILL = PatternFill(start_color="FBF8EA", end_color="FBF8EA", fill_type="solid")
-STATUS_GROUP_FILL = PatternFill(start_color="F0F2F7", end_color="F0F2F7", fill_type="solid")
-
-TITLE_FONT = Font(name=FONT_NAME, size=TITLE_FONT_SIZE, bold=True, color=WHITE_HEX)
-HEADER_FONT = Font(name=FONT_NAME, size=HEADER_FONT_SIZE, bold=True, color=WHITE_HEX)
-KPI_LABEL_FONT = Font(name=FONT_NAME, size=FONT_SIZE, bold=True, color=NAVY_HEX)
-KPI_VALUE_FONT = Font(name=FONT_NAME, size=FONT_SIZE, bold=True, color="111827")
-PDB_FONT = Font(name=FONT_NAME, size=FONT_SIZE, bold=True, color=NAVY_HEX)
-PDB_MISSING_FONT = Font(name=FONT_NAME, size=FONT_SIZE, bold=True, color=RED_HEX)
-FINAL_MODEL_YES_FONT = Font(name=FONT_NAME, size=FONT_SIZE, bold=True, color=NAVY_HEX)
-DATA_FONT = Font(name=FONT_NAME, size=FONT_SIZE, color="111827")
-MUTED_FONT = Font(name=FONT_NAME, size=FONT_SIZE, color="666666")
-WHITE_BOLD_FONT = Font(name=FONT_NAME, size=FONT_SIZE, bold=True, color=WHITE_HEX)
-LINK_FONT = Font(name=FONT_NAME, size=FONT_SIZE, color=NAVY_HEX, underline="single")
-
-TITLE_ALIGNMENT = Alignment(horizontal="left", vertical="center")
-HEADER_ALIGNMENT = Alignment(horizontal="center", vertical="center", wrap_text=True)
-DATA_ALIGNMENT = Alignment(vertical="top", wrap_text=True)
-CENTER_ALIGNMENT = Alignment(horizontal="center", vertical="center", wrap_text=True)
-
-GRID_SIDE = Side(style="thin", color=GRID_HEX)
-LIGHT_GRID_SIDE = Side(style="thin", color=LIGHT_GRID_HEX)
-NAVY_SIDE = Side(style="thin", color=NAVY_HEX)
-RED_SIDE = Side(style="medium", color=RED_HEX)
-
-GRID_BORDER = Border(
-    left=GRID_SIDE,
-    right=GRID_SIDE,
-    top=LIGHT_GRID_SIDE,
-    bottom=LIGHT_GRID_SIDE,
-)
-
-HEADER_BORDER = Border(
-    left=NAVY_SIDE,
-    right=NAVY_SIDE,
-    top=NAVY_SIDE,
-    bottom=NAVY_SIDE,
-)
-
-MISSING_ROW_BORDER = Border(
-    left=RED_SIDE,
-    right=RED_SIDE,
-    top=RED_SIDE,
-    bottom=RED_SIDE,
-)
-
-# ---------------------------------------------------------------------------
-# Column groups
-# ---------------------------------------------------------------------------
-
-HYPERLINK_COLUMN_NAME_SET = {
-    PDB_DIRECTORY_COLUMN_NAME,
-    FASTA_DIRECTORY_COLUMN_NAME,
-    ALIGNMENT_DIRECTORY_COLUMN_NAME,
-    COMPONENTS_DIRECTORY_COLUMN_NAME,
-    FILLER_DIRECTORY_COLUMN_NAME,
-    PREPARED_DIRECTORY_COLUMN_NAME,
-    METALL_PARAMS_DIRECTORY_COLUMN_NAME,
-    FILLER_MODEL_PATH_COLUMN_NAME,
-    PROTONATION_INPUT_PATH_COLUMN_NAME,
-    PROTONATION_OUTPUT_PATH_COLUMN_NAME,
-    INTERNAL_CAPPING_INPUT_PATH_COLUMN_NAME,
-    INTERNAL_CAPPING_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_STRUCTURE_PROTEIN_INPUT_PATH_COLUMN_NAME,
-    PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_GAPS_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_MODELLER_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_ALPHAFOLD_OUTPUT_PATH_COLUMN_NAME,
-    METALL_PARAMS_SITE_COUNT_COLUMN_NAME,
-    METALL_PARAMS_MANIFEST_PATH_COLUMN_NAME,
-    NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME,
-    FINAL_MODEL_PATH_COLUMN_NAME,
-    PARAMETER_AUDIT_JSON_PATH_COLUMN_NAME,
-    PARAMETER_AUDIT_LOG_PATH_COLUMN_NAME,
-    METALS_CHECK_LOG_PATH_COLUMN_NAME,
-    METALS_CHECK_MANIFEST_PATH_COLUMN_NAME,
-}
-
-STATUS_COLOR_COLUMN_NAME_SET = set(STEP_STATUS_COLUMN_NAME_LIST) | {
-    PARAMETER_AUDIT_STATUS_COLUMN_NAME,
-    METALS_CHECK_STATUS_COLUMN_NAME,
-}
-
-SEMANTIC_COLOR_COLUMN_NAME_SET = {
-    FINAL_MODEL_CREATED_COLUMN_NAME,
-    HAS_METALS_COLUMN_NAME,
-    HAS_LIGANDS_COLUMN_NAME,
-    HAS_NONSTANDARD_RESIDUES_COLUMN_NAME,
-    HAS_GAPS_COLUMN_NAME,
-    RETAIN_GAPS_VARIANT_COLUMN_NAME,
-    RETAIN_MODELLER_VARIANT_COLUMN_NAME,
-    RETAIN_ALPHAFOLD_VARIANT_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_REPAIR_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_QM_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_METAL_COLUMN_NAME,
-    METALS_GEOMETRY_MATCH_COLUMN_NAME,
-}
-
-MODEL_GROUP_COLUMN_NAME_SET = {
-    FINAL_MODEL_TYPE_COLUMN_NAME,
-    AVAILABLE_MODELS_COLUMN_NAME,
-}
-
-CHEMISTRY_GROUP_COLUMN_NAME_SET = {
-    HAS_METALS_COLUMN_NAME,
-    HAS_NONSTANDARD_RESIDUES_COLUMN_NAME,
-    HAS_LIGANDS_COLUMN_NAME,
-    METALS_PARAMETER_REFERENCE_COLUMN_NAME,
-    METALS_GEOMETRY_FOUND_COLUMN_NAME,
-    METALS_GEOMETRY_PROBABLE_COLUMN_NAME,
-    METALS_GEOMETRY_MATCH_COLUMN_NAME,
-}
-
-GAP_GROUP_COLUMN_NAME_SET = {
-    HAS_GAPS_COLUMN_NAME,
-    N_GAPS_COLUMN_NAME,
-    GAP_SIZES_COLUMN_NAME,
-}
-
-STATUS_GROUP_COLUMN_NAME_SET = {
-    FILLER_STATUS_COLUMN_NAME,
-    PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
-    PREPARED_STRUCTURE_VARIANT_COLUMN_NAME,
-}
-
-OVERVIEW_COLUMN_NAME_LIST = [
-    PDB_ID_COLUMN_NAME,
-    UNIPROT_ID_COLUMN_NAME,
-    RANGE_COLUMN_NAME,
-    FINAL_MODEL_CREATED_COLUMN_NAME,
-    FINAL_MODEL_TYPE_COLUMN_NAME,
-    AVAILABLE_MODELS_COLUMN_NAME,
-    HAS_METALS_COLUMN_NAME,
-    METALL_PARAMS_STATUS_COLUMN_NAME,
-    HAS_NONSTANDARD_RESIDUES_COLUMN_NAME,
-    NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME,
-    NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME,
-    HAS_LIGANDS_COLUMN_NAME,
-    HAS_GAPS_COLUMN_NAME,
-    N_GAPS_COLUMN_NAME,
-    GAP_SIZES_COLUMN_NAME,
-    PARAMETER_AUDIT_STATUS_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_QM_COLUMN_NAME,
-    FILLER_STATUS_COLUMN_NAME,
-    PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
-    PREPARED_STRUCTURE_VARIANT_COLUMN_NAME,
-    PREPARED_STRUCTURE_ACTUAL_RANGE_COLUMN_NAME,
-]
-
-PREPARATION_COLUMN_NAME_LIST = [
-    PDB_ID_COLUMN_NAME,
-    PDB_SYNC_DONE_COLUMN_NAME,
-    FASTA_FILES_DONE_COLUMN_NAME,
-    SEQUENCE_ALIGNMENT_DONE_COLUMN_NAME,
-    INSERTION_CODES_DONE_COLUMN_NAME,
-    PARAMETER_AUDIT_STATUS_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_REPAIR_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_QM_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_METAL_COLUMN_NAME,
-    FILLER_STATUS_COLUMN_NAME,
-    FILLER_MODEL_SOURCE_COLUMN_NAME,
-]
-
-COMPONENTS_COLUMN_NAME_LIST = [
-    PDB_ID_COLUMN_NAME,
-    HAS_METALS_COLUMN_NAME,
-    METALS_CHECK_STATUS_COLUMN_NAME,
-    METALS_ION_TYPE_COLUMN_NAME,
-    METALS_CLASS_COLUMN_NAME,
-    METALS_MODEL_READY_COLUMN_NAME,
-    METALS_PARAMETER_REFERENCE_COLUMN_NAME,
-    HAS_LIGANDS_COLUMN_NAME,
-    HAS_NONSTANDARD_RESIDUES_COLUMN_NAME,
-    NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME,
-    NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME,
-]
-
-GAPS_AND_VARIANTS_COLUMN_NAME_LIST = [
-    PDB_ID_COLUMN_NAME,
-    N_GAPS_COLUMN_NAME,
-    GAP_SIZES_COLUMN_NAME,
-    HAS_GAPS_COLUMN_NAME,
-    FILLER_STATUS_COLUMN_NAME,
-    FILLER_MODEL_SOURCE_COLUMN_NAME,
-    VARIANT_POLICY_COLUMN_NAME,
-    RETAIN_GAPS_VARIANT_COLUMN_NAME,
-    RETAIN_MODELLER_VARIANT_COLUMN_NAME,
-    RETAIN_ALPHAFOLD_VARIANT_COLUMN_NAME,
-    PREPARED_STRUCTURE_VARIANT_COLUMN_NAME,
-    AVAILABLE_MODELS_COLUMN_NAME,
-]
-
-CHEMISTRY_COLUMN_NAME_LIST = [
-    PDB_ID_COLUMN_NAME,
-    PROTONATION_STATUS_COLUMN_NAME,
-    PROTONATION_INPUT_SOURCE_COLUMN_NAME,
-    INTERNAL_CAPPING_STATUS_COLUMN_NAME,
-    METALS_CHECK_STATUS_COLUMN_NAME,
-    METALS_ION_TYPE_COLUMN_NAME,
-    METALS_CLASS_COLUMN_NAME,
-    METALS_MODEL_READY_COLUMN_NAME,
-    METALS_PARAMETER_REFERENCE_COLUMN_NAME,
-    METALS_GEOMETRY_FOUND_COLUMN_NAME,
-    METALS_GEOMETRY_PROBABLE_COLUMN_NAME,
-    METALS_GEOMETRY_MATCH_COLUMN_NAME,
-    METALL_PARAMS_STATUS_COLUMN_NAME,
-    NONSTD_RESIDUE_PARAMS_STATUS_COLUMN_NAME,
-    NONSTD_RESIDUE_PARAMS_N_RESIDUES_COLUMN_NAME,
-    PARAMETER_AUDIT_STATUS_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_REPAIR_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_QM_COLUMN_NAME,
-    PARAMETER_AUDIT_REQUIRES_METAL_COLUMN_NAME,
-]
-
-PREPARED_OUTPUTS_COLUMN_NAME_LIST = [
-    PDB_ID_COLUMN_NAME,
-    FINAL_MODEL_CREATED_COLUMN_NAME,
-    FINAL_MODEL_TYPE_COLUMN_NAME,
-    AVAILABLE_MODELS_COLUMN_NAME,
-    METALS_MODEL_READY_COLUMN_NAME,
-    METALS_CHECK_STATUS_COLUMN_NAME,
-    PREPARED_STRUCTURE_STATUS_COLUMN_NAME,
-    PREPARED_STRUCTURE_VARIANT_COLUMN_NAME,
-    FINAL_MODEL_PATH_COLUMN_NAME,
-    PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_GAPS_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_MODELLER_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_ALPHAFOLD_OUTPUT_PATH_COLUMN_NAME,
-]
-
-PATHS_COLUMN_NAME_LIST = [
-    PDB_ID_COLUMN_NAME,
-    PDB_DIRECTORY_COLUMN_NAME,
-    COMPONENTS_DIRECTORY_COLUMN_NAME,
-    ALIGNMENT_DIRECTORY_COLUMN_NAME,
-    FILLER_DIRECTORY_COLUMN_NAME,
-    PREPARED_DIRECTORY_COLUMN_NAME,
-    FINAL_MODEL_PATH_COLUMN_NAME,
-    FILLER_MODEL_PATH_COLUMN_NAME,
-    PARAMETER_AUDIT_JSON_PATH_COLUMN_NAME,
-    PARAMETER_AUDIT_LOG_PATH_COLUMN_NAME,
-    METALS_CHECK_LOG_PATH_COLUMN_NAME,
-    METALS_CHECK_MANIFEST_PATH_COLUMN_NAME,
-    NONSTD_RESIDUE_PARAMS_MANIFEST_PATH_COLUMN_NAME,
-    PROTONATION_INPUT_PATH_COLUMN_NAME,
-    PROTONATION_OUTPUT_PATH_COLUMN_NAME,
-    INTERNAL_CAPPING_INPUT_PATH_COLUMN_NAME,
-    INTERNAL_CAPPING_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_STRUCTURE_PROTEIN_INPUT_PATH_COLUMN_NAME,
-    PREPARED_STRUCTURE_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_GAPS_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_MODELLER_OUTPUT_PATH_COLUMN_NAME,
-    PREPARED_ALPHAFOLD_OUTPUT_PATH_COLUMN_NAME,
-]
-
-WORKSHEET_LAYOUTS: list[tuple[str, list[str]]] = [
-    ("overview", OVERVIEW_COLUMN_NAME_LIST),
-    ("preparation", PREPARATION_COLUMN_NAME_LIST),
-    ("components", COMPONENTS_COLUMN_NAME_LIST),
-    ("gaps_and_variants", GAPS_AND_VARIANTS_COLUMN_NAME_LIST),
-    ("chemistry", CHEMISTRY_COLUMN_NAME_LIST),
-    ("prepared_outputs", PREPARED_OUTPUTS_COLUMN_NAME_LIST),
-    ("paths", PATHS_COLUMN_NAME_LIST),
-    ("full_state", []),
-]
 
 
 # ---------------------------------------------------------------------------
@@ -819,322 +541,6 @@ def _build_overview_kpi_list(
             _count_records_where(protein_record_list, HAS_GAPS_COLUMN_NAME, "yes"),
         ),
     ]
-
-
-# ---------------------------------------------------------------------------
-# Styling helpers
-# ---------------------------------------------------------------------------
-
-
-def _set_white_bold(cell) -> None:
-    cell.font = WHITE_BOLD_FONT
-    cell.alignment = CENTER_ALIGNMENT
-
-
-def apply_status_cell_color(cell, value: str) -> None:
-    """Apply status coloring to one cell."""
-
-    normalized_value = str(value).strip().lower()
-
-    if normalized_value == STATUS_SUCCESS:
-        cell.fill = SUCCESS_FILL
-    elif normalized_value == STATUS_WARNING:
-        cell.fill = STRONG_REVIEW_FILL
-        _set_white_bold(cell)
-    elif normalized_value == STATUS_REQUIRED:
-        cell.fill = REVIEW_FILL
-    elif normalized_value == STATUS_SKIPPED:
-        cell.fill = SKIP_FILL
-        cell.font = MUTED_FONT
-    elif normalized_value == STATUS_FAILED:
-        cell.fill = FAIL_FILL
-
-
-def apply_semantic_yes_no_color(
-    cell,
-    column_name: str,
-    value: str,
-) -> None:
-    """Apply value-based colors with one meaning per color.
-
-    Normal yes/no values stay mostly unpainted. Strong fill colors are reserved
-    for values that change interpretation: metals are blockers, non-standard
-    residues and gaps need review, retained variants are available, and missing
-    final models are marked by red text. This avoids the ambiguous situation
-    where pale yellow or red appears only because a column belongs to a visual
-    group rather than because the value matters.
-    """
-
-    normalized_value = str(value).strip().lower()
-
-    if column_name == FINAL_MODEL_CREATED_COLUMN_NAME:
-        cell.alignment = CENTER_ALIGNMENT
-        if normalized_value == "yes":
-            cell.font = FINAL_MODEL_YES_FONT
-        elif normalized_value == "no":
-            cell.font = PDB_MISSING_FONT
-        return
-
-    if column_name == HAS_LIGANDS_COLUMN_NAME:
-        return
-
-    if column_name == HAS_METALS_COLUMN_NAME:
-        if normalized_value == "yes":
-            cell.fill = REVIEW_FILL
-        return
-
-    if column_name == HAS_NONSTANDARD_RESIDUES_COLUMN_NAME:
-        if normalized_value == "yes":
-            cell.fill = REVIEW_FILL
-        return
-
-    if column_name == HAS_GAPS_COLUMN_NAME:
-        if normalized_value == "yes":
-            cell.fill = REVIEW_FILL
-        return
-
-    if column_name in {
-        RETAIN_GAPS_VARIANT_COLUMN_NAME,
-        RETAIN_MODELLER_VARIANT_COLUMN_NAME,
-        RETAIN_ALPHAFOLD_VARIANT_COLUMN_NAME,
-    }:
-        if normalized_value == "yes":
-            cell.fill = SUCCESS_FILL
-        return
-
-    if column_name == METALS_MODEL_READY_COLUMN_NAME:
-        cell.alignment = CENTER_ALIGNMENT
-        if normalized_value == "yes":
-            cell.fill = SUCCESS_FILL
-        elif normalized_value == "no":
-            cell.fill = FAIL_FILL
-        elif normalized_value in {"review", "warning", "required"}:
-            cell.fill = REVIEW_FILL
-        return
-
-    if column_name == METALS_GEOMETRY_MATCH_COLUMN_NAME:
-        cell.alignment = CENTER_ALIGNMENT
-        if normalized_value == "yes":
-            cell.font = Font(name=FONT_NAME, size=FONT_SIZE, bold=True, color=GOLD_HEX)
-        elif normalized_value == "no":
-            cell.font = PDB_MISSING_FONT
-        return
-
-    if column_name in {
-        PARAMETER_AUDIT_REQUIRES_REPAIR_COLUMN_NAME,
-        PARAMETER_AUDIT_REQUIRES_QM_COLUMN_NAME,
-        PARAMETER_AUDIT_REQUIRES_METAL_COLUMN_NAME,
-    }:
-        if normalized_value == "true":
-            cell.fill = FAIL_FILL
-        return
-
-
-
-
-def apply_metal_geometry_pair_color(
-    worksheet,
-    protein_record_list: list[dict[str, str]],
-    column_order: list[str],
-    *,
-    first_data_row_index: int,
-) -> None:
-    """Color found/probable metal geometry text from the match decision.
-
-    Transition-metal rows need two visually linked geometry cells. If the
-    predicted and observed geometry agree, both geometry texts are gold. If
-    they disagree, both geometry texts are red. The cells keep the shared body
-    fill, so the color works as a precise diagnostic signal instead of adding
-    another large block of background shading.
-    """
-
-    try:
-        found_column_index = column_order.index(METALS_GEOMETRY_FOUND_COLUMN_NAME) + 1
-        probable_column_index = column_order.index(METALS_GEOMETRY_PROBABLE_COLUMN_NAME) + 1
-    except ValueError:
-        return
-
-    for offset, protein_record in enumerate(protein_record_list):
-        geometry_match = str(
-            protein_record.get(METALS_GEOMETRY_MATCH_COLUMN_NAME, "")
-        ).strip().lower()
-
-        if geometry_match == "yes":
-            geometry_font = Font(name=FONT_NAME, size=FONT_SIZE, bold=True, color=GOLD_HEX)
-        elif geometry_match == "no":
-            geometry_font = PDB_MISSING_FONT
-        else:
-            continue
-
-        row_index = first_data_row_index + offset
-        for column_index in (found_column_index, probable_column_index):
-            cell = worksheet.cell(row=row_index, column=column_index)
-            if cell.value not in (None, ""):
-                cell.font = geometry_font
-
-
-def style_header_row(
-    worksheet,
-    column_order: list[str],
-    header_row_index: int,
-) -> None:
-    """Apply professional header styling."""
-
-    for column_index, _column_name in enumerate(column_order, start=1):
-        cell = worksheet.cell(row=header_row_index, column=column_index)
-        cell.fill = HEADER_FILL
-        cell.font = HEADER_FONT
-        cell.alignment = HEADER_ALIGNMENT
-        cell.border = HEADER_BORDER
-
-
-def apply_base_data_style(
-    worksheet,
-    *,
-    first_data_row_index: int,
-) -> None:
-    """Apply the consistent body base before semantic colors.
-
-    The overview should read as one designed table rather than as many
-    independent colored blocks. Every data row therefore starts with the same
-    soft navy base, with a slightly lighter stripe on alternating rows. Semantic
-    colors are applied afterwards and only override cells whose value actually
-    matters.
-    """
-
-    for row_index in range(first_data_row_index, worksheet.max_row + 1):
-        base_fill = (
-            ROW_STRIPE_FILL
-            if (row_index - first_data_row_index) % 2 == 1
-            else BODY_FILL
-        )
-
-        for cell in worksheet[row_index]:
-            cell.font = DATA_FONT
-            cell.alignment = DATA_ALIGNMENT
-            cell.border = GRID_BORDER
-            cell.fill = base_fill
-
-
-def apply_group_body_shading(
-    worksheet,
-    column_order: list[str],
-    *,
-    first_data_row_index: int,
-) -> None:
-    """Keep body shading value-based instead of group-based.
-
-    The earlier column-group background colors made the overview harder to
-    interpret because pale gold could mean either a chemistry group, a gap group,
-    or a real warning. The body now uses only subtle row striping plus semantic
-    value colors. This gives a stricter grammar: red means missing/failure,
-    gold means review/gap/non-standard, green means success, and grey means
-    skipped.
-    """
-
-    return
-
-
-def apply_row_striping(
-    worksheet,
-    *,
-    first_data_row_index: int,
-) -> None:
-    """No-op: striping is applied in ``apply_base_data_style``.
-
-    Keeping this function preserves the writer call order while preventing a
-    later styling pass from touching semantically colored cells.
-    """
-
-    return
-
-
-def mark_missing_model_pdb_ids(
-    worksheet,
-    protein_record_list: list[dict[str, str]],
-    column_order: list[str],
-    *,
-    first_data_row_index: int,
-) -> None:
-    """Mark missing final models by coloring the PDB ID red.
-
-    A full red row border makes the overview visually noisy because it competes
-    with every status and chemistry color. The PDB ID is the natural row anchor,
-    so missing final models are marked there instead. This keeps the warning
-    visible even when the user scrolls horizontally, without turning the whole
-    sheet into a red grid.
-    """
-
-    try:
-        pdb_column_index = column_order.index(PDB_ID_COLUMN_NAME) + 1
-    except ValueError:
-        return
-
-    for offset, protein_record in enumerate(protein_record_list):
-        if _record_has_final_model(protein_record):
-            continue
-
-        row_index = first_data_row_index + offset
-        cell = worksheet.cell(row=row_index, column=pdb_column_index)
-        cell.font = PDB_MISSING_FONT
-        cell.alignment = CENTER_ALIGNMENT
-
-
-def autosize_worksheet_columns(worksheet) -> None:
-    """Set readable bounded widths for all worksheet columns."""
-
-    for column_index in range(1, worksheet.max_column + 1):
-        column_letter = get_column_letter(column_index)
-        max_length = 0
-
-        for row_index in range(1, worksheet.max_row + 1):
-            cell = worksheet.cell(row=row_index, column=column_index)
-            cell_value = "" if cell.value is None else str(cell.value)
-            max_length = max(max_length, len(cell_value))
-
-        header_value = str(worksheet.cell(row=1, column=column_index).value or "")
-
-        if header_value.endswith("_path") or "directory" in header_value:
-            adjusted_width = 12
-        elif column_index == 1:
-            adjusted_width = 11
-        else:
-            adjusted_width = min(max(max_length + 2, 10), 28)
-
-        worksheet.column_dimensions[column_letter].width = adjusted_width
-
-
-def set_worksheet_view_options(
-    worksheet,
-    *,
-    freeze_cell: str,
-    auto_filter_range: str,
-) -> None:
-    """Apply stable worksheet usability defaults."""
-
-    worksheet.freeze_panes = freeze_cell
-    worksheet.auto_filter.ref = auto_filter_range
-    worksheet.sheet_view.showGridLines = False
-
-
-def _set_click_hyperlink(cell, target_path: str) -> None:
-    """Store the path as hyperlink target, but show only ``open``."""
-
-    if not target_path:
-        return
-
-    try:
-        target = Path(target_path).expanduser().resolve()
-        cell.value = "open"
-        cell.hyperlink = target.as_uri()
-        cell.font = LINK_FONT
-        cell.alignment = CENTER_ALIGNMENT
-    except Exception:
-        cell.value = target_path
-
-
-def _set_row_height(worksheet, row_index: int, height: float) -> None:
-    worksheet.row_dimensions[row_index].height = height
 
 
 # ---------------------------------------------------------------------------

@@ -172,8 +172,8 @@ def run_alignments_for_pdb_directory(
 
     Current standard jobs
     ---------------------
-    - each chain in PDB-<PDB_ID>-SEQRES.fasta vs first UniProt FASTA
-    - each chain in PDB-<PDB_ID>-ATOM.fasta   vs first UniProt FASTA
+    - PDB-<PDB_ID>-SEQRES.fasta vs first UniProt FASTA  (job: SEQRES_vs_UniProt)
+    - PDB-<PDB_ID>-ATOM.fasta   vs first UniProt FASTA  (job: ATOM_vs_UniProt)
 
     Parameters
     ----------
@@ -216,11 +216,10 @@ def run_alignments_for_pdb_directory(
     alignment_job_list: list[AlignmentJob] = []
 
     if seqres_fasta_path.exists():
-        alignment_job_list.extend(
-            build_chain_specific_alignment_jobs(
-                pdb_fasta_path=seqres_fasta_path,
-                uniprot_fasta_path=uniprot_fasta_path,
-                alignment_prefix="SEQRES",
+        alignment_job_list.append(
+            build_alignment_job(
+                alignment_name="SEQRES_vs_UniProt",
+                input_fasta_paths=[seqres_fasta_path, uniprot_fasta_path],
                 alignment_directory=alignment_directory,
             )
         )
@@ -228,11 +227,10 @@ def run_alignments_for_pdb_directory(
         print(f"[WARNING] Missing SEQRES FASTA for {pdb_id}: {seqres_fasta_path}")
 
     if atom_fasta_path.exists():
-        alignment_job_list.extend(
-            build_chain_specific_alignment_jobs(
-                pdb_fasta_path=atom_fasta_path,
-                uniprot_fasta_path=uniprot_fasta_path,
-                alignment_prefix="ATOM",
+        alignment_job_list.append(
+            build_alignment_job(
+                alignment_name="ATOM_vs_UniProt",
+                input_fasta_paths=[atom_fasta_path, uniprot_fasta_path],
                 alignment_directory=alignment_directory,
             )
         )
@@ -248,19 +246,10 @@ def run_alignments_for_pdb_directory(
 
         alignment_path = alignment_job.output_alignment_fasta_path
         output_png_path = alignment_path.with_suffix(".png")
-        mapping_path = alignment_path.with_suffix(".mapping.tsv")
 
         if alignment_path.exists() and alignment_path.stat().st_size > 0:
-            write_alignment_mapping_file(
-                alignment_fasta_path=alignment_path,
-                output_mapping_tsv_path=mapping_path,
-            )
-
             if render_images:
-                render_alignment_image(
-                    alignment_fasta_path=alignment_path,
-                    output_png_path=output_png_path,
-                )
+                alignment_to_image(alignment_path, output_png_path)
         else:
             print(f"[WARNING] Alignment file missing or empty: {alignment_path}")
 

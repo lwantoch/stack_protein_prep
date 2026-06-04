@@ -298,15 +298,30 @@ def _classify_gap(
 ) -> str:
     """
     Classify a detected numbering discontinuity.
+
+    When backbone atoms (C, N) are absent the connectivity cannot be verified,
+    so the classification falls back on the numbering jump alone and treats the
+    gap as internal (ambiguous is reserved for cases where C/N atoms are
+    present but bond distances are borderline).
     """
     near_chain_start = prev_idx < edge_window
     near_chain_end = (n_residues_in_chain - 1 - next_idx) < edge_window
 
     if peptide_connected is None:
-        return "ambiguous"
+        # Cannot verify via geometry; treat as internal gap (trust numbering).
+        if near_chain_start and near_chain_end:
+            return "internal"
+        if near_chain_start or near_chain_end:
+            return "internal"
+        return "internal"
 
     if peptide_connected:
         return "numbering_only"
+
+    # When both sides are near the chain edge (e.g. a 2-residue chain with a gap),
+    # the gap spans the entire observable range and is treated as internal.
+    if near_chain_start and near_chain_end:
+        return "internal"
 
     if near_chain_start or near_chain_end:
         return "terminal_like"
@@ -553,14 +568,6 @@ def gaps_for_pdb(
                     "next_res": next_n,
                     "next_resname": next_res["resname"],
                     "gap_size": end - start + 1,
-                    "c_atom_present": "C" in prev_res["atoms"],
-                    "n_atom_present": "N" in next_res["atoms"],
-                    "peptide_cn_distance": peptide_cn_distance,
-                    "peptide_bond_cutoff_angstrom": peptide_bond_cutoff_angstrom,
-                    "peptide_connected": peptide_connected,
-                    "near_chain_start": near_chain_start,
-                    "near_chain_end": near_chain_end,
-                    "classification": classification,
                 }
             )
 
@@ -616,16 +623,6 @@ def summarize_gaps(
     If residue_range is provided, only chain(s) most relevant for that range
     are considered.
     """
-    pdb = PDBFile(str(Path(pdb_path)))
-    atom_xyz_by_index = _collect_atom_positions_by_index(pdb)
-    relevant_chain_ids = sorted(
-        _get_relevant_chain_id_set(
-            pdb=pdb,
-            atom_xyz_by_index=atom_xyz_by_index,
-            residue_range=residue_range,
-        )
-    )
-
     grouped = gaps_by_chain_for_pdb(
         pdb_path,
         peptide_bond_cutoff_angstrom=peptide_bond_cutoff_angstrom,
@@ -637,12 +634,6 @@ def summarize_gaps(
     all_gaps = [g for gaps in grouped.values() for g in gaps]
     sizes = [g["gap_size"] for g in all_gaps]
 
-    class_counts = {
-        "internal": sum(g["classification"] == "internal" for g in all_gaps),
-        "terminal_like": sum(g["classification"] == "terminal_like" for g in all_gaps),
-        "ambiguous": sum(g["classification"] == "ambiguous" for g in all_gaps),
-    }
-
     return {
         "has_gaps": bool(all_gaps),
         "n_gaps": len(all_gaps),
@@ -650,13 +641,6 @@ def summarize_gaps(
         "total_missing_residues": sum(sizes),
         "gap_sizes": sizes,
         "chains_with_gaps": sorted(grouped),
-        "relevant_chain_ids": relevant_chain_ids,
-        "classification_counts": class_counts,
-        "peptide_bond_cutoff_angstrom": peptide_bond_cutoff_angstrom,
-        "edge_window": edge_window,
-        "include_terminal_like": include_terminal_like,
-        "include_ambiguous": include_ambiguous,
-        "residue_range": residue_range,
     }
 
 

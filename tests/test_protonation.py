@@ -320,11 +320,11 @@ def test_run_gmx_pdb2gmx_protonation_constructs_expected_command(
         )
 
     monkeypatch.setattr(
-        "stack_protein_preparation.protonation._find_gmx_executable",
+        "stack_protein_preparation._protonation_core._find_gmx_executable",
         lambda: "gmx",
     )
     monkeypatch.setattr(
-        "stack_protein_preparation.protonation.subprocess.run",
+        "stack_protein_preparation._protonation_core.subprocess.run",
         fake_run,
     )
 

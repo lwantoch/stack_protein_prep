@@ -436,23 +436,41 @@ def write_single_representative_monomer_unit(
     identity_threshold: float = DEFAULT_IDENTITY_THRESHOLD,
     coverage_threshold: float = DEFAULT_COVERAGE_THRESHOLD,
     keep_modified_residues: bool = True,
-    keep_non_protein_hetero: bool = True,
+    keep_non_protein_hetero: bool = False,
     keep_waters: bool = False,
     overwrite: bool = True,
 ) -> MonomerWriteResult:
     """Write the single representative unit expected by downstream workflows.
 
-    The historical name is kept for compatibility with the FRUTON runner and
-    earlier tests. The function no longer means "write exactly one chain". It
-    means "write exactly one representative unit file", and that unit can contain
-    multiple chains when the structure has multiple non-equivalent chain groups.
+    This function writes exactly one representative chain group. If the structure
+    contains multiple non-equivalent chain groups (a heteromer), a ValueError is
+    raised because it is not possible to represent such a structure as a single
+    monomer unit without losing information.
 
-    For example, duplicated heteromeric units grouped as A/A-B and C/C-D are
-    written as one output containing chains A and C. Ligands assigned to A and C
-    are retained by default, while ligands assigned to discarded duplicate chains
-    such as B and D are not written. Use ``write_representative_monomer_units``
-    when separate output files per chain group are wanted instead.
+    For structures with multiple equivalent chains (homomers), one representative
+    chain is written. Modified protein residues (HETATM records classified as
+    protein-like) are retained by default. Generic ligands and cofactors are
+    excluded by default (keep_non_protein_hetero=False). Use
+    ``write_representative_monomer_units`` when separate output files per chain
+    group are needed.
     """
+    input_path = Path(input_pdb)
+
+    analysis = analyze_monomer_units(
+        input_path,
+        identity_threshold=identity_threshold,
+        coverage_threshold=coverage_threshold,
+    )
+
+    if len(analysis.groups) > 1:
+        group_labels = [
+            "/".join(str(c) for c in group.chain_ids) for group in analysis.groups
+        ]
+        raise ValueError(
+            f"Structure {input_path.name} contains multiple non-equivalent chain groups "
+            f"and cannot be written as a single monomer unit: {group_labels}. "
+            "Use write_representative_monomer_units() instead."
+        )
 
     return write_representative_monomer_unit(
         input_pdb=input_pdb,
