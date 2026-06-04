@@ -39,7 +39,7 @@ def _extract_chart_data(pipeline_record_list: list[dict]) -> list[dict]:
         if not pdb_id:
             continue
 
-        has_insertions = str(rec.get("insertion_codes.done", "")).strip().lower() == "success"
+        has_insertions = str(rec.get("insertion_codes_done", "")).strip().lower() == "success"
 
         try:
             n_gaps = int(str(rec.get("n_gaps", "0") or "0"))
@@ -89,11 +89,13 @@ def _extract_chart_data(pipeline_record_list: list[dict]) -> list[dict]:
 
 
 def _render_chart_png(chart_data: list[dict]) -> bytes:
+    """Single 5-bar aggregate chart: one bar per feature type, counts across all proteins."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
-    import numpy as np
+
+    n_total = len(chart_data)
 
     if not chart_data:
         fig, ax = plt.subplots(figsize=(8, 4))
@@ -103,61 +105,58 @@ def _render_chart_png(chart_data: list[dict]) -> bytes:
         plt.close(fig)
         return buf.getvalue()
 
-    pdb_ids = [d["pdb_id"] for d in chart_data]
-    n = len(pdb_ids)
-    x = np.arange(n)
+    n_insertions = sum(1 for d in chart_data if d["has_insertions"])
+    n_with_gaps = sum(1 for d in chart_data if d["n_gaps"] > 0)
+    total_gap_residues = sum(d["total_gap_length"] for d in chart_data)
+    n_metals = sum(1 for d in chart_data if d["has_transition_metal"])
+    n_cofactors = sum(1 for d in chart_data if d["has_cofactors"])
+    n_nonstd = sum(1 for d in chart_data if d["has_nonstd"])
 
-    has_insertions = np.array([1.0 if d["has_insertions"] else 0.0 for d in chart_data])
-    n_gaps = np.array([d["n_gaps"] for d in chart_data], dtype=float)
-    total_gap_length = np.array([d["total_gap_length"] for d in chart_data], dtype=float)
-    has_cofactors = np.array([1.0 if d["has_cofactors"] else 0.0 for d in chart_data])
-    has_nonstd = np.array([1.0 if d["has_nonstd"] else 0.0 for d in chart_data])
-    has_transition_metal = np.array([1.0 if d["has_transition_metal"] else 0.0 for d in chart_data])
+    x_pos = [0, 1, 2, 3, 4]
+    bottom_heights = [n_insertions, n_with_gaps, n_metals, n_cofactors, n_nonstd]
+    bar_colors = ["#E07B28", "#2C5BAA", "#E60014", "#50961E", "#7B3FA0"]
+    x_labels = ["Insertions", "Gaps", "Trans.\nmetals", "Cofactors", "Non-std\nresidues"]
 
-    fig, axes = plt.subplots(
-        5, 1,
-        figsize=(max(24, n * 0.45), 11),
-        sharex=True,
-        gridspec_kw={"height_ratios": [1, 2.5, 1, 1, 1]},
-    )
-    fig.subplots_adjust(hspace=0.08)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    width = 0.5
 
-    def _style_binary_ax(ax: Any, values: np.ndarray, color: str, ylabel: str) -> None:
-        ax.bar(x, values, color=color, width=0.7, zorder=2)
-        ax.set_ylim(-0.05, 1.3)
-        ax.set_yticks([0, 1])
-        ax.set_yticklabels(["no", "yes"], fontsize=7)
-        ax.set_ylabel(ylabel, fontsize=8, labelpad=4)
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.yaxis.grid(True, color="#E0E0E0", linewidth=0.5, zorder=1)
-        ax.set_axisbelow(True)
+    bars = ax.bar(x_pos, bottom_heights, width=width, color=bar_colors, zorder=2)
+    # Stacked gap-residue segment on top of the Gaps bar
+    ax.bar([x_pos[1]], [total_gap_residues], width=width, bottom=[n_with_gaps],
+           color="#7BA8D6", zorder=2)
 
-    _style_binary_ax(axes[0], has_insertions, "#E07B28", "insertions")
+    # Value labels: always shown (even at 0 so bars are never invisible)
+    max_h = max(max(bottom_heights) + total_gap_residues, 1)
+    offset = max_h * 0.02
+    for i, (h, bar) in enumerate(zip(bottom_heights, bars)):
+        top = h + (total_gap_residues if i == 1 else 0)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            top + offset,
+            str(h) if i != 1 else f"{h}  (+{total_gap_residues} res.)",
+            ha="center", va="bottom", fontsize=9, fontweight="bold",
+            color=bar_colors[i],
+        )
 
-    # Stacked gap bar
-    gap_ax = axes[1]
-    gap_ax.bar(x, n_gaps, color="#2C5BAA", width=0.7, label="n_gaps", zorder=2)
-    gap_ax.bar(x, total_gap_length, bottom=n_gaps, color="#7BA8D6", width=0.7, label="total_gap_length", zorder=2)
-    gap_ax.set_ylabel("gaps", fontsize=8, labelpad=4)
-    gap_ax.spines["top"].set_visible(False)
-    gap_ax.spines["right"].set_visible(False)
-    gap_ax.yaxis.grid(True, color="#E0E0E0", linewidth=0.5, zorder=1)
-    gap_ax.set_axisbelow(True)
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(x_labels, fontsize=10)
+    ax.set_ylabel("Number of proteins", fontsize=10)
+    ax.set_title(f"Feature summary  ·  {n_total} protein(s)", fontsize=11,
+                 fontweight="bold", color=_IDIS_NAVY)
+    ax.set_ylim(0, (max_h + offset) * 1.20)
+
     legend_patches = [
-        mpatches.Patch(color="#2C5BAA", label="n_gaps"),
-        mpatches.Patch(color="#7BA8D6", label="total_gap_length"),
+        mpatches.Patch(color="#2C5BAA", label=f"Proteins with gaps  ({n_with_gaps})"),
+        mpatches.Patch(color="#7BA8D6", label=f"Total gap residues  ({total_gap_residues})"),
     ]
-    gap_ax.legend(handles=legend_patches, fontsize=7, loc="upper right", framealpha=0.7)
+    ax.legend(handles=legend_patches, fontsize=8, loc="upper right", framealpha=0.85)
 
-    _style_binary_ax(axes[2], has_cofactors, "#50961E", "cofactors")
-    _style_binary_ax(axes[3], has_nonstd, "#7B3FA0", "non-std res")
-    _style_binary_ax(axes[4], has_transition_metal, "#E60014", "trans. metals")
-
-    axes[4].set_xticks(x)
-    axes[4].set_xticklabels(pdb_ids, rotation=45, ha="right", fontsize=max(5, min(8, 200 // n)))
-
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.yaxis.grid(True, color="#E0E0E0", linewidth=0.5, zorder=1)
+    ax.set_axisbelow(True)
     fig.patch.set_facecolor("white")
+    fig.tight_layout()
 
     buf = io.BytesIO()
     fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
@@ -259,36 +258,24 @@ def generate_pipeline_summary_report(
     """Return {"status": "success", "report_path": str} or {"status": "failed", "message": str}"""
     try:
         from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.pagesizes import A4
         from reportlab.lib.units import cm
         from reportlab.platypus import (
-            BaseDocTemplate,
-            Frame,
-            PageTemplate,
-            NextPageTemplate,
-            PageBreak,
+            SimpleDocTemplate,
             Spacer,
             Table,
             TableStyle,
             Image,
             Paragraph,
         )
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
     except ImportError as exc:
         return {"status": "failed", "message": f"reportlab not available: {exc}"}
 
-    # Thresholds: portrait fits up to 60 proteins in the chart; landscape fits up to 90.
-    _PORTRAIT_CHART_MAX = 60
-    _PORTRAIT_CHUNK = 55
-    _LANDSCAPE_CHUNK = 90
-
     ts = run_timestamp or _timestamp()
     margin = 1.5 * cm
-    footer_h = 1.2 * cm
-
-    port_w, port_h = A4
-    land_w, land_h = landscape(A4)
+    page_w, page_h = A4
 
     idis_logo_path = _find_logo("IDIS_LOGO_PATH", _IDIS_LOGO_NAMES, protein_data_dir)
     fruton_logo_path = _find_logo("FRUTON_LOGO_PATH", _FRUTON_LOGO_NAMES, protein_data_dir)
@@ -296,48 +283,18 @@ def generate_pipeline_summary_report(
     chart_data = _extract_chart_data(pipeline_record_list)
     stats = _compute_stats(pipeline_record_list, chart_data, gaussian_pending_ids)
 
-    n_bars = len(chart_data)
-    use_landscape_chart = n_bars > _PORTRAIT_CHART_MAX
-    chunk_size = _LANDSCAPE_CHUNK if use_landscape_chart else _PORTRAIT_CHUNK
-    chart_chunks: list[list[dict]] = (
-        [chart_data[i: i + chunk_size] for i in range(0, n_bars, chunk_size)]
-        if n_bars > 0
-        else [chart_data]
-    )
-
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Page templates
-    port_usable_w = port_w - 2 * margin
-    port_usable_h = port_h - 2 * margin - footer_h
-    land_usable_w = land_w - 2 * margin
-    land_usable_h = land_h - 2 * margin - footer_h
-
-    def _make_footer(page_width: float) -> Any:
-        def _footer(canvas: Any, doc: Any) -> None:
-            canvas.saveState()
-            canvas.setFont("Helvetica", 7)
-            canvas.setFillColor(colors.HexColor(_IDIS_MUTED))
-            canvas.drawCentredString(page_width / 2, 0.6 * cm, f"Generated by FRUTON  ·  {ts}")
-            canvas.restoreState()
-        return _footer
-
-    port_frame = Frame(margin, margin + footer_h, port_usable_w, port_usable_h, id="portrait_frame")
-    port_tmpl = PageTemplate(id="portrait", frames=[port_frame], pagesize=A4,
-                              onPage=_make_footer(port_w))
-    land_frame = Frame(margin, margin + footer_h, land_usable_w, land_usable_h, id="landscape_frame")
-    land_tmpl = PageTemplate(id="landscape", frames=[land_frame], pagesize=landscape(A4),
-                              onPage=_make_footer(land_w))
-
-    doc = BaseDocTemplate(
+    doc = SimpleDocTemplate(
         str(output_path),
-        pageTemplates=[port_tmpl, land_tmpl],
+        pagesize=A4,
         leftMargin=margin,
         rightMargin=margin,
         topMargin=margin,
-        bottomMargin=margin + footer_h,
+        bottomMargin=margin,
     )
+    usable_w = page_w - 2 * margin
 
     # Paragraph styles
     style_normal = ParagraphStyle(
@@ -364,7 +321,6 @@ def generate_pipeline_summary_report(
         textColor=colors.HexColor(_IDIS_TEXT), leftIndent=4,
     )
 
-    # Helper: scale logo to target height
     _LOGO_H = 32
 
     def _header_logo(logo_path: Path | None, align: str = "LEFT") -> Any:
@@ -380,56 +336,35 @@ def generate_pipeline_summary_report(
         except Exception:
             return None
 
-    def _build_header(usable_w: float) -> list[Any]:
-        idis_img = _header_logo(idis_logo_path, "LEFT")
-        fruton_img = _header_logo(fruton_logo_path, "RIGHT")
-        left_cell: Any = idis_img if idis_img is not None else Paragraph("FRUTON", style_header_left)
-        right_cell: Any = fruton_img if fruton_img is not None else Paragraph(ts, style_header_right)
-        col_w = usable_w / 3
-        tbl = Table(
-            [[left_cell, Paragraph("Pipeline Summary Report", style_header_center), right_cell]],
-            colWidths=[col_w, col_w, col_w],
-        )
-        tbl.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_IDIS_NAVY)),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("TOPPADDING", (0, 0), (-1, -1), 6),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-            ("LEFTPADDING", (0, 0), (0, -1), 10),
-            ("RIGHTPADDING", (-1, 0), (-1, -1), 10),
-            ("LINEBELOW", (0, 0), (-1, -1), 2, colors.HexColor(_FRUTON_RED)),
-        ]))
-        elems: list[Any] = [tbl]
-        if fruton_img is not None:
-            elems.append(Paragraph(
-                f'<font size="7" color="{_IDIS_MUTED}">{ts}</font>',
-                ParagraphStyle("FrutonTS", fontName="Helvetica", fontSize=7,
-                               textColor=colors.HexColor(_IDIS_MUTED), alignment=TA_RIGHT),
-            ))
-        elems.append(Spacer(1, 0.3 * cm))
-        return elems
+    idis_img = _header_logo(idis_logo_path, "LEFT")
+    fruton_img = _header_logo(fruton_logo_path, "RIGHT")
+    left_cell: Any = idis_img if idis_img is not None else Paragraph("FRUTON", style_header_left)
+    right_cell: Any = fruton_img if fruton_img is not None else Paragraph(ts, style_header_right)
+    col_w = usable_w / 3
+    header_tbl = Table(
+        [[left_cell, Paragraph("Pipeline Summary Report", style_header_center), right_cell]],
+        colWidths=[col_w, col_w, col_w],
+    )
+    header_tbl.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_IDIS_NAVY)),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING", (0, 0), (0, -1), 10),
+        ("RIGHTPADDING", (-1, 0), (-1, -1), 10),
+        ("LINEBELOW", (0, 0), (-1, -1), 2, colors.HexColor(_FRUTON_RED)),
+    ]))
 
-    def _embed_chart(chunk: list[dict], usable_w: float) -> Any:
-        try:
-            png = _render_chart_png(chunk)
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                tmp.write(png)
-                tmp_path = tmp.name
-            img = Image(tmp_path)
-            aspect = img.imageWidth / img.imageHeight
-            img.drawWidth = usable_w * 0.99
-            img.drawHeight = img.drawWidth / aspect
-            img.hAlign = "CENTER"
-            return img
-        except Exception:
-            return Paragraph("Chart could not be rendered.", style_normal)
+    story: list[Any] = [header_tbl]
+    if fruton_img is not None:
+        story.append(Paragraph(
+            f'<font size="7" color="{_IDIS_MUTED}">{ts}</font>',
+            ParagraphStyle("FrutonTS", fontName="Helvetica", fontSize=7,
+                           textColor=colors.HexColor(_IDIS_MUTED), alignment=TA_RIGHT),
+        ))
+    story.append(Spacer(1, 0.35 * cm))
 
-    story: list[Any] = []
-
-    # --- Portrait page: header + stats (+ gaussian warning if any) ---
-    story.append(NextPageTemplate("portrait"))
-    story += _build_header(port_usable_w)
-
+    # Stats table
     stats_rows = [
         ["Metric", "Value"],
         ["Proteins processed", str(stats["total"])],
@@ -441,9 +376,9 @@ def generate_pipeline_summary_report(
         ["Proteins with cofactors", str(stats["with_cofactors"])],
         ["Gaussian pending (HPC required)", str(stats["gaussian_pending"])],
     ]
-    col_l = port_usable_w * 0.65
-    col_r = port_usable_w * 0.35
-    stats_table = Table(stats_rows, colWidths=[col_l, col_r])
+    col_l = usable_w * 0.65
+    col_r = usable_w * 0.35
+    stats_tbl = Table(stats_rows, colWidths=[col_l, col_r])
     stats_style = [
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(_IDIS_NAVY)),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -462,15 +397,32 @@ def generate_pipeline_summary_report(
     ]
     if stats["gaussian_pending"] > 0:
         stats_style.append(("BACKGROUND", (0, -1), (-1, -1), colors.HexColor(_FRUTON_RED_SOFT)))
-    stats_table.setStyle(TableStyle(stats_style))
-    story.append(stats_table)
+    stats_tbl.setStyle(TableStyle(stats_style))
+    story.append(stats_tbl)
+    story.append(Spacer(1, 0.5 * cm))
 
+    # Chart
+    try:
+        chart_png = _render_chart_png(chart_data)
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            tmp.write(chart_png)
+            tmp_path = tmp.name
+        chart_img = Image(tmp_path)
+        aspect = chart_img.imageWidth / chart_img.imageHeight
+        chart_img.drawWidth = usable_w * 0.92
+        chart_img.drawHeight = chart_img.drawWidth / aspect
+        chart_img.hAlign = "CENTER"
+        story.append(chart_img)
+    except Exception:
+        story.append(Paragraph("Chart could not be rendered.", style_normal))
+
+    # Gaussian warning
     if gaussian_pending_ids:
         story.append(Spacer(1, 0.5 * cm))
-        warn_title_data = [[Paragraph(
-            "Gaussian HPC runs required before pipeline is complete", style_warning_title
-        )]]
-        warn_title_tbl = Table(warn_title_data, colWidths=[port_usable_w])
+        warn_title_tbl = Table(
+            [[Paragraph("Gaussian HPC runs required before pipeline is complete", style_warning_title)]],
+            colWidths=[usable_w],
+        )
         warn_title_tbl.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED)),
             ("TOPPADDING", (0, 0), (-1, -1), 6),
@@ -487,8 +439,10 @@ def generate_pipeline_summary_report(
             "  2. After Gaussian jobs finish: run run_after_gaussian.sh in each nonstandard_params/<label>/resp/ directory",
             "  3. Resume the pipeline: fruton.py --from-step 15",
         ]
-        warn_body_data = [[Paragraph(line if line else " ", style_warning_body)] for line in pending_lines]
-        warn_body_tbl = Table(warn_body_data, colWidths=[port_usable_w])
+        warn_body_tbl = Table(
+            [[Paragraph(line if line else " ", style_warning_body)] for line in pending_lines],
+            colWidths=[usable_w],
+        )
         warn_body_tbl.setStyle(TableStyle([
             ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(_FRUTON_RED_SOFT)),
             ("TOPPADDING", (0, 0), (-1, -1), 2),
@@ -497,17 +451,12 @@ def generate_pipeline_summary_report(
         ]))
         story.append(warn_body_tbl)
 
-    # --- Chart pages ---
-    chart_template = "landscape" if use_landscape_chart else "portrait"
-    chart_usable_w = land_usable_w if use_landscape_chart else port_usable_w
-    story.append(NextPageTemplate(chart_template))
-    story.append(PageBreak())
+    def _page_footer(canvas: Any, doc: Any) -> None:
+        canvas.saveState()
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(colors.HexColor(_IDIS_MUTED))
+        canvas.drawCentredString(page_w / 2, 0.5 * cm, f"Generated by FRUTON  ·  {ts}")
+        canvas.restoreState()
 
-    for i, chunk in enumerate(chart_chunks):
-        story.append(_embed_chart(chunk, chart_usable_w))
-        if i < len(chart_chunks) - 1:
-            story.append(PageBreak())
-
-    doc.build(story)
-
+    doc.build(story, onFirstPage=_page_footer, onLaterPages=_page_footer)
     return {"status": "success", "report_path": str(output_path)}
