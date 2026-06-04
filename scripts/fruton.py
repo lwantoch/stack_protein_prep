@@ -652,6 +652,39 @@ def _save_step_checkpoint(
         pass
 
 
+def _save_variant_sidecar(
+    variant_results_by_pdb: dict[str, list[dict[str, str]]],
+    filename: str,
+) -> None:
+    """Save an in-memory variant-results dict to a JSON sidecar in the checkpoint dir."""
+    if _PROTEIN_DATA_DIR is None:
+        return
+    checkpoint_dir = _PROTEIN_DATA_DIR / "logs" / "checkpoints"
+    try:
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        import json as _json
+        with open(checkpoint_dir / filename, "w", encoding="utf-8") as _fh:
+            _json.dump(variant_results_by_pdb, _fh, indent=2)
+    except Exception:
+        pass
+
+
+def _load_variant_sidecar(
+    protein_data_dir: Path,
+    filename: str,
+) -> dict[str, list[dict[str, str]]]:
+    """Load a variant-results sidecar JSON; returns {} if missing or unreadable."""
+    sidecar = protein_data_dir / "logs" / "checkpoints" / filename
+    if not sidecar.is_file():
+        return {}
+    try:
+        import json as _json
+        with open(sidecar, encoding="utf-8") as _fh:
+            return _json.load(_fh)
+    except Exception:
+        return {}
+
+
 def _manage_rerun_txt(protein_data_dir: Path, from_step: int | None) -> None:
     rerun_txt = protein_data_dir / ".rerun.txt"
     if from_step is None:
@@ -2583,8 +2616,10 @@ def run_pipeline() -> None:
                 pipeline_record[PREPARED_STRUCTURE_STATUS_COLUMN_NAME] = STATUS_FAILED
                 pipeline_record[AVAILABLE_MODELS_COLUMN_NAME] = ""
         _save_step_checkpoint(pipeline_record_list, 10, "protonation")
+        _save_variant_sidecar(prepared_variant_results_by_pdb, "step10_prepared_variants.json")
     else:
         _screen_notice(f"step 10 skipped (rerunning from step {from_step})")
+        prepared_variant_results_by_pdb = _load_variant_sidecar(protein_data_dir, "step10_prepared_variants.json")
 
     _screen_step(11, "sanitize variants")
     sanitized_variant_results_by_pdb: dict[str, list[dict[str, str]]] = {}
@@ -2669,8 +2704,10 @@ def run_pipeline() -> None:
 
             sanitized_variant_results_by_pdb[pdb_id] = sanitized_variant_result_list
         _save_step_checkpoint(pipeline_record_list, 11, "sanitize")
+        _save_variant_sidecar(sanitized_variant_results_by_pdb, "step11_sanitized_variants.json")
     else:
         _screen_notice(f"step 11 skipped (rerunning from step {from_step})")
+        sanitized_variant_results_by_pdb = _load_variant_sidecar(protein_data_dir, "step11_sanitized_variants.json")
 
     _screen_step(12, "metall_params")
     if _step_runs(12):
@@ -2942,7 +2979,7 @@ def run_pipeline() -> None:
                 work_label="write_pipeline_xlsx",
                 screen_pdb_id="-",
                 func=write_pipeline_to_xlsx,
-                protein_record_list=pipeline_record_list,
+                protein_record_list=_records_to_save,
                 output_path=pipeline_xlsx_path,
             )
             _PROGRESS.finish()
@@ -3257,7 +3294,7 @@ def run_pipeline() -> None:
         _records_to_save = [r for r in _existing if r[PDB_ID_COLUMN_NAME] not in _updated_ids] + list(pipeline_record_list)
     _run_mutating_call(log_title="step_19:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=_records_to_save, json_path=pipeline_json_path)
     _screen_step(20, "write_pipeline_xlsx")
-    _run_mutating_call(log_title="step_20:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
+    _run_mutating_call(log_title="step_20:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=_records_to_save, output_path=pipeline_xlsx_path)
 
     _screen_notice(f"pipeline JSON written: {pipeline_json_path}")
     _screen_notice(f"pipeline XLSX written: {pipeline_xlsx_path}")
