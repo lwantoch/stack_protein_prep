@@ -484,9 +484,9 @@ def _write_commands_sh(
 # =============================================================================
 # RESP parametrization — Step 1  |  {resname}
 # =============================================================================
-# Uses antechamber (-h 1) to add missing hydrogens and generate Gaussian
-# input files for HF/6-31G* geometry optimisation and ESP calculation.
-# Stages the .com files into step02_gaussian/ ready for HPC submission.
+# Adds hydrogens with reduce, then generates Gaussian input files:
+#   {resname}_opt.com  — HF/6-31G* geometry optimisation
+#   {resname}_esp.com  — HF/6-31G* MK-ESP on optimised geometry (Geom=AllCheck)
 #
 # Formal charge : {charge}  (physiological pH — verify for your system)
 # Spin          : 1 (singlet — change for open-shell residues)
@@ -496,17 +496,13 @@ def _write_commands_sh(
 #   2. Submit Gaussian jobs:  bash submit_gaussian.sh
 #   3. After Gaussian:  bash run_after_gaussian.sh
 # =============================================================================
-set -eo pipefail
+set -euo pipefail
 
 # Reload cesga/2020 + amber to avoid GLIBC_2.34 mismatch when this script
 # runs inside the cesga/2025 pipeline context (antechamber is a cesga/2020
 # binary and fails if cesga/2025 libraries are in LD_LIBRARY_PATH).
-# amber lives in the MPI-tier module path, which requires loading the
-# full prerequisite chain: cesga/2020 → gcc/system → openmpi → amber.
 if declare -f module &>/dev/null; then
     module --force purge
-    # Reinitialise module paths from scratch so the cesga/2020 hierarchy
-    # is available (--force purge may leave MODULEPATH in an inconsistent state).
     if [[ -f /etc/profile.d/modules.sh ]]; then
         # shellcheck disable=SC1091
         source /etc/profile.d/modules.sh
@@ -517,33 +513,65 @@ if declare -f module &>/dev/null; then
     module load amber/20.13-AmberTools-22.2
 fi
 
-set -u
-
-# -- Add hydrogens with reduce, then generate Gaussian input via antechamber --
-# reduce adds missing H atoms; antechamber assigns GAFF2 types and writes .com.
-# Intermediate antechamber files (ANTECHAMBER_*.AC etc.) go into step01_gaussian_inputs/.
 mkdir -p step01_gaussian_inputs
+
+# -- Add hydrogens with reduce -----------------------------------------------
+# reduce commonly exits non-zero (warnings / clash messages) even when output
+# is structurally valid — suppress that exit code, then fail explicitly if the
+# output file is empty.
+reduce ../../capped_model_ace_nme.pdb > step01_gaussian_inputs/{resname}_capped_H.pdb || true
+[[ -s step01_gaussian_inputs/{resname}_capped_H.pdb ]] || {{
+    echo "ERROR: reduce produced empty output for capped_model_ace_nme.pdb" >&2
+    exit 1
+}}
+
+# -- Adjust charge for electron parity ---------------------------------------
+# Gaussian requires an even number of electrons for a closed-shell singlet.
+# reduce may skip the backbone N-H (clash / unknown residue dictionary),
+# shifting electron parity by 1.  Auto-correct: if (Z − charge) is odd, add 1.
+CHARGE={charge}
+CHARGE=$(python3 - step01_gaussian_inputs/{resname}_capped_H.pdb "$CHARGE" <<'PYEOF'
+import sys
+from pathlib import Path
+_Z = {{'H':1,'C':6,'N':7,'O':8,'F':9,'P':15,'S':16,'CL':17,'BR':35,'I':53,
+       'ZN':30,'FE':26,'MG':12,'CA':20,'MN':25,'CU':29,'CO':27,'NI':28}}
+pdb_path, charge = Path(sys.argv[1]), int(sys.argv[2])
+total_z = 0
+for ln in pdb_path.read_text(errors='replace').splitlines():
+    if not ln.startswith(('ATOM','HETATM')):
+        continue
+    elem = ln[76:78].strip().upper() if len(ln) > 76 else ''
+    if not elem:
+        elem = ''.join(c for c in ln[12:16].strip() if c.isalpha())[:2].upper()
+    total_z += _Z.get(elem, 0)
+n_electrons = total_z - charge
+if n_electrons % 2 != 0:
+    charge += 1
+    print(f"INFO: charge adjusted to {{charge}} for even electron count (Z={{total_z}})", file=sys.stderr)
+print(charge)
+PYEOF
+)
+echo "Using charge: $CHARGE"
+
+# -- Generate Gaussian input files via antechamber ---------------------------
 cd step01_gaussian_inputs
 
-reduce ../../capped_model_ace_nme.pdb > capped_model_ace_nme_H.pdb
-
 antechamber \\
-    -i capped_model_ace_nme_H.pdb -fi pdb \\
+    -i {resname}_capped_H.pdb -fi pdb \\
     -o {resname}_opt.com -fo gcrt \\
-    -nc {charge} -s 2 -at gaff2 \\
+    -nc "$CHARGE" -s 2 -at gaff2 \\
     -gn {resname}_opt \\
     -gk "HF/6-31G* Opt"
 
 # antechamber hardcodes %chk=molecule; rename to match %oldchk in the ESP input.
 sed -i 's/%chk=molecule/%chk={resname}_opt/g' {resname}_opt.com
 
-# ESP single-point — reads OPTIMISED geometry from OPT checkpoint.
-# Mandatory for publication-quality RESP charges consistent with ff14SB
-# (Maier et al. JCTC 2015; Homeyer et al. J Mol Model 2006).
-# %mem/%nproc are stripped by run_gaussian.sh on CESGA (cores from --cpus-per-task).
+# ESP single-point on the OPTIMISED geometry from the opt checkpoint.
+# Mandatory for RESP consistent with ff14SB (Maier et al. JCTC 2015).
+# %mem/%nproc are replaced by run_gaussian.sh on CESGA.
 cat > {resname}_esp.com << 'ESPCOM'
-%mem=48GB
-%nproc=24
+%mem=28GB
+%nproc=16
 %chk={resname}_esp
 %oldchk={resname}_opt
 #P HF/6-31G* Pop=MK IOp(6/33=2,6/42=6) Geom=AllCheck Guess=Read
@@ -562,7 +590,7 @@ cp step01_gaussian_inputs/{resname}_esp.com step02_gaussian/
 
 echo ""
 echo "Step 1 done.  Gaussian inputs staged in step02_gaussian/:"
-echo "  {resname}_opt.com   HF/6-31G* geometry optimisation  (charge={charge})"
+echo "  {resname}_opt.com   HF/6-31G* geometry optimisation  (charge=$CHARGE)"
 echo "  {resname}_esp.com   HF/6-31G* ESP from optimised geometry (Geom=AllCheck)"
 echo ""
 echo "Review charge and H placement, then run:  bash submit_gaussian.sh"
