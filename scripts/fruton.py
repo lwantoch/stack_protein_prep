@@ -211,6 +211,11 @@ FRUTON_EXPANSION = (
 FRUTON_LOG_DIR = PROJECT_ROOT_DIR / "data" / "proteins" / "logs" / "fruton"
 FRUTON_LOG_PATH = FRUTON_LOG_DIR / "fruton.log"
 
+_PROTEIN_DATA_DIR: Path | None = None
+_CURRENT_STEP_NUMBER: int = 0
+_CURRENT_STEP_NAME: str = "init"
+_gaussian_hpc_available: bool = True
+
 FRUTON_PROTONATION_PH = 7.4
 FRUTON_PROTONATION_METHOD = "gmx pdb2gmx -ignh"
 
@@ -613,6 +618,50 @@ def _log_fruton_exception(title: str, exc: Exception) -> None:
     )
 
 
+def _append_protein_stage_log(pdb_id: str, log_title: str, lines: list[str]) -> None:
+    if pdb_id == "-" or _PROTEIN_DATA_DIR is None or not lines:
+        return
+    safe = log_title.replace(":", "_").replace("/", "_")[:120]
+    log_path = _PROTEIN_DATA_DIR / "logs" / pdb_id / f"{safe}.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("a", encoding="utf-8") as fh:
+        fh.write("═" * 100 + "\n")
+        fh.write(f"[{_timestamp()}] {log_title}\n")
+        fh.write("─" * 100 + "\n")
+        for line in lines:
+            fh.write(f"{line}\n")
+        fh.write("\n")
+
+
+def _save_step_checkpoint(
+    pipeline_record_list: list[dict],
+    step_number: int,
+    step_name: str,
+) -> None:
+    if _PROTEIN_DATA_DIR is None:
+        return
+    checkpoint_dir = _PROTEIN_DATA_DIR / "logs" / "checkpoints"
+    checkpoint_path = checkpoint_dir / f"after_step_{step_number:02d}_{step_name}.json"
+    try:
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        save_pipeline_table(
+            protein_record_list=pipeline_record_list,
+            json_path=checkpoint_path,
+        )
+    except Exception:
+        pass
+
+
+def _manage_rerun_txt(protein_data_dir: Path, from_step: int | None) -> None:
+    rerun_txt = protein_data_dir / ".rerun.txt"
+    if from_step is None:
+        if rerun_txt.exists():
+            rerun_txt.unlink()
+    else:
+        with rerun_txt.open("a", encoding="utf-8") as fh:
+            fh.write(f"{_timestamp()}  rerun from step {from_step}\n")
+
+
 pipeline_runner.init_runner(
     _append_fruton_log,
     force_field=DEFAULT_GROMACS_FORCE_FIELD,
@@ -836,7 +885,7 @@ def _verbose_screen_enabled() -> bool:
     return os.environ.get("FRUTON_VERBOSE", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-_PROGRESS = TerminalProgress(total_steps=19)
+_PROGRESS = TerminalProgress(total_steps=21)
 
 _STEP_COMMENTARY: dict[int, list[str]] = {
     1: [
@@ -941,6 +990,18 @@ _STEP_COMMENTARY: dict[int, list[str]] = {
         "Generating the Excel summary. Not every stakeholder reads JSON. Some of them have pivot tables.",
         "Writing xlsx. The data will be copy-pasted into a PowerPoint within 48 hours. FRUTON has made peace with this.",
     ],
+    20: [
+        "Writing to Excel. Science ends; bureaucracy is eternal.",
+        "Exporting results to xlsx. The PI asked for a spreadsheet. The spreadsheet will outlive the simulation.",
+        "Generating the Excel summary. Not every stakeholder reads JSON. Some of them have pivot tables.",
+        "Writing xlsx. The data will be copy-pasted into a PowerPoint within 48 hours. FRUTON has made peace with this.",
+    ],
+    21: [
+        "Generating the summary report. One PDF to summarise what every protein went through.",
+        "Compiling the pipeline summary. Charts, tables, and a list of anything still waiting for the HPC scheduler.",
+        "Writing the landscape PDF report. Because sometimes a spreadsheet is not enough and a picture is worth a thousand rows.",
+        "Rendering the summary PDF. Bar charts for gaps, metals, cofactors, and non-standard residues — all in one landscape page.",
+    ],
 }
 
 
@@ -963,6 +1024,9 @@ def _estimate_initial_work_units(record_count: int) -> int:
 
 
 def _screen_step(step_number: int, step_name: str) -> None:
+    global _CURRENT_STEP_NUMBER, _CURRENT_STEP_NAME
+    _CURRENT_STEP_NUMBER = step_number
+    _CURRENT_STEP_NAME = step_name
     _PROGRESS.start_step(step_number=step_number, step_name=step_name)
 
 
@@ -1419,12 +1483,14 @@ def _run_mutating_call(
         captured_lines = captured.captured_lines()
         if captured_lines:
             _append_fruton_log(log_title, captured_lines)
+            _append_protein_stage_log(screen_pdb_id, log_title, captured_lines)
         _PROGRESS.advance(label=work_label, pdb_id=screen_pdb_id, status="failed")
         raise
 
     captured_lines = captured.captured_lines()
     if captured_lines:
         _append_fruton_log(log_title, captured_lines)
+        _append_protein_stage_log(screen_pdb_id, log_title, captured_lines)
 
     _PROGRESS.advance(label=work_label, pdb_id=screen_pdb_id, status="done")
     return result
@@ -1525,7 +1591,7 @@ def _write_rerun_markers(
 
 
 def run_pipeline() -> None:
-    global FRUTON_LOG_DIR, FRUTON_LOG_PATH
+    global FRUTON_LOG_DIR, FRUTON_LOG_PATH, _PROTEIN_DATA_DIR, _gaussian_hpc_available
 
     args = _parse_args()
     protein_data_dir = _resolve_protein_data_dir(args.data_dir)
@@ -1543,6 +1609,8 @@ def run_pipeline() -> None:
     FRUTON_LOG_PATH = protein_data_dir / "logs" / "fruton" / "fruton.log"
 
     FRUTON_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    _PROTEIN_DATA_DIR = protein_data_dir
+    _manage_rerun_txt(protein_data_dir, from_step)
 
     summary = {
         "total_records": 0,
@@ -1689,6 +1757,7 @@ def run_pipeline() -> None:
                 _clear_component_fields(pipeline_record)
                 _clear_gap_fields(pipeline_record)
                 _clear_downstream_after_gap_stage(pipeline_record)
+        _save_step_checkpoint(pipeline_record_list, 4, "fasta_files")
     else:
         _screen_notice(f"step 4 skipped (rerunning from step {from_step})")
 
@@ -1732,6 +1801,7 @@ def run_pipeline() -> None:
                 _clear_component_fields(pipeline_record)
                 _clear_gap_fields(pipeline_record)
                 _clear_downstream_after_gap_stage(pipeline_record)
+        _save_step_checkpoint(pipeline_record_list, 5, "sequence_alignment")
     else:
         _screen_notice(f"step 5 skipped (rerunning from step {from_step})")
 
@@ -1801,6 +1871,7 @@ def run_pipeline() -> None:
                 _clear_component_fields(pipeline_record)
                 _clear_gap_fields(pipeline_record)
                 _clear_downstream_after_gap_stage(pipeline_record)
+        _save_step_checkpoint(pipeline_record_list, 6, "insertion_codes")
     else:
         _screen_notice(f"step 6 skipped (rerunning from step {from_step})")
 
@@ -1935,6 +2006,7 @@ def run_pipeline() -> None:
                     f"step_8:metalls_check_input_inventory:{pdb_id}",
                     error,
                 )
+        _save_step_checkpoint(pipeline_record_list, 7, "component_split")
     else:
         _screen_notice(f"step 7 skipped (rerunning from step {from_step})")
 
@@ -2008,6 +2080,7 @@ def run_pipeline() -> None:
                 summary["max_gap_gt_5"] += 1
             if max_gap_size >= 8:
                 summary["max_gap_ge_8"] += 1
+        _save_step_checkpoint(pipeline_record_list, 8, "gap_detection")
     else:
         _screen_notice(f"step 8 skipped (rerunning from step {from_step})")
 
@@ -2126,6 +2199,7 @@ def run_pipeline() -> None:
                 pipeline_record[FILLER_STATUS_COLUMN_NAME] = STATUS_WARNING
             else:
                 pipeline_record[FILLER_STATUS_COLUMN_NAME] = STATUS_WARNING
+        _save_step_checkpoint(pipeline_record_list, 9, "filler")
     else:
         _screen_notice(f"step 9 skipped (rerunning from step {from_step})")
 
@@ -2508,6 +2582,7 @@ def run_pipeline() -> None:
                     pipeline_record[PROTONATION_STATUS_COLUMN_NAME] = STATUS_FAILED
                 pipeline_record[PREPARED_STRUCTURE_STATUS_COLUMN_NAME] = STATUS_FAILED
                 pipeline_record[AVAILABLE_MODELS_COLUMN_NAME] = ""
+        _save_step_checkpoint(pipeline_record_list, 10, "protonation")
     else:
         _screen_notice(f"step 10 skipped (rerunning from step {from_step})")
 
@@ -2593,6 +2668,7 @@ def run_pipeline() -> None:
                 )
 
             sanitized_variant_results_by_pdb[pdb_id] = sanitized_variant_result_list
+        _save_step_checkpoint(pipeline_record_list, 11, "sanitize")
     else:
         _screen_notice(f"step 11 skipped (rerunning from step {from_step})")
 
@@ -2637,6 +2713,7 @@ def run_pipeline() -> None:
             site_count = metall_params_result.get("transition_metal_site_count", 0)
             status = metall_params_result.get("status", "")
             _screen_item(f"metall_params -> {pdb_id}: {status} ({site_count} transition-metal site(s))")
+        _save_step_checkpoint(pipeline_record_list, 12, "metall_params")
     else:
         _screen_notice(f"step 12 skipped (rerunning from step {from_step})")
 
@@ -2678,6 +2755,7 @@ def run_pipeline() -> None:
             n_residues = nonstd_result.get("n_residues", 0)
             status = nonstd_result.get("status", "")
             _screen_item(f"nonstd_residue_params -> {pdb_id}: {status} ({n_residues} non-standard residue(s))")
+        _save_step_checkpoint(pipeline_record_list, 13, "nonstd_residue_params")
     else:
         _screen_notice(f"step 13 skipped (rerunning from step {from_step})")
 
@@ -2731,6 +2809,8 @@ def run_pipeline() -> None:
                 )
 
         if gaussian_proteins:
+            from stack_protein_preparation.gaussian_hpc import _sbatch_available
+            _gaussian_hpc_available = _sbatch_available()
             slurm_config = SlurmConfig(
                 partition=args.slurm_partition,
                 time=args.slurm_time,
@@ -2784,6 +2864,7 @@ def run_pipeline() -> None:
                         _screen_notice(f"gaussian_parametrization -> {pdb_id}: input files prepared — submit on CESGA to run Gaussian")
                     else:
                         _screen_item(f"gaussian_parametrization -> {pdb_id}: {status}" + (f" — {msg}" if msg else ""))
+        _save_step_checkpoint(pipeline_record_list, 14, "gaussian")
     else:
         _screen_notice(f"step 14 skipped (rerunning from step {from_step})")
 
@@ -2824,59 +2905,64 @@ def run_pipeline() -> None:
         for r in pipeline_record_list
         if str(r.get(GAUSSIAN_PARAMS_STATUS_COLUMN_NAME, "")).strip() == STATUS_REQUIRED
     ]
+    gaussian_needs_hpc: list[str] = []
     if _gaussian_pending_ids:
         _screen_notice(
             "Gaussian jobs required for: " + ", ".join(_gaussian_pending_ids)
         )
-        _screen_notice(
-            "Pipeline halted — Gaussian must complete before the pipeline can continue.\n"
-            "  1. Submit jobs:  run each protein's submit_gaussian.sh (RESP) or\n"
-            "                   MCPB_submit.sh (metals) on the HPC cluster\n"
-            "  2. After jobs finish: run run_after_gaussian.sh in each\n"
-            "                   nonstandard_params/<label>/resp/ directory\n"
-            "  3. Resume:       fruton --from-step 15  (or full re-run)"
-        )
-        _screen_step(19, "save_pipeline_json (checkpoint)")
-        _records_to_save = pipeline_record_list
-        if target_pdb_id is not None and pipeline_json_path.is_file():
-            _existing = load_pipeline_table(pipeline_json_path)
-            _updated_ids = {r[PDB_ID_COLUMN_NAME] for r in pipeline_record_list}
-            _records_to_save = (
-                [r for r in _existing if r[PDB_ID_COLUMN_NAME] not in _updated_ids]
-                + list(pipeline_record_list)
+        if _gaussian_hpc_available:
+            _screen_notice(
+                "Pipeline halted — Gaussian must complete before the pipeline can continue.\n"
+                "  1. Submit jobs:  run each protein's submit_gaussian.sh (RESP) or\n"
+                "                   MCPB_submit.sh (metals) on the HPC cluster\n"
+                "  2. After jobs finish: run run_after_gaussian.sh in each\n"
+                "                   nonstandard_params/<label>/resp/ directory\n"
+                "  3. Resume:       fruton --from-step 15  (or full re-run)"
             )
-        _run_mutating_call(
-            log_title="step_19:save_pipeline_json:captured_output",
-            work_label="save_pipeline_json",
-            screen_pdb_id="-",
-            func=save_pipeline_table,
-            protein_record_list=_records_to_save,
-            json_path=pipeline_json_path,
-        )
-        _screen_step(20, "write_pipeline_xlsx (checkpoint)")
-        _run_mutating_call(
-            log_title="step_20:write_pipeline_xlsx:captured_output",
-            work_label="write_pipeline_xlsx",
-            screen_pdb_id="-",
-            func=write_pipeline_to_xlsx,
-            protein_record_list=pipeline_record_list,
-            output_path=pipeline_xlsx_path,
-        )
-        _PROGRESS.finish()
-        _screen_notice(f"checkpoint JSON written: {pipeline_json_path}")
-        _screen_notice(f"checkpoint XLSX written: {pipeline_xlsx_path}")
-        _append_fruton_log(
-            "run_pipeline:halted_for_gaussian",
-            [
-                f"gaussian_pending   : {', '.join(_gaussian_pending_ids)}",
-                f"pipeline_json_path : {pipeline_json_path}",
-                f"pipeline_xlsx_path : {pipeline_xlsx_path}",
-                f"summary            : {summary}",
-            ],
-        )
-        _print_summary(summary)
-        print(f"  {_timestamp()}  ·  halted — Gaussian pending")
-        return
+            _screen_step(19, "save_pipeline_json (checkpoint)")
+            _records_to_save = pipeline_record_list
+            if target_pdb_id is not None and pipeline_json_path.is_file():
+                _existing = load_pipeline_table(pipeline_json_path)
+                _updated_ids = {r[PDB_ID_COLUMN_NAME] for r in pipeline_record_list}
+                _records_to_save = (
+                    [r for r in _existing if r[PDB_ID_COLUMN_NAME] not in _updated_ids]
+                    + list(pipeline_record_list)
+                )
+            _run_mutating_call(
+                log_title="step_19:save_pipeline_json:captured_output",
+                work_label="save_pipeline_json",
+                screen_pdb_id="-",
+                func=save_pipeline_table,
+                protein_record_list=_records_to_save,
+                json_path=pipeline_json_path,
+            )
+            _screen_step(20, "write_pipeline_xlsx (checkpoint)")
+            _run_mutating_call(
+                log_title="step_20:write_pipeline_xlsx:captured_output",
+                work_label="write_pipeline_xlsx",
+                screen_pdb_id="-",
+                func=write_pipeline_to_xlsx,
+                protein_record_list=pipeline_record_list,
+                output_path=pipeline_xlsx_path,
+            )
+            _PROGRESS.finish()
+            _screen_notice(f"checkpoint JSON written: {pipeline_json_path}")
+            _screen_notice(f"checkpoint XLSX written: {pipeline_xlsx_path}")
+            _append_fruton_log(
+                "run_pipeline:halted_for_gaussian",
+                [
+                    f"gaussian_pending   : {', '.join(_gaussian_pending_ids)}",
+                    f"pipeline_json_path : {pipeline_json_path}",
+                    f"pipeline_xlsx_path : {pipeline_xlsx_path}",
+                    f"summary            : {summary}",
+                ],
+            )
+            _print_summary(summary)
+            print(f"  {_timestamp()}  ·  halted — Gaussian pending")
+            return
+        else:
+            gaussian_needs_hpc = list(_gaussian_pending_ids)
+            _screen_notice("Gaussian inputs prepared — submit on HPC to complete parametrization")
     # ---------------------------------------------------------------------
 
     _screen_step(15, "parameter_audit of variants")
@@ -3039,6 +3125,7 @@ def run_pipeline() -> None:
             summary=summary,
             pipeline_record_list=pipeline_record_list,
         )
+        _save_step_checkpoint(pipeline_record_list, 15, "parameter_audit")
     else:
         _screen_notice(f"step 15 skipped (rerunning from step {from_step})")
 
@@ -3074,6 +3161,7 @@ def run_pipeline() -> None:
                     f"stage_amber_parameters -> {pdb_id}: {status}"
                     + (f" — {msg}" if msg else "")
                 )
+        _save_step_checkpoint(pipeline_record_list, 16, "stage_amber")
     else:
         _screen_notice(f"step 16 skipped (rerunning from step {from_step})")
 
@@ -3123,6 +3211,7 @@ def run_pipeline() -> None:
                 _screen_item(f"model_evaluation -> {pdb_id}: {status} — {eval_result.get('message', '')}")
 
         global_bib_path = protein_data_dir / "references.bib"
+        _save_step_checkpoint(pipeline_record_list, 17, "model_eval")
     else:
         _screen_notice(f"step 17 skipped (rerunning from step {from_step})")
 
@@ -3169,10 +3258,31 @@ def run_pipeline() -> None:
     _run_mutating_call(log_title="step_19:save_pipeline_json:captured_output", work_label="save_pipeline_json", screen_pdb_id="-", func=save_pipeline_table, protein_record_list=_records_to_save, json_path=pipeline_json_path)
     _screen_step(20, "write_pipeline_xlsx")
     _run_mutating_call(log_title="step_20:write_pipeline_xlsx:captured_output", work_label="write_pipeline_xlsx", screen_pdb_id="-", func=write_pipeline_to_xlsx, protein_record_list=pipeline_record_list, output_path=pipeline_xlsx_path)
-    _PROGRESS.finish()
 
     _screen_notice(f"pipeline JSON written: {pipeline_json_path}")
     _screen_notice(f"pipeline XLSX written: {pipeline_xlsx_path}")
+
+    # Step 21 — final summary report
+    _screen_step(21, "pipeline_summary_report")
+    summary_report_path = protein_data_dir / "pipeline_summary_report.pdf"
+    try:
+        from stack_protein_preparation.pipeline_summary_report import generate_pipeline_summary_report
+        _run_mutating_call(
+            log_title="step_21:pipeline_summary_report:captured_output",
+            work_label="pipeline_summary_report",
+            screen_pdb_id="-",
+            func=generate_pipeline_summary_report,
+            pipeline_record_list=_records_to_save,
+            output_path=summary_report_path,
+            gaussian_pending_ids=gaussian_needs_hpc if gaussian_needs_hpc else None,
+            protein_data_dir=protein_data_dir,
+            run_timestamp=_timestamp(),
+        )
+        _screen_notice(f"summary report written: {summary_report_path}")
+    except Exception as _sr_exc:
+        _screen_error(f"pipeline_summary_report failed: {_sr_exc!r}")
+
+    _PROGRESS.finish()
 
     _append_fruton_log(
         "run_pipeline:finished",
