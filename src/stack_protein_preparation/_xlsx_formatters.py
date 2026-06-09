@@ -313,3 +313,14 @@ def _set_click_hyperlink(cell, target_path: str) -> None:
 
 def _set_row_height(worksheet, row_index: int, height: float) -> None:
     worksheet.row_dimensions[row_index].height = height
+
+
+def mark_missing_model_pdb_ids(
+    worksheet,
+    protein_record_list: list[dict[str, str]],
+    column_order: list[str],
+    *,
+    first_data_row_index: int,
+) -> None:
+    """No-op placeholder — visual marking for missing model PDB IDs not yet implemented."""
+    pass

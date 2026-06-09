@@ -185,6 +185,7 @@ from stack_protein_preparation._xlsx_formatters import (  # noqa: F401 (re-expor
     apply_semantic_yes_no_color,
     apply_status_cell_color,
     autosize_worksheet_columns,
+    mark_missing_model_pdb_ids,
     set_worksheet_view_options,
     style_header_row,
 )
