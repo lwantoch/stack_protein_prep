@@ -309,6 +309,100 @@ def build_prepared_structure_for_pdb_directory(
     )
 
 
+def build_prepared_structure_for_variant(
+    pdb_directory: str | Path,
+    pdb_id: str,
+    structure_variant: str,
+    protein_input_path: str | Path | None = None,
+    protein_input_paths: list[str | Path] | None = None,
+    water_input_path: str | Path | None = None,
+    ligand_input_path: str | Path | None = None,
+    metals_input_path: str | Path | None = None,
+    backbone_nonstd_input_path: str | Path | None = None,
+) -> PreparedStructureSummary:
+    """Build the final prepared structure for one variant.
+
+    Always writes to prepared/<variant>/<pdb_id>.pdb.
+    Accepts either a single protein_input_path or a list (protein_input_paths);
+    backbone_nonstd_input_path atoms are appended to the protein section.
+    """
+    pdb_directory = Path(pdb_directory)
+
+    output_pdb_path = get_prepared_structure_output_path(
+        pdb_directory=pdb_directory,
+        pdb_id=pdb_id,
+        had_gaps=True,
+        structure_variant=structure_variant,
+    )
+
+    if protein_input_paths is not None:
+        primary_protein_path = Path(protein_input_paths[0])
+        all_protein_lines: list[str] = []
+        for p in protein_input_paths:
+            all_protein_lines.extend(_read_atom_lines_from_pdb(Path(p)))
+    elif protein_input_path is not None:
+        primary_protein_path = Path(protein_input_path)
+        all_protein_lines = _read_atom_lines_from_pdb(primary_protein_path)
+    else:
+        raise ValueError("Either protein_input_path or protein_input_paths must be provided.")
+
+    if not all_protein_lines:
+        raise ValueError(f"No ATOM/HETATM records found in protein input(s) for {pdb_id}")
+
+    if backbone_nonstd_input_path is not None:
+        backbone_path = Path(backbone_nonstd_input_path)
+        if backbone_path.exists():
+            all_protein_lines.extend(_read_atom_lines_from_pdb(backbone_path))
+
+    water_input = Path(water_input_path) if water_input_path is not None else None
+    ligand_input = Path(ligand_input_path) if ligand_input_path is not None else None
+    metals_input = Path(metals_input_path) if metals_input_path is not None else None
+
+    water_atom_lines = (
+        _read_atom_lines_from_pdb(water_input)
+        if water_input is not None and water_input.exists()
+        else None
+    )
+    ligand_atom_lines = (
+        _read_atom_lines_from_pdb(ligand_input)
+        if ligand_input is not None and ligand_input.exists()
+        else None
+    )
+    metals_atom_lines = (
+        _read_atom_lines_from_pdb(metals_input)
+        if metals_input is not None and metals_input.exists()
+        else None
+    )
+
+    ordered_sections: list[list[str]] = [all_protein_lines]
+    if water_atom_lines:
+        ordered_sections.append(water_atom_lines)
+    if ligand_atom_lines:
+        ordered_sections.append(ligand_atom_lines)
+    if metals_atom_lines:
+        ordered_sections.append(metals_atom_lines)
+
+    n_atom_records_written = _write_merged_pdb_sections(
+        output_pdb_path=output_pdb_path,
+        ordered_sections=ordered_sections,
+    )
+
+    return PreparedStructureSummary(
+        pdb_id=pdb_id,
+        output_pdb_path=output_pdb_path,
+        protein_input_path=primary_protein_path,
+        water_input_path=water_input if water_atom_lines else None,
+        ligand_input_path=ligand_input if ligand_atom_lines else None,
+        metals_input_path=metals_input if metals_atom_lines else None,
+        had_gaps=True,
+        structure_variant=structure_variant,
+        water_included=bool(water_atom_lines),
+        ligand_included=bool(ligand_atom_lines),
+        metals_included=bool(metals_atom_lines),
+        n_atom_records_written=n_atom_records_written,
+    )
+
+
 def prepared_structure_summary_to_dict(
     summary: PreparedStructureSummary,
 ) -> dict[str, str | bool | int]:
