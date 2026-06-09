@@ -170,19 +170,8 @@ def run_alignments_for_pdb_directory(
     """
     Run standard MAFFT alignments for one local PDB directory.
 
-    Current standard jobs
-    ---------------------
-    - PDB-<PDB_ID>-SEQRES.fasta vs first UniProt FASTA  (job: SEQRES_vs_UniProt)
-    - PDB-<PDB_ID>-ATOM.fasta   vs first UniProt FASTA  (job: ATOM_vs_UniProt)
-
-    Parameters
-    ----------
-    pdb_directory
-        Directory such as:
-            data/proteins/1W4R
-    render_images
-        If True, render alignment PNG files after successful MAFFT execution.
-        If False, skip visualization entirely.
+    Produces chain-specific alignment files (e.g. SEQRES_chain_A_vs_UniProt.*,
+    ATOM_chain_A_vs_UniProt.*) plus a residue-mapping TSV for each.
     """
     pdb_id = pdb_directory.name.upper()
     fasta_directory = pdb_directory / "fasta"
@@ -216,10 +205,11 @@ def run_alignments_for_pdb_directory(
     alignment_job_list: list[AlignmentJob] = []
 
     if seqres_fasta_path.exists():
-        alignment_job_list.append(
-            build_alignment_job(
-                alignment_name="SEQRES_vs_UniProt",
-                input_fasta_paths=[seqres_fasta_path, uniprot_fasta_path],
+        alignment_job_list.extend(
+            build_chain_specific_alignment_jobs(
+                pdb_fasta_path=seqres_fasta_path,
+                uniprot_fasta_path=uniprot_fasta_path,
+                alignment_prefix="SEQRES",
                 alignment_directory=alignment_directory,
             )
         )
@@ -227,10 +217,11 @@ def run_alignments_for_pdb_directory(
         print(f"[WARNING] Missing SEQRES FASTA for {pdb_id}: {seqres_fasta_path}")
 
     if atom_fasta_path.exists():
-        alignment_job_list.append(
-            build_alignment_job(
-                alignment_name="ATOM_vs_UniProt",
-                input_fasta_paths=[atom_fasta_path, uniprot_fasta_path],
+        alignment_job_list.extend(
+            build_chain_specific_alignment_jobs(
+                pdb_fasta_path=atom_fasta_path,
+                uniprot_fasta_path=uniprot_fasta_path,
+                alignment_prefix="ATOM",
                 alignment_directory=alignment_directory,
             )
         )
@@ -248,6 +239,12 @@ def run_alignments_for_pdb_directory(
         output_png_path = alignment_path.with_suffix(".png")
 
         if alignment_path.exists() and alignment_path.stat().st_size > 0:
+            write_alignment_mapping_file(
+                alignment_fasta_path=alignment_path,
+                output_mapping_tsv_path=alignment_path.with_name(
+                    alignment_path.name.replace(".aln.fasta", ".aln.mapping.tsv")
+                ),
+            )
             if render_images:
                 alignment_to_image(alignment_path, output_png_path)
         else:
