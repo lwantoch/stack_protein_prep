@@ -636,10 +636,19 @@ def format_fasta_record(header: str, sequence: str, line_width: int = 80) -> str
 def run_alignment_job(alignment_job: AlignmentJob) -> None:
     """
     Execute one alignment job:
-    1. use an already prepared two-record FASTA input
+    1. concatenate input_fasta_paths into combined_input_fasta_path (if not already done)
     2. run MAFFT
     """
     print(f"[INFO] Running alignment job: {alignment_job.alignment_name}")
+
+    if alignment_job.input_fasta_paths and not alignment_job.combined_input_fasta_path.exists():
+        alignment_job.combined_input_fasta_path.parent.mkdir(parents=True, exist_ok=True)
+        combined_text = "".join(
+            p.read_text(encoding="utf-8")
+            for p in alignment_job.input_fasta_paths
+            if p.exists()
+        )
+        alignment_job.combined_input_fasta_path.write_text(combined_text, encoding="utf-8")
 
     run_mafft_alignment(
         input_fasta_path=alignment_job.combined_input_fasta_path,
