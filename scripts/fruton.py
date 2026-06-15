@@ -2198,7 +2198,7 @@ def run_pipeline() -> None:
                     chain_id=chain_id,
                     final_model_name="final_filled_model.pdb",
                     starting_model=1,
-                    ending_model=1,
+                    ending_model=20,
                     uniprot_id=uniprot_id,
                     residue_range=residue_range,
                 )

@@ -388,7 +388,7 @@ def run_filler_for_chain(
     chain_id: str | None,
     final_model_name: str | None = None,
     starting_model: int = 1,
-    ending_model: int = 1,
+    ending_model: int = 20,
     skip_if_no_internal_gaps: bool = True,
     uniprot_id: str | None = None,
     residue_range: str = "",
