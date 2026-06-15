@@ -22,6 +22,8 @@ from ._filler_shared import (
     _resolve_residue_range_for_filler,
     _validate_written_pdb_has_atoms,
     cleanup_model_pdb,
+    _get_uniprot_range_from_mapping,
+    _build_pdb_to_uniprot_residue_map,
 )
 
 
@@ -193,6 +195,67 @@ def crop_pdb_to_range(
     return output_pdb_path
 
 
+def _align_alphafold_by_residue_map(
+    reference_pdb_path: Path,
+    mobile_pdb_path: Path,
+    output_pdb_path: Path,
+    pdb_to_uniprot_map: dict[int, int],
+) -> dict[str, str | float | bool | int]:
+    """Superimpose AlphaFold (UniProt-numbered) onto PDB template using the
+    PDB-resnum → UniProt-position mapping so that structurally equivalent
+    residues are paired even when the two numbering systems differ."""
+    parser = PDBParser(QUIET=True)
+    reference_structure = parser.get_structure("ref", str(reference_pdb_path))
+    mobile_structure = parser.get_structure("mob", str(mobile_pdb_path))
+
+    reference_by_resseq = _collect_protein_ca_atoms_by_resseq(reference_structure)
+    mobile_by_resseq = _collect_protein_ca_atoms_by_resseq(mobile_structure)
+
+    fixed_atoms = []
+    moving_atoms = []
+    for pdb_resnum, uniprot_pos in sorted(pdb_to_uniprot_map.items()):
+        if pdb_resnum in reference_by_resseq and uniprot_pos in mobile_by_resseq:
+            fixed_atoms.append(reference_by_resseq[pdb_resnum])
+            moving_atoms.append(mobile_by_resseq[uniprot_pos])
+
+    pairing_mode = "residue_map"
+
+    if len(fixed_atoms) < 3:
+        reference_ordered = _collect_protein_ca_atoms_in_order(reference_structure)
+        mobile_ordered = _collect_protein_ca_atoms_in_order(mobile_structure)
+        if not reference_ordered or not mobile_ordered:
+            raise ValueError(
+                f"No protein CA atoms for alignment: ref={reference_pdb_path}, "
+                f"mob={mobile_pdb_path}"
+            )
+        n = min(len(reference_ordered), len(mobile_ordered))
+        if n < 3:
+            raise ValueError(
+                f"Not enough CA atoms for reliable alignment: "
+                f"ref={len(reference_ordered)}, mob={len(mobile_ordered)}"
+            )
+        fixed_atoms = reference_ordered[:n]
+        moving_atoms = mobile_ordered[:n]
+        pairing_mode = "positional_fallback"
+
+    superimposer = Superimposer()
+    superimposer.set_atoms(fixed_atoms, moving_atoms)
+    superimposer.apply(mobile_structure.get_atoms())
+
+    output_pdb_path.parent.mkdir(parents=True, exist_ok=True)
+    io = PDBIO()
+    io.set_structure(mobile_structure)
+    io.save(str(output_pdb_path), preserve_atom_numbering=True)
+
+    return {
+        "alignment_success": output_pdb_path.exists() and output_pdb_path.stat().st_size > 0,
+        "alignment_rmsd": float(superimposer.rms),
+        "alignment_output_path": str(output_pdb_path),
+        "alignment_pairing_mode": pairing_mode,
+        "alignment_n_pairs": len(fixed_atoms),
+    }
+
+
 def run_alphafold_fallback_for_chain(
     output_dir: Path,
     template_pdb_path: Path,
@@ -200,12 +263,28 @@ def run_alphafold_fallback_for_chain(
     residue_range: str,
     final_model_name: str,
     model_version: int = 4,
+    uniprot_residue_range: str | None = None,
+    pdb_to_uniprot_map: dict[int, int] | None = None,
 ) -> Path:
+    """Download, crop, align and return an AlphaFold fill model.
+
+    When *uniprot_residue_range* is supplied (derived from the alignment
+    mapping TSV) it is used to crop the AlphaFold download instead of the
+    PDB residue-number range.  This is essential for proteins where PDB
+    author residue numbers differ from UniProt positions (e.g. domain
+    fragments, propeptide offsets).
+
+    *pdb_to_uniprot_map* is used for the structural superimposition so that
+    each PDB residue is paired with the correct AlphaFold residue rather
+    than relying on matching residue sequence numbers.
+    """
     _ = model_version
     effective_residue_range = _resolve_residue_range_for_filler(
         residue_range=residue_range,
         template_pdb_path=template_pdb_path,
     )
+    alphafold_crop_range = uniprot_residue_range or effective_residue_range
+
     alphafold_dir = output_dir / DEFAULT_ALPHAFOLD_DIRNAME
     downloaded_pdb = download_alphafold_structure(
         uniprot_id=uniprot_id, output_dir=alphafold_dir
@@ -217,14 +296,24 @@ def run_alphafold_fallback_for_chain(
     cropped_model_path = crop_pdb_to_range(
         input_pdb_path=downloaded_pdb,
         output_pdb_path=alphafold_dir / DEFAULT_ALPHAFOLD_CROPPED_FILENAME,
-        residue_range=effective_residue_range,
+        residue_range=alphafold_crop_range,
     )
     aligned_model_path = alphafold_dir / DEFAULT_ALPHAFOLD_ALIGNED_FILENAME
-    alignment_result = align_protonated_alphafold_model_to_start_pdb(
-        reference_pdb_path=template_pdb_path,
-        mobile_pdb_path=cropped_model_path,
-        output_pdb_path=aligned_model_path,
-    )
+
+    if pdb_to_uniprot_map:
+        alignment_result = _align_alphafold_by_residue_map(
+            reference_pdb_path=template_pdb_path,
+            mobile_pdb_path=cropped_model_path,
+            output_pdb_path=aligned_model_path,
+            pdb_to_uniprot_map=pdb_to_uniprot_map,
+        )
+    else:
+        alignment_result = align_protonated_alphafold_model_to_start_pdb(
+            reference_pdb_path=template_pdb_path,
+            mobile_pdb_path=cropped_model_path,
+            output_pdb_path=aligned_model_path,
+        )
+
     _debug(
         "AlphaFold alignment result: "
         f"success={alignment_result['alignment_success']}, "

@@ -238,6 +238,75 @@ def _infer_full_residue_range_from_protein_pdb(protein_pdb_path: Path) -> str:
     return f"{min(residue_numbers)}-{max(residue_numbers)}"
 
 
+def _get_uniprot_range_from_mapping(mapping_path: Path) -> str | None:
+    """Return 'min_uniprot-max_uniprot' for positions where the PDB has a residue."""
+    if not mapping_path.is_file():
+        return None
+    uniprot_positions: list[int] = []
+    with mapping_path.open(encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("#") or not line.strip():
+                continue
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 6 or parts[5].strip() == "deletion_in_pdb":
+                continue
+            try:
+                uniprot_positions.append(int(parts[2]))
+            except (ValueError, IndexError):
+                continue
+    if not uniprot_positions:
+        return None
+    return f"{min(uniprot_positions)}-{max(uniprot_positions)}"
+
+
+def _build_pdb_to_uniprot_residue_map(
+    template_pdb_path: Path,
+    mapping_path: Path,
+) -> dict[int, int]:
+    """Map actual PDB ATOM residue numbers → UniProt residue positions.
+
+    The mapping TSV uses a sequential PDB index (1, 2, 3 …) that does not
+    equal the residue sequence numbers stored in the ATOM records.  We
+    reconstruct the correspondence by reading both sources in order.
+    """
+    if not mapping_path.is_file():
+        return {}
+
+    parsed = _parse_first_model(template_pdb_path)
+    pdb_resnums: list[int] = []
+    seen: set[int] = set()
+    for chain in parsed.model:
+        for residue in chain:
+            if not _is_protein_atom_residue(residue):
+                continue
+            resnum = int(residue.id[1])
+            if resnum not in seen:
+                seen.add(resnum)
+                pdb_resnums.append(resnum)
+
+    seq_to_uniprot: list[tuple[int, int]] = []
+    with mapping_path.open(encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("#") or not line.strip():
+                continue
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 6 or parts[5].strip() == "deletion_in_pdb":
+                continue
+            try:
+                pdb_seq_idx = int(parts[1])
+                uniprot_pos = int(parts[2])
+                seq_to_uniprot.append((pdb_seq_idx, uniprot_pos))
+            except (ValueError, IndexError):
+                continue
+
+    result: dict[int, int] = {}
+    for pdb_seq_idx, uniprot_pos in seq_to_uniprot:
+        arr_idx = pdb_seq_idx - 1
+        if 0 <= arr_idx < len(pdb_resnums):
+            result[pdb_resnums[arr_idx]] = uniprot_pos
+    return result
+
+
 def _resolve_residue_range_for_filler(
     *,
     residue_range: str,

@@ -52,6 +52,8 @@ from ._filler_shared import (
     _trim_final_model_in_place,
     _validate_written_pdb_has_atoms,
     cleanup_model_pdb,
+    _get_uniprot_range_from_mapping,
+    _build_pdb_to_uniprot_residue_map,
 )
 from ._filler_analysis import (
     _alignment_metrics_for_chain,
@@ -614,6 +616,22 @@ def run_filler_for_chain(
                     "one internal gap is 8 residues or longer."
                 ),
             )
+            mapping_path = (
+                alignment_directory
+                / f"ATOM_chain_{resolved_chain_id}_vs_UniProt.aln.mapping.tsv"
+            )
+            uniprot_residue_range = _get_uniprot_range_from_mapping(mapping_path)
+            pdb_to_uniprot_map = (
+                _build_pdb_to_uniprot_residue_map(copied_template_pdb, mapping_path)
+                if mapping_path.is_file()
+                else {}
+            )
+            if uniprot_residue_range:
+                _log_debug(
+                    module_log_path,
+                    f"AlphaFold crop: using UniProt range {uniprot_residue_range!r} "
+                    f"(PDB range was {effective_residue_range!r})",
+                )
             alphafold_model_path = run_alphafold_fallback_for_chain(
                 output_dir=output_dir,
                 template_pdb_path=copied_template_pdb,
@@ -621,8 +639,11 @@ def run_filler_for_chain(
                 residue_range=effective_residue_range,
                 final_model_name=final_model_name,
                 model_version=4,
+                uniprot_residue_range=uniprot_residue_range,
+                pdb_to_uniprot_map=pdb_to_uniprot_map or None,
             )
-            _trim_final_model_in_place(alphafold_model_path, effective_residue_range)
+            trim_range = uniprot_residue_range or effective_residue_range
+            _trim_final_model_in_place(alphafold_model_path, trim_range)
             result = _build_result(
                 chain_id=resolved_chain_id,
                 output_dir=output_dir,
