@@ -1,9 +1,10 @@
 """Primitive types, constants, and low-level PDB utilities for filler submodules."""
 from __future__ import annotations
 
+import math
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +55,17 @@ class FillDecision:
     gap_regions: tuple[GapRegion, ...]
     skip_reason: str | None
     alphafold_candidate: bool
+
+
+@dataclass(frozen=True)
+class ContactAtom:
+    """One protein atom to be held near its crystal position during MODELLER runs."""
+    atom_name: str   # PDB atom name, e.g. "OD2"
+    resseq: int      # PDB residue sequence number
+    x: float         # crystal structure coordinate
+    y: float
+    z: float
+    stdev: float = field(default=0.2)  # Gaussian restraint stdev in Å
 
 
 @dataclass(frozen=True)
@@ -305,6 +317,81 @@ def _build_pdb_to_uniprot_residue_map(
         if 0 <= arr_idx < len(pdb_resnums):
             result[pdb_resnums[arr_idx]] = uniprot_pos
     return result
+
+
+def _read_hetatm_xyz(pdb_path: Path) -> list[tuple[float, float, float]]:
+    """Return (x, y, z) for every HETATM line in *pdb_path*."""
+    result: list[tuple[float, float, float]] = []
+    if not pdb_path.is_file():
+        return result
+    for line in pdb_path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("HETATM"):
+            continue
+        try:
+            result.append((float(line[30:38]), float(line[38:46]), float(line[46:54])))
+        except (ValueError, IndexError):
+            continue
+    return result
+
+
+def find_metal_and_ligand_contact_atoms(
+    protein_pdb_path: Path,
+    metals_pdb_path: Path,
+    ligand_pdb_path: Path,
+    cofactor_pdb_path: Path,
+    metal_cutoff: float = 3.0,
+    ligand_cutoff: float = 4.0,
+) -> list[ContactAtom]:
+    """Return protein atoms within cutoff of any metal ion or ligand/cofactor atom.
+
+    Uses *metal_cutoff* for atoms read from *metals_pdb_path* (tighter, for
+    direct coordination bonds) and *ligand_cutoff* for atoms from the ligand
+    and cofactor PDB files (looser, for non-covalent contacts).  Only ATOM-
+    record residues in *protein_pdb_path* are considered.  All chains present
+    in that file are searched (pass a chain-specific template to restrict).
+    """
+    # Each entry: (x, y, z, distance_cutoff, restraint_stdev)
+    hetero_points: list[tuple[float, float, float, float, float]] = []
+
+    for path, cutoff, stdev in [
+        (metals_pdb_path, metal_cutoff, 0.1),
+        (ligand_pdb_path, ligand_cutoff, 0.3),
+        (cofactor_pdb_path, ligand_cutoff, 0.3),
+    ]:
+        for x, y, z in _read_hetatm_xyz(path):
+            hetero_points.append((x, y, z, cutoff, stdev))
+
+    if not hetero_points:
+        return []
+
+    parsed = _parse_first_model(protein_pdb_path)
+    seen: set[tuple[str, int]] = set()
+    contacts: list[ContactAtom] = []
+
+    for chain in parsed.model:
+        for residue in chain:
+            if not _is_protein_atom_residue(residue):
+                continue
+            resseq = int(residue.id[1])
+            for atom in residue:
+                atom_name = str(atom.id).strip()
+                ax, ay, az = float(atom.coord[0]), float(atom.coord[1]), float(atom.coord[2])
+                for hx, hy, hz, cutoff, stdev in hetero_points:
+                    if math.sqrt((ax - hx) ** 2 + (ay - hy) ** 2 + (az - hz) ** 2) <= cutoff:
+                        key = (atom_name, resseq)
+                        if key not in seen:
+                            seen.add(key)
+                            contacts.append(ContactAtom(
+                                atom_name=atom_name,
+                                resseq=resseq,
+                                x=round(ax, 3),
+                                y=round(ay, 3),
+                                z=round(az, 3),
+                                stdev=stdev,
+                            ))
+                        break
+
+    return contacts
 
 
 def _resolve_residue_range_for_filler(

@@ -30,6 +30,7 @@ from ._filler_shared import (
     DEFAULT_MODELLER_SCRIPT_FILENAME,
     FORCE_FIELD_RESIDUE_ALIASES,
     MODULE_NAME,
+    ContactAtom,
     FillDecision,
     FillerRunResult,
     GapRegion,
@@ -52,6 +53,7 @@ from ._filler_shared import (
     _trim_final_model_in_place,
     _validate_written_pdb_has_atoms,
     cleanup_model_pdb,
+    find_metal_and_ligand_contact_atoms,
     _get_uniprot_range_from_mapping,
     _build_pdb_to_uniprot_residue_map,
 )
@@ -118,6 +120,8 @@ __all__ = [
     "DEFAULT_ALIGNMENT_FILENAME",
     "DEFAULT_MANIFEST_FILENAME",
     "cleanup_model_pdb",
+    "ContactAtom",
+    "find_metal_and_ligand_contact_atoms",
     "analyze_fill_decision",
     "analyze_fill_decision_from_template_alignment",
     "choose_filler_chain_id_from_range_and_alignments",
@@ -724,6 +728,19 @@ def run_filler_for_chain(
             alignment_file=alignment_file,
             template_id=template_id,
         )
+        components_dir = template_pdb_path.parent
+        contact_atoms = find_metal_and_ligand_contact_atoms(
+            protein_pdb_path=copied_template_pdb,
+            metals_pdb_path=components_dir / f"{pdb_id}_metals.pdb",
+            ligand_pdb_path=components_dir / f"{pdb_id}_ligand.pdb",
+            cofactor_pdb_path=components_dir / f"{pdb_id}_cofactor.pdb",
+        )
+        if contact_atoms:
+            _log_debug(
+                module_log_path,
+                f"Adding position restraints for {len(contact_atoms)} "
+                f"metal/ligand contact atoms",
+            )
         script_path = write_modeller_script(
             output_dir=output_dir,
             alignment_file=alignment_file,
@@ -731,6 +748,7 @@ def run_filler_for_chain(
             target_id=target_id,
             starting_model=starting_model,
             ending_model=ending_model,
+            contact_atoms=contact_atoms or None,
         )
         stdout_log, stderr_log = run_modeller_binary(
             script_path=script_path, working_dir=output_dir

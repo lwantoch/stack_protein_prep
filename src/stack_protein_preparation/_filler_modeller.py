@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 from ._filler_shared import (
     DEFAULT_ALIGNMENT_FILENAME,
@@ -127,6 +128,40 @@ def write_modeller_alignment_from_existing_alignment(
     return alignment_file
 
 
+def _render_restraints_block(contact_atoms: list[Any]) -> str:
+    """Return the Python snippet that adds position restraints to a MODELLER model."""
+    if not contact_atoms:
+        return ""
+    rows = ", ".join(
+        f"({at.atom_name!r}, {at.resseq}, {at.x}, {at.y}, {at.z}, {at.stdev})"
+        for at in contact_atoms
+    )
+    return f"""
+_CONTACT_RESTRAINTS = [{rows}]
+
+
+class _RestrainedModel(automodel):
+    def special_restraints(self, aln):
+        rsr = self.restraints
+        lookup = {{
+            (name, resseq): (x, y, z, stdev)
+            for name, resseq, x, y, z, stdev in _CONTACT_RESTRAINTS
+        }}
+        for at in self.atoms:
+            key = (at.name.strip(), int(at.residue.num))
+            if key not in lookup:
+                continue
+            x0, y0, z0, sd = lookup[key]
+            rsr.add(forms.Gaussian(group=physical.xy_distance,
+                feature=features.x_coordinate(atoms=[at]), mean=x0, stdev=sd))
+            rsr.add(forms.Gaussian(group=physical.xy_distance,
+                feature=features.y_coordinate(atoms=[at]), mean=y0, stdev=sd))
+            rsr.add(forms.Gaussian(group=physical.xy_distance,
+                feature=features.z_coordinate(atoms=[at]), mean=z0, stdev=sd))
+
+"""
+
+
 def write_modeller_script(
     output_dir: Path,
     alignment_file: Path,
@@ -134,7 +169,11 @@ def write_modeller_script(
     target_id: str,
     starting_model: int = 1,
     ending_model: int = 1,
+    contact_atoms: list[Any] | None = None,
 ) -> Path:
+    restraints_block = _render_restraints_block(contact_atoms or [])
+    model_class = "_RestrainedModel" if restraints_block else "automodel"
+
     script_path = output_dir / DEFAULT_MODELLER_SCRIPT_FILENAME
     content = f"""from modeller import *
 from modeller.automodel import *
@@ -144,8 +183,8 @@ log.verbose()
 env = environ()
 env.io.atom_files_directory = ['.']
 env.io.hetatm = True
-
-a = automodel(
+{restraints_block}
+a = {model_class}(
     env,
     alnfile='{alignment_file.name}',
     knowns='{template_id}',
