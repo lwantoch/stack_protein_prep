@@ -49,6 +49,26 @@ def _write_skip_logs(output_dir: Path, message: str) -> tuple[Path, Path]:
     return stdout_log, stderr_log
 
 
+def _strip_terminal_template_gaps(
+    template_seq: str,
+    target_seq: str,
+) -> tuple[str, str]:
+    """Remove alignment columns where the template has only terminal (leading or
+    trailing) gaps.  Internal gaps are left intact so MODELLER can model them.
+    This prevents MODELLER from receiving target residues that have no structural
+    template at all (e.g., a signal peptide preceding the crystallised fragment)
+    which would otherwise be built de-novo and corrupt residue numbering."""
+    first = 0
+    while first < len(template_seq) and template_seq[first] == "-":
+        first += 1
+    last = len(template_seq) - 1
+    while last >= first and template_seq[last] == "-":
+        last -= 1
+    if first > last:
+        raise ValueError("Template alignment sequence is entirely gaps; cannot build MODELLER alignment")
+    return template_seq[first : last + 1], target_seq[first : last + 1]
+
+
 def write_modeller_alignment_from_existing_alignment(
     alignment_fasta_path: Path,
     template_pdb_path: Path,
@@ -72,6 +92,10 @@ def write_modeller_alignment_from_existing_alignment(
             f"expected chain {normalized_chain_id!r}, "
             f"but header {template_header!r} suggests chain {header_chain_id!r}."
         )
+
+    template_alignment_skeleton, target_aligned_sequence = _strip_terminal_template_gaps(
+        template_alignment_skeleton, target_aligned_sequence
+    )
 
     actual_template_sequence = extract_sequence_from_template_pdb(
         template_pdb_path=template_pdb_path,
