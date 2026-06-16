@@ -37,6 +37,7 @@ from stack_protein_preparation._metalls_check_core import (  # noqa: F401 (re-ex
     MetalSiteSummary,
     MetalCheckResult,
     find_metal_contacts,
+    filter_bidentate_carboxylate_contacts,
     classify_coordination_geometry,
     read_pdb_atom_records,
     summarize_metal_site,

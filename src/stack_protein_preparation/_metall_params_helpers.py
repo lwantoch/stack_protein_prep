@@ -24,6 +24,7 @@ from stack_protein_preparation.metalls_check import (
     TRANSITION_METAL_ELEMENTS,
     classify_coordination_geometry,
     distance_between_atoms,
+    filter_bidentate_carboxylate_contacts,
     find_metal_contacts,
     is_true_metal_atom,
     read_pdb_atom_records,
@@ -661,10 +662,12 @@ def _process_one_site(
         contact_cutoff_angstrom=contact_cutoff_angstrom,
     )
 
-    contacts_list = find_metal_contacts(
-        metal_atom=metal_in_analysis,
-        atom_records=all_analysis_records,
-        contact_cutoff_angstrom=contact_cutoff_angstrom,
+    contacts_list = filter_bidentate_carboxylate_contacts(
+        find_metal_contacts(
+            metal_atom=metal_in_analysis,
+            atom_records=all_analysis_records,
+            contact_cutoff_angstrom=contact_cutoff_angstrom,
+        )
     )
     site_result["coordination_number"] = len(contacts_list)
     max_contact_dist = max((c.distance_angstrom for c in contacts_list), default=2.5)
