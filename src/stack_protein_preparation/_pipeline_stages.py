@@ -9,7 +9,7 @@ from stack_protein_preparation.metalls_check import (
     run_metals_check_for_model,
     run_metals_inventory_for_structure,
 )
-from stack_protein_preparation.monomer import write_single_representative_monomer_unit
+from stack_protein_preparation.monomer import write_representative_monomer_unit
 from stack_protein_preparation.pipeline_paths import (
     _build_representative_unit_path,
     _build_representative_sanitize_log_path,
@@ -60,7 +60,7 @@ def _write_representative_monomer_for_protein(
 
     components_dir.mkdir(parents=True, exist_ok=True)
 
-    result = write_single_representative_monomer_unit(
+    result = write_representative_monomer_unit(
         input_pdb_path,
         representative_unit_path,
         keep_non_protein_hetero=True,
