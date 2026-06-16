@@ -140,17 +140,27 @@ def _write_commands_sh(
 ) -> None:
     """Write the step-1 script: creates step01_gen_inputs/, runs MCPB.py -s 1,
     then stages .com files into step02_gaussian/."""
-    # Build copy line for naa mol2 files (if any)
-    naa_copy_lines = ""
-    naa_note = ""
+    # Build antechamber generation + copy block for naa mol2 files (if any).
+    # Each mol2 is generated on-the-fly if it doesn't already exist so that
+    # commands.sh can be run directly in the AmberTools environment on HPC
+    # without needing a separate preparation step.
+    naa_gen_and_copy_lines = ""
     if naa_mol2files:
-        naa_files_str = " ".join(naa_mol2files)
-        naa_copy_lines = f"cp {naa_files_str} step01_gen_inputs/\n"
-        naa_note = (
-            "\n# NOTE: Non-standard ligand mol2 file(s) must exist before running:\n"
-            + "".join(f"#   {f}\n" for f in naa_mol2files)
-            + "# Generate with antechamber if needed (see comments in the .in file).\n"
-        )
+        lines: list[str] = [
+            "\n# -- Generate mol2 for non-standard ligand(s) if not already present --------"
+        ]
+        for mol2_f in naa_mol2files:
+            resname = mol2_f.replace(".mol2", "")
+            lines.append(
+                f"if [ ! -f {mol2_f} ]; then\n"
+                f"    # TODO: verify net charge (default 0) — update -nc if ligand is ionised\n"
+                f"    antechamber -i {resname}.pdb -fi pdb -o {mol2_f} -fo mol2"
+                f" -c bcc -nc 0 -at gaff2 -s 2 -pf y\n"
+                f"fi"
+            )
+        copy_str = " ".join(naa_mol2files)
+        lines.append(f"cp {copy_str} step01_gen_inputs/")
+        naa_gen_and_copy_lines = "\n".join(lines) + "\n"
 
     content = f"""\
 #!/usr/bin/env bash
@@ -166,11 +176,10 @@ def _write_commands_sh(
 #   3. Once all Gaussian jobs complete:  bash run_after_gaussian.sh
 # =============================================================================
 set -euo pipefail
-{naa_note}
+{naa_gen_and_copy_lines}
 # -- Create step01 directory and copy all required inputs --------------------
 mkdir -p step01_gen_inputs
 cp {pdb_id}.in {pdb_id}_mcpb.pdb {mol2_filename} step01_gen_inputs/
-{naa_copy_lines}
 # -- Run MCPB.py step 1 (generates Gaussian input files and model PDBs) ------
 cd step01_gen_inputs
 MCPB.py -i {pdb_id}.in -s 1

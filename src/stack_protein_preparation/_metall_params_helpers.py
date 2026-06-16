@@ -746,6 +746,8 @@ def _process_one_site(
             naa_mol2 = mcpb_dir / f"{naa_rn}.mol2"
             extracted = _extract_residue_pdb(mcpb_pdb, naa_rn, naa_pdb)
             if extracted:
+                # Attempt mol2 generation now (succeeds if antechamber is in PATH).
+                # If it fails, commands.sh will regenerate it in the AmberTools env.
                 _generate_naa_mol2(naa_rn, naa_pdb, naa_mol2)
                 naa_mol2files.append(f"{naa_rn}.mol2")
 
