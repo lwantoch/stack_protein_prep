@@ -256,6 +256,55 @@ def _compute_actual_protein_range(pdb_path: Path) -> str:
     return f"{min(resnums)}-{max(resnums)}"
 
 
+def _write_dockingbox_csv(
+    pdb_id: str,
+    pdb_dir: Path,
+    variant_label: str,
+) -> Path | None:
+    from stack_protein_preparation.prepared_structure import sanitize_variant_label
+
+    ligand_path = pdb_dir / "components" / f"{pdb_id}_ligand.pdb"
+    if not ligand_path.exists() or ligand_path.stat().st_size == 0:
+        return None
+
+    coords: list[tuple[float, float, float]] = []
+    for line in ligand_path.read_text(encoding="utf-8").splitlines():
+        if not (line.startswith("ATOM  ") or line.startswith("HETATM")):
+            continue
+        try:
+            coords.append((float(line[30:38]), float(line[38:46]), float(line[46:54])))
+        except (ValueError, IndexError):
+            continue
+
+    if not coords:
+        return None
+
+    n = len(coords)
+    cx = sum(c[0] for c in coords) / n
+    cy = sum(c[1] for c in coords) / n
+    cz = sum(c[2] for c in coords) / n
+
+    max_span = 0.0
+    for i in range(n):
+        for j in range(i + 1, n):
+            dx = coords[i][0] - coords[j][0]
+            dy = coords[i][1] - coords[j][1]
+            dz = coords[i][2] - coords[j][2]
+            d = (dx * dx + dy * dy + dz * dz) ** 0.5
+            if d > max_span:
+                max_span = d
+
+    safe_variant = sanitize_variant_label(variant_label)
+    out_dir = pdb_dir / "prepared" / safe_variant
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "dockingbox.csv"
+    out_path.write_text(
+        f"center_x,center_y,center_z,max_span\n{cx:.3f},{cy:.3f},{cz:.3f},{max_span:.3f}\n",
+        encoding="utf-8",
+    )
+    return out_path
+
+
 def _build_prepared_structure_for_variant(
     pdb_id: str,
     pdb_dir: Path,
@@ -263,7 +312,6 @@ def _build_prepared_structure_for_variant(
     final_protein_input_path: Path | None = None,
     final_protein_input_paths: list[Path] | None = None,
 ) -> Path:
-    ligand_input_path = pdb_dir / "components" / f"{pdb_id}_ligand.pdb"
     metals_input_path = pdb_dir / "components" / f"{pdb_id}_metals.pdb"
     protein_component_path = pdb_dir / "components" / f"{pdb_id}_protein.pdb"
     kwargs: dict[str, object] = {
@@ -271,7 +319,7 @@ def _build_prepared_structure_for_variant(
         "pdb_id": pdb_id,
         "structure_variant": variant_label,
         "water_input_path": None,
-        "ligand_input_path": ligand_input_path if ligand_input_path.exists() else None,
+        "ligand_input_path": None,
         "metals_input_path": metals_input_path if metals_input_path.exists() else None,
         "backbone_nonstd_input_path": protein_component_path if protein_component_path.exists() else None,
     }
@@ -284,6 +332,7 @@ def _build_prepared_structure_for_variant(
             )
         kwargs["protein_input_path"] = final_protein_input_path
     summary = build_prepared_structure_for_variant(**kwargs)
+    _write_dockingbox_csv(pdb_id, pdb_dir, variant_label)
     return summary.output_pdb_path
 
 
@@ -303,7 +352,6 @@ def _build_prepared_wat_structure_for_variant(
     if not water_path.exists() or water_path.stat().st_size == 0:
         return None
 
-    ligand_input_path = pdb_dir / "components" / f"{pdb_id}_ligand.pdb"
     metals_input_path = pdb_dir / "components" / f"{pdb_id}_metals.pdb"
     protein_component_path = pdb_dir / "components" / f"{pdb_id}_protein.pdb"
 
@@ -313,7 +361,7 @@ def _build_prepared_wat_structure_for_variant(
     kwargs: dict[str, object] = {
         "output_pdb_path": wat_output_path,
         "water_input_path": water_path,
-        "ligand_input_path": ligand_input_path if ligand_input_path.exists() else None,
+        "ligand_input_path": None,
         "metals_input_path": metals_input_path if metals_input_path.exists() else None,
         "backbone_nonstd_input_path": protein_component_path if protein_component_path.exists() else None,
         "structure_variant": variant_label,

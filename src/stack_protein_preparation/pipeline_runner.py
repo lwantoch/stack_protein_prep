@@ -23,6 +23,7 @@ from stack_protein_preparation._pipeline_helpers import (  # noqa: F401  (re-exp
     _build_prepared_cofactor_structure_for_variant,
     _build_prepared_structure_for_variant,
     _build_prepared_wat_structure_for_variant,
+    _write_dockingbox_csv,
     _clear_component_output_files,
     _compute_actual_protein_range,
     _copy_representative_protein_component_to_monomer_path,
