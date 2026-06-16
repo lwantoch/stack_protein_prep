@@ -131,6 +131,27 @@ def _rewrite_chain_id(line: str, chain_id: str) -> str:
     return f"{line[:21]}{chain_id[:1]}{line[22:]}"
 
 
+def _normalize_intermediate_fragment_termini(atom_lines: list[str]) -> list[str]:
+    """Rename OC1→O and strip OC2 from a protonated non-terminal fragment.
+
+    pdb2gmx adds OC1/OC2 (carboxylate oxygens) at the C-terminus of each
+    independently protonated fragment.  When fragments are assembled into one
+    chain, these atoms appear at internal positions where downstream pdb2gmx
+    rejects them.  Renaming OC1 to the standard backbone carbonyl O and
+    dropping OC2 makes each internal residue look like a normal residue.
+    """
+    result = []
+    for line in atom_lines:
+        if _is_atom_or_hetatm_record(line):
+            atom_name = line[12:16].strip()
+            if atom_name == "OC2":
+                continue
+            if atom_name == "OC1":
+                line = line[:12] + " O  " + line[16:]
+        result.append(line)
+    return result
+
+
 def _write_merged_pdb_sections(
     output_pdb_path: str | Path,
     ordered_sections: list[list[str]],
@@ -184,6 +205,11 @@ def build_prepared_structure(
         protein_sections: list[list[str]] = [
             _read_atom_lines_from_pdb(Path(p)) for p in protein_input_paths
         ]
+        if len(protein_sections) > 1:
+            protein_sections = [
+                _normalize_intermediate_fragment_termini(s) if i < len(protein_sections) - 1 else s
+                for i, s in enumerate(protein_sections)
+            ]
     elif protein_input_path is not None:
         resolved_protein = Path(protein_input_path)
         protein_sections = [_read_atom_lines_from_pdb(resolved_protein)]
@@ -343,12 +369,14 @@ def build_prepared_structure_for_variant(
 
     if protein_input_paths is not None:
         primary_protein_path = Path(protein_input_paths[0])
-        # Keep each fragment as a separate section so TER records are written
-        # between them.  This prevents pdb2gmx from seeing GROMACS C-terminal
-        # atoms (OC1/OC2) at internal positions of the assembled chain.
         protein_sections: list[list[str]] = [
             _read_atom_lines_from_pdb(Path(p)) for p in protein_input_paths
         ]
+        if len(protein_sections) > 1:
+            protein_sections = [
+                _normalize_intermediate_fragment_termini(s) if i < len(protein_sections) - 1 else s
+                for i, s in enumerate(protein_sections)
+            ]
     elif protein_input_path is not None:
         primary_protein_path = Path(protein_input_path)
         protein_sections = [_read_atom_lines_from_pdb(primary_protein_path)]
