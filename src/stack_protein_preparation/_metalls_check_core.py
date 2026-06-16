@@ -301,6 +301,66 @@ def find_metal_contacts(
     return contacts
 
 
+# Carboxylate residue names and their paired delta/epsilon oxygen atom names
+_CARBOXYLATE_OXYGEN_PAIRS: dict[str, tuple[str, str]] = {
+    "ASP": ("OD1", "OD2"),
+    "ASH": ("OD1", "OD2"),  # protonated ASP
+    "GLU": ("OE1", "OE2"),
+    "GLH": ("OE1", "OE2"),  # protonated GLU
+}
+_BIDENTATE_ASYMMETRY_THRESHOLD = 0.5  # Å; pairs farther apart than this are treated as monodentate
+
+
+def filter_bidentate_carboxylate_contacts(
+    contacts: list[MetalContact],
+) -> list[MetalContact]:
+    """Drop the farther oxygen from asymmetric bidentate carboxylate contacts.
+
+    When both oxygens of an ASP or GLU carboxylate lie within the coordination
+    cutoff but one is significantly farther than the other (≥0.5 Å difference),
+    the farther oxygen is an electrostatic bystander rather than a genuine donor
+    and should not inflate the coordination number.  Symmetric bidentate contacts
+    (both oxygens within 0.5 Å of each other) are left untouched.
+    """
+    # Index contacts by (chain, resseq, resname) for ASP/GLU residues
+    from collections import defaultdict
+    carboxylate_contacts: dict[tuple, list[MetalContact]] = defaultdict(list)
+    other_contacts: list[MetalContact] = []
+
+    for c in contacts:
+        rn = c.donor_residue_name.strip().upper()
+        if rn in _CARBOXYLATE_OXYGEN_PAIRS:
+            key = (c.donor_chain_id, c.donor_residue_number, rn)
+            carboxylate_contacts[key].append(c)
+        else:
+            other_contacts.append(c)
+
+    filtered: list[MetalContact] = list(other_contacts)
+    for (chain, resseq, resname), group in carboxylate_contacts.items():
+        pair = _CARBOXYLATE_OXYGEN_PAIRS[resname]
+        ox_contacts = {c.donor_atom_name.strip(): c for c in group if c.donor_atom_name.strip() in pair}
+        non_ox = [c for c in group if c.donor_atom_name.strip() not in pair]
+        filtered.extend(non_ox)
+
+        if len(ox_contacts) == 2:
+            o1_name, o2_name = pair
+            c1, c2 = ox_contacts.get(o1_name), ox_contacts.get(o2_name)
+            if c1 and c2:
+                diff = abs(c1.distance_angstrom - c2.distance_angstrom)
+                if diff >= _BIDENTATE_ASYMMETRY_THRESHOLD:
+                    # Asymmetric: keep only the closer oxygen
+                    filtered.append(c1 if c1.distance_angstrom <= c2.distance_angstrom else c2)
+                else:
+                    # Symmetric bidentate: keep both
+                    filtered.extend([c1, c2])
+            else:
+                filtered.extend(ox_contacts.values())
+        else:
+            filtered.extend(ox_contacts.values())
+
+    return filtered
+
+
 def classify_coordination_geometry(
     *,
     metal_atom: PDBAtomRecord,
@@ -363,10 +423,12 @@ def summarize_metal_site(
 
     contacts = tuple(
         sorted(
-            find_metal_contacts(
-                metal_atom=metal_atom,
-                atom_records=atom_records,
-                contact_cutoff_angstrom=contact_cutoff_angstrom,
+            filter_bidentate_carboxylate_contacts(
+                find_metal_contacts(
+                    metal_atom=metal_atom,
+                    atom_records=atom_records,
+                    contact_cutoff_angstrom=contact_cutoff_angstrom,
+                )
             ),
             key=lambda contact: contact.distance_angstrom,
         )

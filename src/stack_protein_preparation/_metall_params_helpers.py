@@ -107,9 +107,16 @@ _GROMACS_TO_AMBER_ATOM: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 
 def _choose_best_protein_input(components_dir: Path, pdb_id: str) -> Path | None:
-    """Return the best available protonated protein structure for this site."""
+    """Return the best available protonated protein structure for metal contact analysis.
+
+    Crystal-coordinate variants (single, gaps) are strongly preferred over
+    AlphaFold/MODELLER complete models.  Complete models have predicted loop
+    conformations that do not match the crystal zinc environment; using them
+    causes the contact detection to find wrong backbone atoms near the metal.
+    """
     protein_dir = components_dir.parent
-    prepared_variants = ["single", "best_complete", "gaps", "large_gap_complete", "complete"]
+    # Crystal variants first, then complete models as fallback only
+    prepared_variants = ["single", "gaps", "large_gap_complete", "best_complete", "complete"]
     for variant in prepared_variants:
         prepared_path = protein_dir / "prepared" / variant / f"{pdb_id}.pdb"
         if prepared_path.is_file() and prepared_path.stat().st_size > 0:
@@ -737,7 +744,7 @@ def _process_one_site(
             extracted = _extract_residue_pdb(mcpb_pdb, naa_rn, naa_pdb)
             if extracted:
                 _generate_naa_mol2(naa_rn, naa_pdb, naa_mol2)
-            naa_mol2files.append(f"{naa_rn}.mol2")
+                naa_mol2files.append(f"{naa_rn}.mol2")
 
         group_name = f"{pdb_id}_{element}_{chain}_{resseq}"
         mcpb_in = mcpb_dir / f"{pdb_id}.in"
