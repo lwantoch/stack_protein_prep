@@ -181,16 +181,16 @@ def build_prepared_structure(
 
     if protein_input_paths is not None:
         resolved_protein = Path(protein_input_paths[0])
-        protein_atom_lines: list[str] = []
-        for p in protein_input_paths:
-            protein_atom_lines.extend(_read_atom_lines_from_pdb(Path(p)))
+        protein_sections: list[list[str]] = [
+            _read_atom_lines_from_pdb(Path(p)) for p in protein_input_paths
+        ]
     elif protein_input_path is not None:
         resolved_protein = Path(protein_input_path)
-        protein_atom_lines = _read_atom_lines_from_pdb(resolved_protein)
+        protein_sections = [_read_atom_lines_from_pdb(resolved_protein)]
     else:
         raise ValueError("Either protein_input_path or protein_input_paths is required.")
 
-    if not protein_atom_lines:
+    if not any(protein_sections):
         raise ValueError(
             f"No ATOM/HETATM records found in protein file: {resolved_protein}"
         )
@@ -215,7 +215,7 @@ def build_prepared_structure(
         else None
     )
 
-    ordered_sections: list[list[str]] = [protein_atom_lines]
+    ordered_sections: list[list[str]] = list(protein_sections)
     if water_atom_lines:
         ordered_sections.append(water_atom_lines)
     if ligand_atom_lines:
@@ -343,22 +343,25 @@ def build_prepared_structure_for_variant(
 
     if protein_input_paths is not None:
         primary_protein_path = Path(protein_input_paths[0])
-        all_protein_lines: list[str] = []
-        for p in protein_input_paths:
-            all_protein_lines.extend(_read_atom_lines_from_pdb(Path(p)))
+        # Keep each fragment as a separate section so TER records are written
+        # between them.  This prevents pdb2gmx from seeing GROMACS C-terminal
+        # atoms (OC1/OC2) at internal positions of the assembled chain.
+        protein_sections: list[list[str]] = [
+            _read_atom_lines_from_pdb(Path(p)) for p in protein_input_paths
+        ]
     elif protein_input_path is not None:
         primary_protein_path = Path(protein_input_path)
-        all_protein_lines = _read_atom_lines_from_pdb(primary_protein_path)
+        protein_sections = [_read_atom_lines_from_pdb(primary_protein_path)]
     else:
         raise ValueError("Either protein_input_path or protein_input_paths must be provided.")
 
-    if not all_protein_lines:
+    if not any(protein_sections):
         raise ValueError(f"No ATOM/HETATM records found in protein input(s) for {pdb_id}")
 
     if backbone_nonstd_input_path is not None:
         backbone_path = Path(backbone_nonstd_input_path)
         if backbone_path.exists():
-            all_protein_lines.extend(_read_atom_lines_from_pdb(backbone_path))
+            protein_sections.append(_read_atom_lines_from_pdb(backbone_path))
 
     water_input = Path(water_input_path) if water_input_path is not None else None
     ligand_input = Path(ligand_input_path) if ligand_input_path is not None else None
@@ -380,7 +383,7 @@ def build_prepared_structure_for_variant(
         else None
     )
 
-    ordered_sections: list[list[str]] = [all_protein_lines]
+    ordered_sections: list[list[str]] = list(protein_sections)
     if water_atom_lines:
         ordered_sections.append(water_atom_lines)
     if ligand_atom_lines:
