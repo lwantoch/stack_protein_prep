@@ -313,7 +313,6 @@ def _build_prepared_structure_for_variant(
     final_protein_input_paths: list[Path] | None = None,
 ) -> Path:
     metals_input_path = pdb_dir / "components" / f"{pdb_id}_metals.pdb"
-    protein_component_path = pdb_dir / "components" / f"{pdb_id}_protein.pdb"
     kwargs: dict[str, object] = {
         "pdb_directory": pdb_dir,
         "pdb_id": pdb_id,
@@ -321,7 +320,6 @@ def _build_prepared_structure_for_variant(
         "water_input_path": None,
         "ligand_input_path": None,
         "metals_input_path": metals_input_path if metals_input_path.exists() else None,
-        "backbone_nonstd_input_path": protein_component_path if protein_component_path.exists() else None,
     }
     if final_protein_input_paths:
         kwargs["protein_input_paths"] = final_protein_input_paths
