@@ -363,7 +363,6 @@ def _build_prepared_wat_structure_for_variant(
         "water_input_path": water_path,
         "ligand_input_path": None,
         "metals_input_path": metals_input_path if metals_input_path.exists() else None,
-        "backbone_nonstd_input_path": protein_component_path if protein_component_path.exists() else None,
         "structure_variant": variant_label,
     }
     if final_protein_input_paths:
