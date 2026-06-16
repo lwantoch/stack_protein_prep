@@ -37,6 +37,41 @@ class SanitizeIssue:
 
 
 @dataclass(frozen=True)
+class ForcefieldAtomRenamer:
+    """Renames PDB-standard atom names to force-field conventions in place.
+
+    Some force fields diverge from the PDB/IUPAC standard. The only known
+    case in amber99sb-ildn is ILE δ-carbon: PDB uses ``CD1``, AMBER/GROMACS
+    uses ``CD``. Applying this renamer before the heavy-atom check and before
+    pdb2gmx eliminates false-positive "missing atom" reports and ensures every
+    downstream tool (MCPB.py fallback included) sees the force-field names.
+    """
+
+    aliases: dict[str, dict[str, str]]  # {resname: {pdb_name: ff_name}}
+
+    @classmethod
+    def for_force_field(cls, force_field: str) -> "ForcefieldAtomRenamer":
+        if "amber" in force_field.lower():
+            return cls(aliases={"ILE": {"CD1": "CD"}})
+        return cls(aliases={})
+
+    def rename_in_place(self, structure) -> int:  # noqa: ANN001
+        """Rename atoms in a BioPython structure in place. Returns count renamed."""
+        n = 0
+        for residue in structure.get_residues():
+            mapping = self.aliases.get(residue.get_resname().strip().upper())
+            if not mapping:
+                continue
+            for atom in residue.get_atoms():
+                ff_name = mapping.get(atom.get_name().strip())
+                if ff_name is not None:
+                    atom.name = ff_name
+                    atom.fullname = f" {ff_name:<3}"
+                    n += 1
+        return n
+
+
+@dataclass(frozen=True)
 class HeavyAtomTemplateLookup:
     """Expected heavy atoms loaded from one GROMACS force-field RTP file."""
 

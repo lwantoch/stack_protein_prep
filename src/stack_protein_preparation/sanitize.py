@@ -35,6 +35,7 @@ from Bio.PDB import PDBParser
 from stack_protein_preparation._sanitize_core import (  # noqa: F401 (re-exported)
     IssueSeverity,
     SanitizeIssue,
+    ForcefieldAtomRenamer,
     HeavyAtomTemplateLookup,
     SanitizeResult,
     GromacsProteinSelect,
@@ -181,6 +182,8 @@ def sanitize_pdb_for_gromacs(
         )
 
     altloc_summary = select_altlocs_by_highest_occupancy(structure)
+    ForcefieldAtomRenamer.for_force_field(force_field).rename_in_place(structure)
+
     if altloc_summary.selected_altloc_count:
         issues.append(
             SanitizeIssue(
