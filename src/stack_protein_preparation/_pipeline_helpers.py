@@ -402,7 +402,6 @@ def _build_prepared_cofactor_structure_for_variant(
         "water_input_path": None,
         "ligand_input_path": cofactor_path,
         "metals_input_path": None,
-        "backbone_nonstd_input_path": protein_component_path if protein_component_path.exists() else None,
         "structure_variant": variant_label,
     }
     if final_protein_input_paths:

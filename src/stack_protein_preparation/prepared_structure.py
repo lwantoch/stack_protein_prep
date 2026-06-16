@@ -168,6 +168,7 @@ def _write_merged_pdb_sections(
 def build_prepared_structure(
     output_pdb_path: str | Path,
     protein_input_path: str | Path | None = None,
+    protein_input_paths: list[str | Path] | None = None,
     water_input_path: str | Path | None = None,
     ligand_input_path: str | Path | None = None,
     metals_input_path: str | Path | None = None,
@@ -178,11 +179,16 @@ def build_prepared_structure(
     """Build one final prepared structure."""
     output_pdb_path = Path(output_pdb_path)
 
-    if protein_input_path is None:
-        raise ValueError("protein_input_path is required.")
-
-    resolved_protein = Path(protein_input_path)
-    protein_atom_lines = _read_atom_lines_from_pdb(resolved_protein)
+    if protein_input_paths is not None:
+        resolved_protein = Path(protein_input_paths[0])
+        protein_atom_lines: list[str] = []
+        for p in protein_input_paths:
+            protein_atom_lines.extend(_read_atom_lines_from_pdb(Path(p)))
+    elif protein_input_path is not None:
+        resolved_protein = Path(protein_input_path)
+        protein_atom_lines = _read_atom_lines_from_pdb(resolved_protein)
+    else:
+        raise ValueError("Either protein_input_path or protein_input_paths is required.")
 
     if not protein_atom_lines:
         raise ValueError(
