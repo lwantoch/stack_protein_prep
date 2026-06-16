@@ -153,11 +153,11 @@ class _RestrainedModel(automodel):
                 continue
             x0, y0, z0, sd = lookup[key]
             rsr.add(forms.Gaussian(group=physical.xy_distance,
-                feature=features.x_coordinate(atoms=[at]), mean=x0, stdev=sd))
+                feature=features.x_coordinate(at), mean=x0, stdev=sd))
             rsr.add(forms.Gaussian(group=physical.xy_distance,
-                feature=features.y_coordinate(atoms=[at]), mean=y0, stdev=sd))
+                feature=features.y_coordinate(at), mean=y0, stdev=sd))
             rsr.add(forms.Gaussian(group=physical.xy_distance,
-                feature=features.z_coordinate(atoms=[at]), mean=z0, stdev=sd))
+                feature=features.z_coordinate(at), mean=z0, stdev=sd))
 
 """
 
