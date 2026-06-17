@@ -414,6 +414,37 @@ def _generate_water_mol2(mol2_path: Path, water_pdb: Path) -> bool:
         return False
 
 
+# Standard TIP3P water mol2 used as fallback when antechamber is unavailable.
+# Charges match the TIP3P model; atom types are GAFF2-compatible.
+_TIP3P_HOH_MOL2 = """\
+@<TRIPOS>MOLECULE
+HOH
+ 3 2 1 0 0
+SMALL
+USER_CHARGES
+
+@<TRIPOS>ATOM
+      1 O           0.0000    0.0000    0.0000 oh        1 HOH    -0.834000
+      2 H1          0.9572    0.0000    0.0000 ho        1 HOH     0.417000
+      3 H2         -0.2399    0.9267    0.0000 ho        1 HOH     0.417000
+@<TRIPOS>BOND
+     1     1     2    1
+     2     1     3    1
+@<TRIPOS>SUBSTRUCTURE
+     1 HOH         1 TEMP              0 ****  ****    0 ROOT
+"""
+
+
+def _write_standard_hoh_mol2(mol2_path: Path) -> None:
+    """Write a standard TIP3P HOH mol2 used when a water molecule coordinates a metal."""
+    mol2_path.write_text(_TIP3P_HOH_MOL2, encoding="utf-8")
+
+
+def _has_water_contacts(contacts: list[Any]) -> bool:
+    """Return True if any contact donor is a water molecule."""
+    return any(c.donor_residue_name.strip().upper() in _WATER_NAMES for c in contacts)
+
+
 # ---------------------------------------------------------------------------
 # Chimera executable resolution
 # ---------------------------------------------------------------------------
@@ -750,6 +781,13 @@ def _process_one_site(
                 # If it fails, commands.sh will regenerate it in the AmberTools env.
                 _generate_naa_mol2(naa_rn, naa_pdb, naa_mol2)
                 naa_mol2files.append(f"{naa_rn}.mol2")
+
+        # Water molecules coordinating the metal require HOH.mol2 for MCPB.py.
+        # Provide a standard TIP3P mol2 (antechamber-independent).
+        if _has_water_contacts(contacts_list):
+            hoh_mol2 = mcpb_dir / "HOH.mol2"
+            _write_standard_hoh_mol2(hoh_mol2)
+            naa_mol2files.append("HOH.mol2")
 
         group_name = f"{pdb_id}_{element}_{chain}_{resseq}"
         mcpb_in = mcpb_dir / f"{pdb_id}.in"
