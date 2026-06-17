@@ -519,7 +519,7 @@ mkdir -p step01_gaussian_inputs
 # reduce commonly exits non-zero (warnings / clash messages) even when output
 # is structurally valid — suppress that exit code, then fail explicitly if the
 # output file is empty.
-reduce ../../capped_model_ace_nme.pdb > step01_gaussian_inputs/{resname}_capped_H.pdb || true
+reduce ../capped_model_ace_nme.pdb > step01_gaussian_inputs/{resname}_capped_H.pdb || true
 [[ -s step01_gaussian_inputs/{resname}_capped_H.pdb ]] || {{
     echo "ERROR: reduce produced empty output for capped_model_ace_nme.pdb" >&2
     exit 1
