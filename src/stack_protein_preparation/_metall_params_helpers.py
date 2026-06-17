@@ -406,6 +406,11 @@ def _normalize_mcpb_pdb(pdb_path: Path) -> None:
     finally:
         if tmp.is_file():
             tmp.unlink(missing_ok=True)
+    # pdb4amber renames HIS only when it can infer protonation from H atoms.
+    # Heavy-atom-only crystal structures leave some residues as 'HIS', which
+    # MCPB.py's charge dictionary does not recognise. Rename any remaining
+    # HIS → HID/HIE/HIP (defaulting to HIE for ambiguous ones).
+    _rename_his_by_protonation(pdb_path)
     # Always renumber globally after pdb4amber — it renumbers within each
     # chain independently, which leaves cross-chain collisions intact.
     _renumber_residues_globally(pdb_path)
