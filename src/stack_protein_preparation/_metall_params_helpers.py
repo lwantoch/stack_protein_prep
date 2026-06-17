@@ -327,13 +327,44 @@ def _renumber_pdb_atoms(pdb_path: Path) -> None:
     pdb_path.write_text("".join(out_lines), encoding="utf-8")
 
 
+def _renumber_residues_globally(pdb_path: Path) -> None:
+    """Renumber residues with a single sequential counter across all chains.
+
+    pdb4amber renumbers residues within each chain independently (chain A:
+    1..N, chain B: 1..M, ...).  MCPB.py ignores chain IDs and resolves
+    residues by number alone, so two residues at position 1 in different
+    chains cause KeyErrors such as 'NPRO-C1'.  This pass assigns a globally
+    unique number to every (chain, resseq, icode) group in file order.
+    """
+    lines = pdb_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    out: list[str] = []
+    counter = 0
+    resmap: dict[tuple[str, str, str], int] = {}
+    for ln in lines:
+        if not ln.startswith(("ATOM  ", "HETATM")):
+            out.append(ln)
+            continue
+        chain = ln[21] if len(ln) > 21 else " "
+        orig_res = ln[22:26] if len(ln) > 26 else "   1"
+        icode = ln[26] if len(ln) > 26 else " "
+        key = (chain, orig_res, icode)
+        if key not in resmap:
+            counter += 1
+            resmap[key] = counter
+        new_res = resmap[key]
+        ln = ln[:22] + f"{new_res:4d}" + ln[26:]
+        out.append(ln)
+    pdb_path.write_text("".join(out), encoding="utf-8")
+
+
 def _normalize_mcpb_pdb(pdb_path: Path) -> None:
     """Normalize a mcpb PDB for AMBER/MCPB.py compatibility using pdb4amber.
 
-    pdb4amber handles all GROMACS→AMBER atom naming differences, renumbers
-    residues sequentially across chains (eliminating cross-chain residue
-    number collisions that confuse MCPB.py), and correctly identifies
-    HIS protonation states (HID/HIE/HIP) from which H atoms are present.
+    pdb4amber handles all GROMACS→AMBER atom naming differences and correctly
+    identifies HIS protonation states (HID/HIE/HIP) from which H atoms are
+    present.  A follow-up pass (_renumber_residues_globally) assigns a single
+    sequential counter across all chains so MCPB.py — which ignores chain IDs
+    — sees unique residue numbers everywhere.
 
     Preprocessing: strip MODEL/ENDMDL records that pdb2gmx sometimes emits.
     If pdb4amber is not found in PATH, falls back to the legacy per-residue
@@ -352,6 +383,7 @@ def _normalize_mcpb_pdb(pdb_path: Path) -> None:
         # Legacy fallback — keeps pipeline working without AmberTools in PATH
         _rename_gromacs_to_amber_atoms(pdb_path)
         _rename_his_by_protonation(pdb_path)
+        _renumber_residues_globally(pdb_path)
         return
 
     tmp = pdb_path.with_suffix(".pdb4amber_tmp.pdb")
@@ -374,6 +406,9 @@ def _normalize_mcpb_pdb(pdb_path: Path) -> None:
     finally:
         if tmp.is_file():
             tmp.unlink(missing_ok=True)
+    # Always renumber globally after pdb4amber — it renumbers within each
+    # chain independently, which leaves cross-chain collisions intact.
+    _renumber_residues_globally(pdb_path)
 
 
 def _rename_gromacs_to_amber_atoms(pdb_path: Path) -> None:
