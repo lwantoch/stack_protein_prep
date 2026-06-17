@@ -327,6 +327,55 @@ def _renumber_pdb_atoms(pdb_path: Path) -> None:
     pdb_path.write_text("".join(out_lines), encoding="utf-8")
 
 
+def _normalize_mcpb_pdb(pdb_path: Path) -> None:
+    """Normalize a mcpb PDB for AMBER/MCPB.py compatibility using pdb4amber.
+
+    pdb4amber handles all GROMACS→AMBER atom naming differences, renumbers
+    residues sequentially across chains (eliminating cross-chain residue
+    number collisions that confuse MCPB.py), and correctly identifies
+    HIS protonation states (HID/HIE/HIP) from which H atoms are present.
+
+    Preprocessing: strip MODEL/ENDMDL records that pdb2gmx sometimes emits.
+    If pdb4amber is not found in PATH, falls back to the legacy per-residue
+    rename table + HIS detection.
+    """
+    # Strip MODEL/ENDMDL records — pdb4amber (via parmed) rejects multi-model files
+    text = pdb_path.read_text(encoding="utf-8", errors="replace")
+    cleaned = "".join(
+        ln for ln in text.splitlines(keepends=True)
+        if not ln.startswith(("MODEL ", "ENDMDL"))
+    )
+    pdb_path.write_text(cleaned, encoding="utf-8")
+
+    pdb4amber_exe = shutil.which("pdb4amber")
+    if pdb4amber_exe is None:
+        # Legacy fallback — keeps pipeline working without AmberTools in PATH
+        _rename_gromacs_to_amber_atoms(pdb_path)
+        _rename_his_by_protonation(pdb_path)
+        return
+
+    tmp = pdb_path.with_suffix(".pdb4amber_tmp.pdb")
+    try:
+        result = subprocess.run(
+            [pdb4amber_exe, "-i", str(pdb_path), "-o", str(tmp),
+             "--no-conect", "--noter"],
+            capture_output=True, text=True, timeout=120,
+            cwd=str(pdb_path.parent),
+        )
+        if result.returncode == 0 and tmp.is_file() and tmp.stat().st_size > 0:
+            shutil.move(str(tmp), str(pdb_path))
+        else:
+            # pdb4amber failed — fall back
+            _rename_gromacs_to_amber_atoms(pdb_path)
+            _rename_his_by_protonation(pdb_path)
+    except Exception:
+        _rename_gromacs_to_amber_atoms(pdb_path)
+        _rename_his_by_protonation(pdb_path)
+    finally:
+        if tmp.is_file():
+            tmp.unlink(missing_ok=True)
+
+
 def _rename_gromacs_to_amber_atoms(pdb_path: Path) -> None:
     """Rename GROMACS (amber99sb-ildn) atom names to AMBER (ff99SB) in-place."""
     lines = pdb_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
@@ -747,8 +796,7 @@ def _process_one_site(
         shutil.copy(env_after_cleanup, mcpb_pdb)
 
         _renumber_pdb_atoms(mcpb_pdb)
-        _rename_gromacs_to_amber_atoms(mcpb_pdb)
-        _rename_his_by_protonation(mcpb_pdb)
+        _normalize_mcpb_pdb(mcpb_pdb)
 
         ion_serial = _find_metal_serial_in_pdb(mcpb_pdb, element)
 
