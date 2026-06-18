@@ -89,6 +89,7 @@ from ._filler_modeller import (
     _parse_model_scores,
     _write_skip_logs,
     find_raw_models,
+    renumber_modeller_output_to_template,
     run_modeller_binary,
     select_best_model,
     select_best_model_from_scores,
@@ -759,6 +760,10 @@ def run_filler_for_chain(
             target_id=target_id,
             raw_model_paths=raw_model_paths,
             final_name=final_model_name,
+        )
+        renumber_modeller_output_to_template(
+            model_path=modeller_model_path,
+            template_pdb_path=copied_template_pdb,
         )
         _trim_final_model_in_place(modeller_model_path, effective_residue_range)
         append_log_text(module_log_path, "[RESULT] success: modeller")

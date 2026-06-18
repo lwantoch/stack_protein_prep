@@ -463,6 +463,29 @@ def _trim_final_model_in_place(model_path: Path, effective_residue_range: str) -
     model_path.write_text("".join(kept_lines), encoding="utf-8")
 
 
+def _extract_backbone_residue_numbers(pdb_path: Path) -> list[int]:
+    """Return ordered residue numbers for protein residues that have a peptide backbone.
+
+    The order matches ``extract_sequence_from_template_pdb``, so position i in
+    the returned list corresponds to the i-th non-gap character in the
+    MODELLER template alignment sequence.
+    """
+    parsed = _parse_first_model(pdb_path)
+    result: list[int] = []
+    seen: set[int] = set()
+    for chain in parsed.model:
+        for residue in chain:
+            if not _is_protein_atom_residue(residue):
+                continue
+            if not _residue_has_peptide_backbone(residue):
+                continue
+            resnum = int(residue.id[1])
+            if resnum not in seen:
+                seen.add(resnum)
+                result.append(resnum)
+    return result
+
+
 def cleanup_model_pdb(input_model_path: Path, output_model_path: Path) -> Path:
     """Write a protein-only cleaned model keeping only ATOM records."""
     if not input_model_path.exists():

@@ -16,6 +16,7 @@ from ._filler_shared import (
     DEFAULT_STDERR_LOG_FILENAME,
     DEFAULT_STDOUT_LOG_FILENAME,
     _debug,
+    _extract_backbone_residue_numbers,
     cleanup_model_pdb,
 )
 from ._filler_analysis import (
@@ -348,3 +349,50 @@ def standardize_model_name(
         output_model_path=final_model,
     )
     return best_model, cleaned_final_model
+
+
+def renumber_modeller_output_to_template(
+    model_path: Path,
+    template_pdb_path: Path,
+    alignment_file: Path | None = None,
+    template_id: str | None = None,
+    target_id: str | None = None,
+) -> None:
+    """Renumber MODELLER output residues to match the template starting position.
+
+    MODELLER assigns 1-based residue numbers when the target is declared as a
+    ``sequence`` record (no known PDB).  This function shifts all residue
+    numbers by ``(template_first_resnum - 1)`` so the model starts at the same
+    residue number as the crystal-structure template, making the downstream
+    trimming step retain the full model instead of cutting off the initial
+    residues.
+
+    The simple offset correctly handles the common case where the template
+    starts at a residue number greater than 1 (e.g., 33 for a chain that
+    begins mid-sequence in the asymmetric unit).  For the gap-fill residues
+    themselves the numbers will be sequential but may differ from the PDB
+    numbering inside the gap region; this is acceptable for MD pre-processing
+    where internal consistency matters more than exact PDB correspondence.
+    """
+    template_resnums = _extract_backbone_residue_numbers(template_pdb_path)
+    if not template_resnums:
+        return
+
+    offset = template_resnums[0] - 1
+    if offset == 0:
+        return
+
+    lines = model_path.read_text(encoding="utf-8").splitlines(keepends=True)
+    result_lines: list[str] = []
+    for line in lines:
+        if line.startswith(("ATOM  ", "HETATM")):
+            try:
+                old_resnum = int(line[22:26])
+            except ValueError:
+                result_lines.append(line)
+                continue
+            new_resnum = old_resnum + offset
+            line = f"{line[:22]}{new_resnum:4d}{line[26:]}"
+        result_lines.append(line)
+
+    model_path.write_text("".join(result_lines), encoding="utf-8")
