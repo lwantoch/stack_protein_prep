@@ -32,6 +32,7 @@ from stack_protein_preparation.metalls_check import (
 from stack_protein_preparation.pdb_components import WATER_NAMES as _WATER_NAMES
 from stack_protein_preparation._metall_params_mcpb import (  # noqa: F401 (re-exported)
     _UNAMBIGUOUS_SPIN,
+    _get_spin_candidates,
     _write_mcpb_in,
     _write_commands_sh,
     _write_submit_gaussian_sh,
@@ -200,23 +201,73 @@ def _extract_residue_pdb(
     return True
 
 
+def _add_hydrogens_to_residue_pdb(input_pdb: Path, output_pdb: Path) -> bool:
+    """Add hydrogens to a non-standard residue PDB using OpenBabel.
+
+    Crystal PDB ligand records typically contain only heavy atoms.  Passing
+    such an H-less PDB to ``antechamber`` produces a GAFF2 mol2 with the same
+    missing-H valence structure, which then forces MCPB.py to compute an
+    incorrect total electron count (often odd, forcing a wrong-state doublet
+    optimisation that does not converge in Berny).  The general remedy is to
+    add hydrogens from standard valences before antechamber sees the file.
+
+    OpenBabel's ``obabel -h`` infers H count from heavy-atom connectivity and
+    standard valences and writes the H-added structure to ``output_pdb``.
+    Returns True when the output file is non-empty.
+    """
+    if not input_pdb.is_file() or input_pdb.stat().st_size == 0:
+        return False
+    obabel = shutil.which("obabel") or shutil.which("babel")
+    if obabel is None:
+        # No OpenBabel — caller can still proceed with antechamber on the
+        # H-less PDB and accept the consequences (will likely produce a wrong
+        # electron count for non-rigid organic ligands).
+        return False
+    try:
+        subprocess.run(
+            [obabel, str(input_pdb), "-O", str(output_pdb), "-h"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except Exception:
+        return False
+    return output_pdb.is_file() and output_pdb.stat().st_size > 0
+
+
 def _generate_naa_mol2(
     resname: str,
     pdb_path: Path,
     mol2_path: Path,
     net_charge: int = 0,
 ) -> bool:
-    """Try to generate a GAFF2 mol2 for *resname* using antechamber."""
+    """Try to generate a GAFF2 mol2 for *resname* using antechamber.
+
+    Pre-step: ensure the input PDB has hydrogens.  Crystal ligand PDB records
+    almost never include hydrogens, so we route the file through OpenBabel
+    (``obabel -h``) first when available.  The H-added intermediate is written
+    next to ``mol2_path`` and reused as antechamber's input.  Without this
+    pre-step, antechamber happily produces a mol2 with the missing-H valence
+    structure, and MCPB.py downstream computes an incorrect total electron
+    count (typically odd, forcing a wrong-multiplicity doublet calculation
+    that does not converge under Berny optimisation in Gaussian).
+    """
     if not pdb_path.is_file() or pdb_path.stat().st_size == 0:
         return False
     antechamber = shutil.which("antechamber")
     if antechamber is None:
         return False
+
+    antechamber_input = pdb_path
+    h_added_pdb = mol2_path.parent / f"{resname}_H.pdb"
+    if _add_hydrogens_to_residue_pdb(pdb_path, h_added_pdb):
+        antechamber_input = h_added_pdb
+
     try:
         subprocess.run(
             [
                 antechamber,
-                "-i", str(pdb_path),
+                "-i", str(antechamber_input),
                 "-fi", "pdb",
                 "-o", str(mol2_path),
                 "-fo", "mol2",
@@ -846,7 +897,19 @@ def _process_one_site(
 
         metal_identity = METAL_RESIDUE_IDENTITY.get(element)
         formal_charge = metal_identity[1] if metal_identity else None
-        spin_guess = _UNAMBIGUOUS_SPIN.get(element)
+        # Spin selection: prefer the (element, formal_charge) lookup which covers
+        # Cu(II), Ti(III), Mn(II), Fe(II/III), etc.  The first candidate is the
+        # biological default (HS for first-row open-shell, LS for strong-field
+        # d6); remaining candidates are recorded in the .in comment for the user.
+        # Falls back to the legacy element-only view for back-compat when no
+        # candidates are tabulated.
+        spin_candidates = _get_spin_candidates(element, formal_charge)
+        if spin_candidates:
+            spin_guess = spin_candidates[0]
+            spin_alternatives = spin_candidates[1:]
+        else:
+            spin_guess = _UNAMBIGUOUS_SPIN.get(element)
+            spin_alternatives = ()
 
         mol2_filename: str
         if formal_charge is not None:
@@ -895,6 +958,7 @@ def _process_one_site(
             formal_charge=formal_charge,
             spin_guess=spin_guess,
             naa_mol2files=naa_mol2files if naa_mol2files else None,
+            spin_alternatives=spin_alternatives,
         )
         _write_commands_sh(
             mcpb_dir / "commands.sh",
@@ -909,6 +973,7 @@ def _process_one_site(
         site_result["mcpb_scaffold_generated"] = True
         site_result["formal_charge"] = formal_charge
         site_result["spin_multiplicity"] = spin_guess
+        site_result["spin_alternatives"] = list(spin_alternatives)
 
     # ------------------------------------------------------------------
     # logs — pipeline log for this site

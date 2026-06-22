@@ -14,12 +14,108 @@ from stack_protein_preparation.metalls_check import (
     read_pdb_atom_records,
 )
 
-# Spin multiplicity is unambiguous only for closed-shell d10 ions.
-_UNAMBIGUOUS_SPIN: dict[str, int] = {
-    "ZN": 1,  # d10 Zn2+: singlet (closed shell, no unpaired electrons)
-    "CD": 1,  # d10 Cd2+: singlet
-    "HG": 1,  # d10 Hg2+: singlet
+# Plausible spin multiplicities per (element_symbol_upper, formal_charge).
+# Order matters: the first entry is the biological default that FRUTON writes
+# into the MCPB.in scaffold (and submits as small_opt's charge_m_sm spin).
+# Subsequent entries are documented as alternatives in the scaffold comment
+# so the user can swap them when the geometry/coordination clearly demands it.
+#
+# Naming choice: HS (high-spin) is the biological-protein default for first-row
+# open-shell metals (Mn(II), Fe(II/III), Co(II), Ni(II) octahedral) because most
+# metalloenzymes operate weak-field ligand sets (His/Asp/Glu/H2O/Cys).
+# Square-planar Ni(II) (LS) and porphyrinic LS Fe(II) are real exceptions —
+# users should override after inspecting coordination.
+#
+# Closed-shell ions (d0, d10, d6-LS, etc.) have a single entry → unambiguous,
+# behaves like the original _UNAMBIGUOUS_SPIN.
+_PLAUSIBLE_SPINS: dict[tuple[str, int], tuple[int, ...]] = {
+    # d10 closed-shell — unambiguous
+    ("ZN", 2): (1,),
+    ("CD", 2): (1,),
+    ("HG", 2): (1,),
+    ("CU", 1): (1,),
+    # d9 — Cu(II): always one unpaired electron
+    ("CU", 2): (2,),
+    # d8 — Ni(II): octahedral HS triplet, square-planar LS singlet
+    ("NI", 2): (3, 1),
+    # d7 — Co(II): HS quartet dominant biologically, LS doublet rarer
+    ("CO", 2): (4, 2),
+    # d6 — Fe(II) HS quintet (deoxy-heme, non-heme), LS singlet (CO/CN/strong field)
+    ("FE", 2): (5, 1),
+    # d6 — Co(III) typically LS singlet (strong-field d6), HS quintet rare
+    ("CO", 3): (1, 5),
+    # d5 — Fe(III) HS sextet (most protein sites), LS doublet (cytochromes, low-spin heme)
+    ("FE", 3): (6, 2),
+    # d5 — Mn(II) HS sextet (almost always), LS doublet only in very strong fields
+    ("MN", 2): (6, 2),
+    # d4 — Mn(III) HS quintet, LS triplet possible
+    ("MN", 3): (5, 3),
+    # d4 — Fe(IV) HS quintet, LS triplet in compound I/II of peroxidases (LS triplet common)
+    ("FE", 4): (3, 5),
+    # d3 — Cr(III) quartet (essentially fixed)
+    ("CR", 3): (4,),
+    # d3 — Mn(IV) quartet
+    ("MN", 4): (4,),
+    # d2 — V(III) triplet
+    ("V", 3): (3,),
+    # d1 — Ti(III) doublet
+    ("TI", 3): (2,),
+    # d1 — V(IV) doublet
+    ("V", 4): (2,),
+    # d0 — closed shell
+    ("TI", 4): (1,),
+    ("V", 5): (1,),
+    ("ZR", 4): (1,),
+    ("MO", 6): (1,),
+    # Group 1/2 ions — closed shell
+    ("MG", 2): (1,),
+    ("CA", 2): (1,),
+    ("NA", 1): (1,),
+    ("K", 1): (1,),
 }
+
+
+def _get_spin_candidates(element: str, formal_charge: int | None) -> tuple[int, ...]:
+    """Return the ordered tuple of plausible multiplicities for the given metal.
+
+    Empty tuple means FRUTON has no opinion — the .in scaffold will fall back
+    to a TODO_spin placeholder requiring the user to set it by hand.
+    """
+    if formal_charge is None:
+        return ()
+    return _PLAUSIBLE_SPINS.get((element.upper(), formal_charge), ())
+
+
+# Back-compat shim: external callers (metall_params.py, _metall_params_helpers.py)
+# still query ``_UNAMBIGUOUS_SPIN.get(element)`` and expect either an int or None.
+# We synthesise a dict-like view that returns the default spin (first candidate)
+# only when the element-charge pair is unambiguous (single candidate); otherwise
+# returns None so the caller writes a clearly-marked alternative-spin scaffold.
+class _UnambiguousSpinView:
+    """Element-only view: returns the default multiplicity only when the
+    metal has exactly one plausible spin across its plausible oxidation states.
+
+    This preserves the original ``_UNAMBIGUOUS_SPIN.get("ZN") -> 1`` semantics
+    for d10 closed-shell ions while explicitly returning ``None`` for ions like
+    Fe/Mn/Co/Ni where the chemistry is genuinely ambiguous and the caller must
+    handle alternative-spin enumeration (see Task #7 phase 2).
+    """
+
+    def get(self, element: str, default: int | None = None) -> int | None:
+        candidates_by_ox = [
+            spins
+            for (el, _ox), spins in _PLAUSIBLE_SPINS.items()
+            if el == element.upper()
+        ]
+        if not candidates_by_ox:
+            return default
+        unique_spins = {s for tup in candidates_by_ox for s in tup}
+        if len(unique_spins) == 1:
+            return next(iter(unique_spins))
+        return default
+
+
+_UNAMBIGUOUS_SPIN = _UnambiguousSpinView()
 
 # ---------------------------------------------------------------------------
 # MCPB scaffold writers (03_mcpb)
@@ -37,6 +133,7 @@ def _write_mcpb_in(
     formal_charge: int | None,
     spin_guess: int | None,
     naa_mol2files: list[str] | None = None,
+    spin_alternatives: tuple[int, ...] = (),
 ) -> None:
     """Write a first-pass MCPB.py ``.in`` scaffold.
 
@@ -44,6 +141,11 @@ def _write_mcpb_in(
     metal formal charge, spin for d10 ions) are filled in directly.  Fields
     that require manual chemistry input (spin for open-shell metals, ligand
     partial charges) are written as ``TODO`` with an explanatory comment.
+
+    ``spin_alternatives`` is the ordered tuple of additional plausible
+    multiplicities (excluding ``spin_guess``) for this (element, oxidation)
+    pair.  When present, the scaffold comment lists them so the user can swap
+    in HS/LS without recomputing the table by hand.
     """
     group_name = f"{pdb_id}_{element}_{chain}_{resseq}"
     cut_off = max_contact_dist + 0.5
@@ -66,11 +168,23 @@ def _write_mcpb_in(
     if formal_charge is not None and spin_guess is not None:
         charge_sm_line = f"charge_m_sm {formal_charge} {spin_guess}"
         charge_lm_line = f"charge_m_lm {formal_charge} {spin_guess}"
-        charge_comment = (
-            f"# Metal formal charge {formal_charge}+ and spin {spin_guess} "
-            f"(unambiguous for {element}, auto-filled).\n"
-            "# NOTE: Add net charge of any ionised ligand residues in the QM region."
-        )
+        if spin_alternatives:
+            alt_pretty = ", ".join(str(s) for s in spin_alternatives)
+            charge_comment = (
+                f"# Metal formal charge {formal_charge}+ and spin {spin_guess} "
+                f"auto-filled (biological default for {element}{formal_charge}+).\n"
+                f"# Alternative plausible multiplicities for this ion: {alt_pretty}.\n"
+                f"# If the coordination geometry / ligand-field clearly favours an\n"
+                f"# alternative (e.g. square-planar Ni(II) → 1, low-spin heme Fe(II) → 1),\n"
+                f"# substitute it in the charge_m_sm / charge_m_lm lines below.\n"
+                "# NOTE: Add net charge of any ionised ligand residues in the QM region."
+            )
+        else:
+            charge_comment = (
+                f"# Metal formal charge {formal_charge}+ and spin {spin_guess} "
+                f"(unambiguous for {element}, auto-filled).\n"
+                "# NOTE: Add net charge of any ionised ligand residues in the QM region."
+            )
     elif formal_charge is not None:
         charge_sm_line = f"charge_m_sm {formal_charge} TODO_spin"
         charge_lm_line = f"charge_m_lm {formal_charge} TODO_spin"
@@ -131,6 +245,134 @@ water_model tip3p
     output_path.write_text(content, encoding="utf-8")
 
 
+# ---------------------------------------------------------------------------
+# MCPB input/output consistency audit
+# ---------------------------------------------------------------------------
+
+def _parse_charge_mult_from_in_file(in_path: Path) -> tuple[int, int] | None:
+    """Return (charge, multiplicity) from ``charge_m_sm <C> <M>`` in an MCPB .in
+    file.  Returns None if the line is absent or marked TODO.
+    """
+    if not in_path.is_file():
+        return None
+    for line in in_path.read_text(errors="replace").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("charge_m_sm"):
+            continue
+        parts = stripped.split()
+        if len(parts) < 3:
+            return None
+        try:
+            return int(parts[1]), int(parts[2])
+        except ValueError:
+            return None
+    return None
+
+
+def _parse_charge_mult_from_com_file(com_path: Path) -> tuple[int, int] | None:
+    """Return (charge, multiplicity) from a Gaussian ``.com`` input.
+
+    The line follows the route + blank + title + blank block.  We scan the first
+    ~14 lines and return the first two-integer line found.
+    """
+    if not com_path.is_file():
+        return None
+    import re as _re
+    int_pair = _re.compile(r"^(-?\d+)\s+(\d+)\s*$")
+    for idx, line in enumerate(com_path.read_text(errors="replace").splitlines()):
+        if idx > 14:
+            break
+        m = int_pair.match(line.strip())
+        if m:
+            return int(m.group(1)), int(m.group(2))
+    return None
+
+
+def audit_mcpb_input_consistency(mcpb_dir: Path) -> list[dict[str, object]]:
+    """Audit charge/multiplicity consistency between an MCPB ``.in`` and its
+    Gaussian ``.com`` files.
+
+    Returns a list of issue dicts.  An empty list means every .com's leading
+    ``<charge> <mult>`` line matches what the .in's ``charge_m_sm`` prescribed.
+    Detects:
+
+    * .com hand-edited after MCPB.py emitted it (most common cause when a user
+      tweaks a route to retry stuck convergence and accidentally changes the
+      electronic state).
+    * .com missing the charge/mult line entirely (Gaussian will crash on read).
+    * .in still carrying a TODO_charge / TODO_spin placeholder.
+
+    Re-running ``MCPB.py -s 1`` regenerates .com from .in and clears drift.
+    """
+    issues: list[dict[str, object]] = []
+    in_files = sorted(mcpb_dir.glob("*.in"))
+    if not in_files:
+        return issues
+    in_path = in_files[0]
+    expected = _parse_charge_mult_from_in_file(in_path)
+    if expected is None:
+        issues.append(
+            {
+                "kind": "in_unparseable_or_todo",
+                "in_path": str(in_path),
+                "message": (
+                    "Could not parse charge_m_sm from the .in (TODO "
+                    "placeholder or missing line).  MCPB.py needs explicit "
+                    "charge and multiplicity to emit Gaussian inputs."
+                ),
+            }
+        )
+        return issues
+    expected_charge, expected_mult = expected
+    gauss_dir = mcpb_dir / "step02_gaussian"
+    if not gauss_dir.is_dir():
+        gauss_dir = mcpb_dir / "step01_gen_inputs"
+    for com_path in sorted(gauss_dir.glob("*.com")):
+        # small_fc reads small_opt.chk via Geom=AllCheckpoint and legitimately
+        # omits an explicit charge/mult line; skip.
+        if com_path.name.endswith("_small_fc.com"):
+            continue
+        observed = _parse_charge_mult_from_com_file(com_path)
+        if observed is None:
+            issues.append(
+                {
+                    "kind": "com_missing_charge_mult",
+                    "com_path": str(com_path),
+                    "expected_charge": expected_charge,
+                    "expected_mult": expected_mult,
+                    "message": (
+                        f"No charge/multiplicity line found in {com_path.name}; "
+                        "Gaussian will fail to read the input."
+                    ),
+                }
+            )
+            continue
+        observed_charge, observed_mult = observed
+        if observed_charge != expected_charge or observed_mult != expected_mult:
+            issues.append(
+                {
+                    "kind": "com_in_charge_mult_mismatch",
+                    "com_path": str(com_path),
+                    "in_path": str(in_path),
+                    "expected_charge": expected_charge,
+                    "expected_mult": expected_mult,
+                    "observed_charge": observed_charge,
+                    "observed_mult": observed_mult,
+                    "message": (
+                        f"{com_path.name} has charge={observed_charge}, "
+                        f"mult={observed_mult} but the .in prescribes "
+                        f"{expected_charge}/{expected_mult}.  Either the .com "
+                        "was hand-edited after MCPB.py -s 1, or MCPB.py "
+                        "auto-derived a different charge from the QM-region "
+                        "residue composition.  Re-run MCPB.py -s 1 to "
+                        "regenerate .com from .in, or update .in to match the "
+                        "intended electronic state."
+                    ),
+                }
+            )
+    return issues
+
+
 def _write_commands_sh(
     output_path: Path,
     pdb_id: str,
@@ -147,15 +389,29 @@ def _write_commands_sh(
     naa_gen_and_copy_lines = ""
     if naa_mol2files:
         lines: list[str] = [
-            "\n# -- Generate mol2 for non-standard ligand(s) if not already present --------"
+            "\n# -- Generate mol2 for non-standard ligand(s) if not already present --------",
+            "# IMPORTANT: crystal ligand PDB records almost never include hydrogens.",
+            "# antechamber does NOT add hydrogens itself; running it on a heavy-atom-only",
+            "# PDB produces a mol2 with the missing-H valence structure, and MCPB.py then",
+            "# computes an incorrect electron count (typically odd, forcing a wrong-state",
+            "# doublet Berny optimisation that does not converge in Gaussian).  We add",
+            "# hydrogens with OpenBabel first when available, then run antechamber.",
         ]
         for mol2_f in naa_mol2files:
             resname = mol2_f.replace(".mol2", "")
             lines.append(
                 f"if [ ! -f {mol2_f} ]; then\n"
                 f"    # TODO: verify net charge (default 0) — update -nc if ligand is ionised\n"
-                f"    antechamber -i {resname}.pdb -fi pdb -o {mol2_f} -fo mol2"
+                f"    if command -v obabel >/dev/null 2>&1; then\n"
+                f"        obabel {resname}.pdb -O {resname}_H.pdb -h\n"
+                f"        antechamber -i {resname}_H.pdb -fi pdb -o {mol2_f} -fo mol2"
                 f" -c bcc -nc 0 -at gaff2 -s 2 -pf y\n"
+                f"    else\n"
+                f"        echo \"WARNING: obabel not in PATH; running antechamber on H-less PDB.\" >&2\n"
+                f"        echo \"         Verify the resulting mol2 has the expected hydrogen count.\" >&2\n"
+                f"        antechamber -i {resname}.pdb -fi pdb -o {mol2_f} -fo mol2"
+                f" -c bcc -nc 0 -at gaff2 -s 2 -pf y\n"
+                f"    fi\n"
                 f"fi"
             )
         copy_str = " ".join(naa_mol2files)
