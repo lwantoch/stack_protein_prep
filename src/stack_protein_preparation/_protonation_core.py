@@ -578,6 +578,61 @@ def predict_protonation_states(
     }
 
 
+def parse_metal_coordinating_his_overrides(
+    pdb_path: Path,
+) -> dict[tuple[str, int, str], str]:
+    """Return ``{(chain, resnum, icode): "HID"|"HIE"}`` for each His residue
+    that coordinates a metal via its ring nitrogens, based on the PDB's
+    ``REMARK 620`` records.
+
+    Standard chemistry of metal-binding His: the nitrogen that points at the
+    metal donates its lone pair and is deprotonated; the other ring nitrogen
+    keeps its hydrogen.  In AMBER residue naming:
+
+    * Metal binds **NE2** → residue is **HID** (HD1 on ND1, NE2 free).
+    * Metal binds **ND1** → residue is **HIE** (HE2 on NE2, ND1 free).
+
+    Without this override propka may classify the His as HIP (doubly
+    protonated, +1) based on local pKa estimation that does not know about
+    metal coordination.  Downstream, MCPB.py's small-model extractor then
+    strips the metal-side H but does not update the residue's formal charge,
+    leaving an odd electron count and forcing the small-model Gaussian job to
+    run as a wrong-spin doublet (which seldom converges).
+
+    Returns an empty mapping if the PDB has no REMARK 620 records or no His
+    metal donors.
+    """
+    overrides: dict[tuple[str, int, str], str] = {}
+    if not pdb_path.is_file():
+        return overrides
+    for raw in pdb_path.read_text(errors="replace").splitlines():
+        if not raw.startswith("REMARK 620"):
+            continue
+        parts = raw.split()
+        # Coordination donor lines look like:
+        #   REMARK 620 <index> HIS <chain> <resnum> <atom> [angles...]
+        # Fixed columns: REMARK(0) 620(1) index(2) resname(3) chain(4)
+        #               resnum(5) atom(6) ...
+        if len(parts) < 7 or parts[3] != "HIS":
+            continue
+        chain = parts[4].strip()
+        try:
+            resnum = int(parts[5])
+        except ValueError:
+            continue
+        atom = parts[6].strip().upper()
+        if atom == "NE2":
+            forced = "HID"
+        elif atom == "ND1":
+            forced = "HIE"
+        else:
+            continue
+        # Insertion codes are not represented in REMARK 620; assume blank.
+        key = (chain, resnum, "")
+        overrides[key] = forced
+    return overrides
+
+
 def _apply_protonation_renames(
     input_path: Path,
     output_path: Path,
@@ -608,6 +663,83 @@ def _apply_protonation_renames(
 # ============================================================================
 # external tool execution
 # ============================================================================
+
+
+def restore_residue_numbering_from_template(
+    template_pdb: str | Path,
+    target_pdb: str | Path,
+) -> None:
+    """Renumber residues in *target_pdb* so the i-th unique residue takes the
+    i-th unique resseq seen in *template_pdb*.
+
+    ``gmx pdb2gmx`` is documented to preserve input residue numbering by
+    default (``-renum no``), but in practice it sometimes silently renumbers
+    fragments — for example the first fragment of a gap-split protein gets
+    consecutive 1..N numbering even though the input started at 126.  The
+    second fragment of the same protein under the same ``gmx`` invocation may
+    be preserved.  This inconsistency means we cannot rely on the flag; we
+    restore numbering ourselves by position.
+
+    The function reads protein residue numbers in order of first appearance
+    in each file (chain order, then residue order).  The output file is
+    rewritten in place: ATOM and HETATM resseq columns are replaced with the
+    template's corresponding resseq.  If the target has more residues than the
+    template (extra atoms pdb2gmx introduced — terminal NH3+/COO- treated as
+    new residues by some force fields), the surplus residues keep their
+    pdb2gmx-assigned numbers.
+    """
+    template_pdb = Path(template_pdb)
+    target_pdb = Path(target_pdb)
+    if not template_pdb.is_file() or not target_pdb.is_file():
+        return
+
+    def _ordered_unique_resseqs(pdb_path: Path) -> list[int]:
+        seen: list[int] = []
+        seen_set: set[tuple[str, int, str]] = set()
+        for ln in pdb_path.read_text(errors="replace").splitlines():
+            if not (ln.startswith("ATOM") or ln.startswith("HETATM")):
+                continue
+            try:
+                rs = int(ln[22:26])
+            except ValueError:
+                continue
+            chain = ln[21]
+            icode = ln[26] if len(ln) > 26 else " "
+            key = (chain, rs, icode)
+            if key not in seen_set:
+                seen_set.add(key)
+                seen.append(rs)
+        return seen
+
+    template_resseqs = _ordered_unique_resseqs(template_pdb)
+    if not template_resseqs:
+        return
+
+    new_lines: list[str] = []
+    mapping: dict[tuple[str, int, str], int] = {}
+    template_idx = 0
+    with target_pdb.open("r", encoding="utf-8", errors="replace") as fh:
+        for raw in fh:
+            if not (raw.startswith("ATOM") or raw.startswith("HETATM")):
+                new_lines.append(raw)
+                continue
+            try:
+                old = int(raw[22:26])
+            except ValueError:
+                new_lines.append(raw)
+                continue
+            chain = raw[21]
+            icode = raw[26] if len(raw) > 26 else " "
+            key = (chain, old, icode)
+            if key not in mapping:
+                if template_idx < len(template_resseqs):
+                    mapping[key] = template_resseqs[template_idx]
+                    template_idx += 1
+                else:
+                    mapping[key] = old  # past template, keep as-is
+            new = mapping[key]
+            new_lines.append(f"{raw[:22]}{new:4d}{raw[26:]}")
+    target_pdb.write_text("".join(new_lines), encoding="utf-8")
 
 
 def run_gmx_pdb2gmx_protonation(
@@ -678,7 +810,7 @@ def run_gmx_pdb2gmx_protonation(
     env = os.environ.copy()
     env.setdefault("GMX_MAXBACKUP", "-1")
 
-    return subprocess.run(
+    result = subprocess.run(
         cmd,
         check=False,
         capture_output=True,
@@ -688,3 +820,23 @@ def run_gmx_pdb2gmx_protonation(
         timeout=timeout_seconds,
         env=env,
     )
+
+    # Restore original residue numbering.  ``gmx pdb2gmx`` documents -renum no
+    # as the default, but in practice silently renumbers some fragments to
+    # 1..N (notably gap-route fragments whose input range starts well above
+    # 1).  Restoring by position keeps downstream comparisons (e.g. Maestro)
+    # and per-residue trim ranges meaningful.  Only run on a successful pdb2gmx
+    # invocation that actually wrote the output coordinate file.
+    if result.returncode == 0 and output_pdb.is_file():
+        try:
+            restore_residue_numbering_from_template(
+                template_pdb=input_pdb,
+                target_pdb=output_pdb,
+            )
+        except Exception:
+            # Restoration must never break a successful protonation; leave the
+            # raw pdb2gmx output in place if the helper hits an unexpected
+            # edge.  Downstream stages still get valid coordinates.
+            pass
+
+    return result

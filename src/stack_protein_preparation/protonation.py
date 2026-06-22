@@ -207,21 +207,47 @@ def protonate_selected_structure(
         if d["assigned"] == "HIP"
     }
     propka_him_count = len(propka_renames)
+
+    # Override propka for any His whose ring nitrogen coordinates a metal
+    # (PDB REMARK 620).  propka's pKa-based decision does not know about metal
+    # coordination, and frequently picks HIP for a His that is actually a
+    # neutral HID (NE2 → metal lone-pair donor) or HIE (ND1 → metal).  Letting
+    # the HIP label through means pdb2gmx hands MCPB.py a doubly-protonated
+    # ring on a metal donor, the small-model extractor strips both ring Hs
+    # without updating the charge, and the resulting QM region has an odd
+    # electron count that forces an unphysical doublet Gaussian run.
+    from stack_protein_preparation._protonation_core import (
+        parse_metal_coordinating_his_overrides,
+    )
+    # REMARK 620 lives in the original PDB file (component_split strips it).
+    # Try the canonical "<protein_dir>/<PDB_ID>.pdb" first; fall back to the
+    # protonation input (mostly for tests that pass an already-prepared PDB
+    # with REMARK records preserved).
+    _remark_source = protein_dir_guess / f"{pdb_id_guess}.pdb"
+    if not _remark_source.is_file():
+        _remark_source = input_pdb
+    metal_his_overrides = parse_metal_coordinating_his_overrides(_remark_source)
+    if metal_his_overrides:
+        propka_renames.update(metal_his_overrides)
+    metal_his_override_count = len(metal_his_overrides)
     propka_applied = bool(propka_renames)
 
     _screen_item("propka_ran", str(propka_ran))
     _screen_item("propka_his_total", str(len(his_assignments)))
     _screen_item("propka_hip_count", str(propka_him_count))
+    _screen_item("metal_his_override_count", str(metal_his_override_count))
     _append_log_block(
         module_log_path,
         "protonate_selected_structure:propka",
         [
-            f"propka_ran              : {propka_ran}",
-            f"propka_ph               : {ph}",
-            f"propka_his_total        : {len(his_assignments)}",
-            f"propka_hip_count        : {propka_him_count}",
-            f"propka_applied          : {propka_applied}",
-            f"propka_assignments      : {his_assignments}",
+            f"propka_ran               : {propka_ran}",
+            f"propka_ph                : {ph}",
+            f"propka_his_total         : {len(his_assignments)}",
+            f"propka_hip_count         : {propka_him_count}",
+            f"metal_his_override_count : {metal_his_override_count}",
+            f"metal_his_overrides      : {metal_his_overrides}",
+            f"propka_applied           : {propka_applied}",
+            f"propka_assignments       : {his_assignments}",
         ],
     )
 
@@ -396,6 +422,30 @@ def protonate_selected_structure(
     )
     _append_text_block(module_log_path, "protonate_selected_structure:stdout", result.stdout)
     _append_text_block(module_log_path, "protonate_selected_structure:stderr", result.stderr)
+
+    # Restore residue numbering against the ORIGINAL caller-supplied input.
+    # The in-function restore inside ``run_gmx_pdb2gmx_protonation`` uses
+    # whichever file was last passed to pdb2gmx as template — and on the
+    # pdbfixer-retry path that is the pdbfixer-fixed coordinates, which
+    # pdbfixer itself can renumber.  Re-applying the restore here against the
+    # caller's original ``input_pdb`` makes the final output's numbering
+    # consistent with what the user / upstream stages saw, regardless of
+    # which intermediate transformations were used.
+    if protonation_success and output_pdb.is_file():
+        try:
+            from stack_protein_preparation._protonation_core import (
+                restore_residue_numbering_from_template,
+            )
+            restore_residue_numbering_from_template(
+                template_pdb=input_pdb,
+                target_pdb=output_pdb,
+            )
+        except Exception as _restore_exc:
+            _append_log_block(
+                module_log_path,
+                "protonate_selected_structure:restore_residue_numbering_failed",
+                [str(_restore_exc)],
+            )
 
     error_message = ""
     if not protonation_success:
