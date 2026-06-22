@@ -182,8 +182,24 @@ open(outp, "w", encoding="utf-8").write("".join(out))
 PY
 INPUT_TO_RUN="$TMP_GPU"
 
-# -------- restart logic --------
 CHK_GUESS="${WORKDIR}/${BASE}.chk"
+
+# -------- stale-chk guard --------
+# Gaussian behaviour: when %Chk=foo.chk references a pre-existing .chk file
+# with a completed prior calculation, Gaussian silently prepends
+# "Geom=AllCheck Guess=Read" to the route.  That mutated route is incompatible
+# with input files that still carry a title/charge/atom block (the layout
+# MCPB.py emits for large_mk and small_opt), and Gaussian then crashes inside
+# Link 602 ("Wanted a floating point number… Found an end-of-line").
+# A fresh, non-restart submission must therefore start from a clean chk.
+# Only the chk whose basename matches the input is deleted; shared chks (e.g.
+# small_fc reading small_opt.chk) are untouched because their basename differs.
+if [[ "$RESTART" -ne 1 && -f "$CHK_GUESS" ]]; then
+  echo "Removing stale chk before fresh run: $CHK_GUESS"
+  rm -f "$CHK_GUESS"
+fi
+
+# -------- restart logic --------
 if [[ "$RESTART" -eq 1 && -f "$CHK_GUESS" ]]; then
   TMP_RESTART="${WORKDIR}/${BASE}.restart.com"
 
