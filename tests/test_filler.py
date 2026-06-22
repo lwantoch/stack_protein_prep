@@ -189,6 +189,40 @@ def test_analyze_fill_decision_returns_yellow_for_medium_internal_gap(
 def test_analyze_fill_decision_returns_alphafold_candidate_for_large_internal_gap(
     tmp_path: Path,
 ) -> None:
+    # Template covers 20 + 20 = 40 residues, internal gap is 9 — this is a
+    # genuine missing-loop inside a resolved domain (gap < template content),
+    # so the alphafold-candidate route is the right call.  The domain-only-spread
+    # guard only fires when the gap eclipses the resolved template content.
+    template_block = "A" * 20
+    gap_block = "-" * 9
+    target_gap_residues = "Q" * 9
+    ali_path = tmp_path / "test.ali"
+    ali_path.write_text(
+        ">P1;template\n"
+        "structureX:template:FIRST:@:LAST:@::::\n"
+        f"{template_block}{gap_block}{template_block}*\n"
+        ">P1;target\n"
+        "sequence:target:FIRST:@:LAST:@::::\n"
+        f"{template_block}{target_gap_residues}{template_block}*\n",
+        encoding="utf-8",
+    )
+
+    result = analyze_fill_decision(ali_path, "template")
+
+    assert result.should_run_modeller is False
+    assert result.overall_classification == "alphafold_candidate"
+    assert result.alphafold_candidate is True
+    assert len(result.gap_regions) == 1
+    assert result.gap_regions[0].gap_length == 9
+
+
+def test_analyze_fill_decision_returns_domain_only_spread_when_gap_exceeds_template(
+    tmp_path: Path,
+) -> None:
+    # Reproduces the 3OLL pathology: template resolves only a tiny part of the
+    # full-length target (4 residues) and the alignment spreads it across a
+    # 9-residue internal "gap" that is really un-crystallised regions outside
+    # the resolved domain.  FRUTON must refuse to fill in this case.
     ali_path = tmp_path / "test.ali"
     ali_path.write_text(
         ">P1;template\n"
@@ -203,10 +237,9 @@ def test_analyze_fill_decision_returns_alphafold_candidate_for_large_internal_ga
     result = analyze_fill_decision(ali_path, "template")
 
     assert result.should_run_modeller is False
-    assert result.overall_classification == "alphafold_candidate"
-    assert result.alphafold_candidate is True
-    assert len(result.gap_regions) == 1
-    assert result.gap_regions[0].gap_length == 9
+    assert result.overall_classification == "domain_only_spread"
+    assert result.alphafold_candidate is False
+    assert "Template resolves only part" in (result.skip_reason or "")
 
 
 def test_find_alignment_fasta_for_filler_prefers_exact_chain_match(

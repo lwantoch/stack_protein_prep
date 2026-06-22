@@ -47,6 +47,7 @@ from ._filler_shared import (
     _residue_has_peptide_backbone,
     _residue_name_to_one_letter,
     _residue_to_one_letter,
+    _renumber_model_from_uniprot_to_pdb,
     _resolve_residue_range_for_filler,
     _safe_str_path,
     _strip_gaps,
@@ -647,8 +648,23 @@ def run_filler_for_chain(
                 uniprot_residue_range=uniprot_residue_range,
                 pdb_to_uniprot_map=pdb_to_uniprot_map or None,
             )
-            trim_range = uniprot_residue_range or effective_residue_range
-            _trim_final_model_in_place(alphafold_model_path, trim_range)
+            # The AlphaFold output is in UniProt residue numbering.  Renumber it
+            # back to PDB numbering using the (PDB → UniProt) map, dropping any
+            # residues whose UniProt position has no PDB counterpart (these are
+            # parts of the canonical sequence the crystal never resolved and the
+            # user did not request via the CSV ``range`` column).  Then trim to
+            # the user's authoritative PDB range.  Falls back to the legacy
+            # UniProt-range trim only when no mapping is available.
+            if pdb_to_uniprot_map:
+                _renumber_model_from_uniprot_to_pdb(
+                    alphafold_model_path, pdb_to_uniprot_map
+                )
+                _trim_final_model_in_place(
+                    alphafold_model_path, effective_residue_range
+                )
+            else:
+                trim_range = uniprot_residue_range or effective_residue_range
+                _trim_final_model_in_place(alphafold_model_path, trim_range)
             result = _build_result(
                 chain_id=resolved_chain_id,
                 output_dir=output_dir,

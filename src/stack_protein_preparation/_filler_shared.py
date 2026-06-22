@@ -463,6 +463,46 @@ def _trim_final_model_in_place(model_path: Path, effective_residue_range: str) -
     model_path.write_text("".join(kept_lines), encoding="utf-8")
 
 
+def _renumber_model_from_uniprot_to_pdb(
+    model_path: Path,
+    pdb_to_uniprot_map: dict[int, int],
+) -> None:
+    """Rewrite ATOM record residue numbers from UniProt back to PDB numbering.
+
+    The AlphaFold fallback emits its model in UniProt residue numbering because
+    AlphaFold itself works in the full-length canonical sequence frame.  For
+    downstream comparison and parametrisation FRUTON's outputs must agree with
+    the crystal PDB numbering the user supplied via ``pdb_ids.csv``.
+
+    The reverse map (UniProt → PDB) is built from ``pdb_to_uniprot_map``.
+    Lines whose UniProt position is not in the map (i.e. the AlphaFold model
+    extends past the crystal's UniProt span — e.g. a C-terminal stretch the
+    crystal never resolved) are dropped, since they correspond to residues
+    outside the user's authoritative range and would otherwise leak into the
+    final trimmed output.
+    """
+    if not pdb_to_uniprot_map:
+        return
+    uniprot_to_pdb = {u: p for p, u in pdb_to_uniprot_map.items()}
+    rewritten: list[str] = []
+    with model_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("ATOM") or line.startswith("HETATM"):
+                raw_resseq = line[22:26].strip()
+                try:
+                    uniprot_pos = int(raw_resseq)
+                except ValueError:
+                    rewritten.append(line)
+                    continue
+                pdb_pos = uniprot_to_pdb.get(uniprot_pos)
+                if pdb_pos is None:
+                    continue  # drop residues outside the crystal's UniProt span
+                rewritten.append(f"{line[:22]}{pdb_pos:4d}{line[26:]}")
+            else:
+                rewritten.append(line)
+    model_path.write_text("".join(rewritten), encoding="utf-8")
+
+
 def _extract_backbone_residue_numbers(pdb_path: Path) -> list[int]:
     """Return ordered residue numbers for protein residues that have a peptide backbone.
 

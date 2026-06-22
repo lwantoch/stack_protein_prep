@@ -118,6 +118,35 @@ def analyze_fill_decision_from_template_alignment(
         )
 
     has_alphafold_gap = any(gap_region.gap_length >= 8 for gap_region in internal_gap_regions)
+
+    # Domain-only-vs-full-length guard.
+    # When a crystal that resolves only one domain is aligned against the
+    # full-length UniProt target, short spurious matches outside the
+    # crystallised domain scatter the template residues across the whole target.
+    # The stretches between those spurious fragments then look like very large
+    # "internal" gaps even though they are simply un-crystallised regions of the
+    # full-length protein, not missing loops to rebuild. Filling them (especially
+    # via AlphaFold, which crops to the spurious span) corrupts the model — e.g.
+    # 3OLL produced a 1072-residue model cropped to 370-1441 instead of the true
+    # 262-498 domain. Detect this when the missing (gap) content exceeds the
+    # residues the crystal actually provides, and skip filling: the downstream
+    # range-trim then keeps the genuine crystal domain.
+    template_residue_count = sum(1 for c in template_alignment_skeleton if c != "-")
+    total_internal_gap = sum(g.gap_length for g in internal_gap_regions)
+    if has_alphafold_gap and total_internal_gap > template_residue_count:
+        return FillDecision(
+            should_run_modeller=False,
+            overall_classification="domain_only_spread",
+            gap_regions=internal_gap_regions,
+            skip_reason=(
+                "Template resolves only part of the full-length target "
+                f"(crystallised residues={template_residue_count}, internal gap "
+                f"content={total_internal_gap}). The large gaps are un-crystallised "
+                "regions, not missing loops, so filling is skipped to avoid grafting "
+                "over residues outside the resolved domain."
+            ),
+            alphafold_candidate=False,
+        )
     if has_alphafold_gap:
         has_small_gap = any(gap_region.gap_length < 8 for gap_region in internal_gap_regions)
         return FillDecision(
