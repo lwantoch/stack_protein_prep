@@ -24,6 +24,7 @@ run_gaussian_parametrization_for_protein(protein_dir, pdb_id, slurm_config)
 
 from __future__ import annotations
 
+import getpass
 import json
 import os
 import shutil
@@ -107,7 +108,14 @@ def _sbatch_single(
         cmd.append(f"--dependency={dependency}")
     cmd += ["--wrap", f"bash {worker} {com_path}"]
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    return result.stdout.strip()
+    job_id = result.stdout.strip().split(";")[0]
+    # Record the submitted job id next to the .com so a later rerun can tell
+    # this job is already in flight and avoid a duplicate submission.
+    try:
+        com_path.with_suffix(".jobid").write_text(job_id, encoding="utf-8")
+    except OSError:
+        pass
+    return job_id
 
 
 def _wait_for_slurm_jobs(
@@ -151,6 +159,41 @@ def _gaussian_log_ok(log_path: Path) -> bool:
         return "Normal termination of Gaussian" in log_path.read_text(errors="replace")
     except Exception:
         return False
+
+
+def _active_slurm_job_ids() -> set[str]:
+    """Return the set of this user's currently queued/running SLURM job ids.
+
+    Used to detect Gaussian jobs that are already in flight (PENDING/RUNNING)
+    but have not yet produced a 'Normal termination' log, so a pipeline rerun
+    does not submit a duplicate of a job that is still on the cluster.
+    """
+    if shutil.which("squeue") is None:
+        return set()
+    try:
+        result = subprocess.run(
+            ["squeue", "--noheader", "--format=%i", "-u", getpass.getuser()],
+            capture_output=True, text=True, timeout=60,
+        )
+    except Exception:
+        return set()
+    return {
+        line.strip().split(".")[0]
+        for line in result.stdout.splitlines()
+        if line.strip()
+    }
+
+
+def _com_has_active_job(com_path: Path, active_job_ids: set[str]) -> bool:
+    """True if the job recorded for this .com is still queued/running."""
+    jobid_file = com_path.with_suffix(".jobid")
+    if not jobid_file.is_file():
+        return False
+    try:
+        job_id = jobid_file.read_text(errors="replace").strip().split(".")[0]
+    except OSError:
+        return False
+    return bool(job_id) and job_id in active_job_ids
 
 
 def _run_sh(script_name: str, work_dir: Path, timeout_s: int = 900) -> None:
@@ -376,18 +419,52 @@ def _submit_mcpb_jobs(
     slurm_config: SlurmConfig,
 ) -> list[str]:
     """Submit Gaussian jobs for all MCPB sites. Returns submitted job IDs."""
+    from stack_protein_preparation._metall_params_mcpb import (
+        audit_mcpb_input_consistency,
+    )
+
     all_job_ids = []
+    active_job_ids = _active_slurm_job_ids()
     for info in site_infos:
         if info["skip"] or info["error"]:
             continue
         group_name = info["group_name"]
         pdb_id = info["pdb_id"]
+        # Pre-flight: refuse to submit jobs from .com files whose charge/mult
+        # disagree with the .in.  Submitting a wrong-electronic-state job burns
+        # hours of cluster time computing the wrong chemistry; the user should
+        # either re-run MCPB.py -s 1 to regenerate .com from .in, or update the
+        # .in to match the intended state.  We log all issues and skip the
+        # entire site rather than gambling on partial submission.
+        issues = audit_mcpb_input_consistency(info["mcpb_dir"])
+        if issues:
+            issue_summary = "; ".join(
+                f"{i['kind']}:{Path(str(i.get('com_path', i.get('in_path', '?')))).name}"
+                for i in issues
+            )
+            info["error"] = (
+                f"mcpb_input_consistency: {issue_summary}.  Re-run MCPB.py -s 1 "
+                f"in {info['mcpb_dir']} to regenerate Gaussian inputs from .in, "
+                "or align .in's charge_m_sm with the intended electronic state."
+            )
+            for iss in issues:
+                info.setdefault("audit_issues", []).append(iss)
+            continue
         step02 = info["mcpb_dir"] / "step02_gaussian"
         opt_job_id: str | None = None
         for suffix in ("small_opt", "large_mk", "small_fc"):
             com = step02 / f"{group_name}_{suffix}.com"
             log = step02 / f"{group_name}_{suffix}.log"
             if not com.is_file() or _gaussian_log_ok(log):
+                continue
+            if _com_has_active_job(com, active_job_ids):
+                info.setdefault("already_running", []).append(suffix)
+                continue
+            if suffix == "small_fc" and opt_job_id is None and "small_opt" in info.get("already_running", []):
+                # small_opt is still on the cluster; submitting small_fc now would
+                # lose its afterok dependency. Defer to a later rerun once small_opt
+                # has finished (it will then submit cleanly with dep=None).
+                info.setdefault("deferred", []).append(suffix)
                 continue
             dep = f"afterok:{opt_job_id}" if suffix == "small_fc" and opt_job_id else None
             try:
@@ -412,6 +489,7 @@ def _submit_resp_jobs(
 ) -> list[str]:
     """Submit Gaussian jobs for all RESP residues. Returns submitted job IDs."""
     all_job_ids = []
+    active_job_ids = _active_slurm_job_ids()
     for info in residue_infos:
         if info["skip"] or info["error"]:
             continue
@@ -426,8 +504,14 @@ def _submit_resp_jobs(
         if not opt_com.is_file() or not esp_com.is_file():
             info["error"] = f"Expected .com files missing in {step02}"
             continue
+        opt_in_flight = _com_has_active_job(opt_com, active_job_ids)
+        esp_in_flight = _com_has_active_job(esp_com, active_job_ids)
+        if opt_in_flight or esp_in_flight:
+            info.setdefault("already_running", []).extend(
+                s for s, f in (("opt", opt_in_flight), ("esp", esp_in_flight)) if f
+            )
         try:
-            if _gaussian_log_ok(opt_log):
+            if _gaussian_log_ok(opt_log) or opt_in_flight:
                 opt_job_id = None
             else:
                 opt_job_id = _sbatch_single(
@@ -435,8 +519,12 @@ def _submit_resp_jobs(
                     f"{pdb_id}_{resname}_opt",
                 )
             dep = f"afterok:{opt_job_id}" if opt_job_id else None
-            if _gaussian_log_ok(esp_log):
+            if _gaussian_log_ok(esp_log) or esp_in_flight:
                 esp_job_id = None
+            elif opt_in_flight and not _gaussian_log_ok(opt_log):
+                # opt still on the cluster; defer esp so it keeps its dependency.
+                esp_job_id = None
+                info.setdefault("deferred", []).append("esp")
             else:
                 esp_job_id = _sbatch_single(
                     esp_com, worker, slurm_config, info["log_dir"],

@@ -1563,6 +1563,17 @@ def _parse_args() -> argparse.Namespace:
             "Requires --pdb-id when used to track per-protein rerun history."
         ),
     )
+    parser.add_argument(
+        "--to-step",
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "Stop running work steps after step N (4–18). Bounds the work "
+            "performed this run; the JSON/XLSX/report persistence steps (19–21) "
+            "always run so a bounded rerun never leaves stale on-disk state."
+        ),
+    )
     slurm = parser.add_argument_group("Slurm (Gaussian parametrization)")
     slurm.add_argument(
         "--slurm-partition", default="short", metavar="NAME",
@@ -1634,9 +1645,12 @@ def run_pipeline() -> None:
 
     target_pdb_id: str | None = args.pdb_id.strip().upper() if args.pdb_id else None
     from_step: int | None = args.from_step
+    to_step: int | None = args.to_step
 
     def _step_runs(n: int) -> bool:
-        return from_step is None or n >= from_step
+        return (from_step is None or n >= from_step) and (
+            to_step is None or n <= to_step
+        )
 
     FRUTON_LOG_DIR = protein_data_dir / "logs" / "fruton"
     FRUTON_LOG_PATH = protein_data_dir / "logs" / "fruton" / "fruton.log"
@@ -2302,6 +2316,40 @@ def run_pipeline() -> None:
                 filler_model_path=filler_model_path,
             )
 
+            # Prune prepared variant directories left over from a previous run
+            # whose variant set differed (e.g. a structure that used to produce
+            # best_complete but now resolves to gaps-only after a fill-decision
+            # change).  Stale directories are dangerous: downstream consumers
+            # select variants by priority, so an orphaned best_complete would be
+            # read in preference to the correct current variant.
+            from stack_protein_preparation.prepared_structure import (
+                sanitize_variant_label,
+            )
+            expected_variant_dirnames = {
+                sanitize_variant_label(str(p["variant_label"]))
+                for p in variant_plan_list
+            }
+            prepared_base_dir = pdb_dir / "prepared"
+            if prepared_base_dir.is_dir():
+                for existing_variant_dir in prepared_base_dir.iterdir():
+                    if (
+                        existing_variant_dir.is_dir()
+                        and existing_variant_dir.name not in expected_variant_dirnames
+                    ):
+                        shutil.rmtree(existing_variant_dir, ignore_errors=True)
+                        _screen_item(
+                            f"pruned stale prepared variant -> {pdb_id} "
+                            f"[{existing_variant_dir.name}]"
+                        )
+                        _append_fruton_log(
+                            "step_10:pruned_stale_prepared_variant",
+                            [
+                                f"pdb_id  : {pdb_id}",
+                                f"variant : {existing_variant_dir.name}",
+                                f"path    : {existing_variant_dir}",
+                            ],
+                        )
+
             successful_variant_label_list: list[str] = []
             successful_variant_result_list: list[dict[str, str]] = []
 
@@ -2943,7 +2991,7 @@ def run_pipeline() -> None:
         if str(r.get(GAUSSIAN_PARAMS_STATUS_COLUMN_NAME, "")).strip() == STATUS_REQUIRED
     ]
     gaussian_needs_hpc: list[str] = []
-    if _gaussian_pending_ids:
+    if _gaussian_pending_ids and (to_step is None or to_step >= 14):
         _screen_notice(
             "Gaussian jobs required for: " + ", ".join(_gaussian_pending_ids)
         )
