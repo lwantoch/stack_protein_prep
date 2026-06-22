@@ -200,7 +200,20 @@ def run_alignments_for_pdb_directory(
         )
         return
 
-    print(f"[INFO] Using UniProt FASTA: {uniprot_fasta_path.name}")
+    print(f"[INFO] Using UniProt FASTA (fallback/primary): {uniprot_fasta_path.name}")
+
+    # Build chain → UniProt map from DBREF records.  Multi-protein complexes
+    # have one DBREF per chain naming the correct accession; without this map
+    # every chain would be aligned against the lexicographically-first
+    # UniProt_*.fasta, which is the wrong protein for any chain whose
+    # accession does not sort first (e.g. 3OLL chain A is ESR2/Q92731 but
+    # NCOA1/Q15788 sorts first).
+    pdb_file_path = pdb_directory / f"{pdb_id}.pdb"
+    chain_to_uniprot_map = parse_dbref_chain_uniprot_map(pdb_file_path)
+    if chain_to_uniprot_map:
+        print(
+            f"[INFO] Chain → UniProt map from DBREF: {chain_to_uniprot_map}"
+        )
 
     alignment_job_list: list[AlignmentJob] = []
 
@@ -211,6 +224,8 @@ def run_alignments_for_pdb_directory(
                 uniprot_fasta_path=uniprot_fasta_path,
                 alignment_prefix="SEQRES",
                 alignment_directory=alignment_directory,
+                chain_to_uniprot_map=chain_to_uniprot_map,
+                fasta_directory=fasta_directory,
             )
         )
     else:
@@ -223,6 +238,8 @@ def run_alignments_for_pdb_directory(
                 uniprot_fasta_path=uniprot_fasta_path,
                 alignment_prefix="ATOM",
                 alignment_directory=alignment_directory,
+                chain_to_uniprot_map=chain_to_uniprot_map,
+                fasta_directory=fasta_directory,
             )
         )
     else:
@@ -504,11 +521,72 @@ def build_alignment_job(
     )
 
 
+def parse_dbref_chain_uniprot_map(pdb_path: Path) -> dict[str, str]:
+    """Read PDB ``DBREF`` records and return ``{chain_id: uniprot_accession}``.
+
+    DBREF is the canonical PDB-defined mapping from a coordinate-file chain to
+    its source database accession.  Multi-protein complexes (e.g. 3OLL with
+    ESR2 chains A/B and NCOA1 peptide chains C/D) explicitly list one DBREF
+    line per chain with the correct UniProt code.
+
+    Without this lookup, ``get_primary_uniprot_fasta_path`` falls back to a
+    lexicographically-sorted FASTA glob, which arbitrarily picks the wrong
+    UniProt for any chain whose accession does not sort first — producing
+    nonsense alignments (ESR2 chain aligned against NCOA1 sequence, etc.).
+
+    Returns an empty dict if the PDB has no DBREF records pointing at UniProt.
+    """
+    chain_to_uniprot: dict[str, str] = {}
+    if not pdb_path.is_file():
+        return chain_to_uniprot
+    for raw in pdb_path.read_text(errors="replace").splitlines():
+        if not (raw.startswith("DBREF ") or raw.startswith("DBREF1")):
+            continue
+        # DBREF format (cols 1-based, fixed-width):
+        # cols 13: chain ID, cols 27-32: database name, cols 34-41: accession
+        if len(raw) < 41:
+            continue
+        chain_id = raw[12:13].strip()
+        db_name = raw[26:32].strip().upper()
+        db_accession = raw[33:41].strip()
+        if db_name not in {"UNP", "UNIPROT"}:
+            continue
+        if chain_id and db_accession and chain_id not in chain_to_uniprot:
+            chain_to_uniprot[chain_id] = db_accession
+    return chain_to_uniprot
+
+
+def _resolve_uniprot_fasta_for_chain(
+    chain_label: str,
+    fasta_directory: Path,
+    chain_to_uniprot_map: dict[str, str],
+    fallback_uniprot_fasta_path: Path,
+) -> Path:
+    """Pick the UniProt FASTA file matching this chain's DBREF accession.
+
+    ``chain_label`` is the chain identifier extracted from the local PDB FASTA
+    header (e.g. ``chain_A`` → ``A``).  If the DBREF map names an accession for
+    this chain and the matching ``UniProt_<accession>.fasta`` exists in
+    ``fasta_directory``, that file is returned.  Otherwise we fall back to the
+    legacy primary UniProt FASTA, preserving behaviour for PDBs that have no
+    DBREF (or only one UniProt).
+    """
+    chain_id = chain_label.replace("chain_", "")
+    accession = chain_to_uniprot_map.get(chain_id)
+    if accession:
+        candidate = fasta_directory / f"UniProt_{accession}.fasta"
+        if candidate.is_file():
+            return candidate
+    return fallback_uniprot_fasta_path
+
+
 def build_chain_specific_alignment_jobs(
     pdb_fasta_path: Path,
     uniprot_fasta_path: Path,
     alignment_prefix: str,
     alignment_directory: Path,
+    chain_to_uniprot_map: dict[str, str] | None = None,
+    fasta_directory: Path | None = None,
 ) -> list[AlignmentJob]:
     """
     Build one pairwise alignment job per chain-specific PDB FASTA record.
@@ -518,36 +596,53 @@ def build_chain_specific_alignment_jobs(
     pdb_fasta_path
         Multi-entry local PDB-derived FASTA file.
     uniprot_fasta_path
-        UniProt FASTA file expected to contain exactly one record.
+        UniProt FASTA file used as the fallback for chains whose DBREF
+        accession is not in ``chain_to_uniprot_map`` or whose matching
+        FASTA file is missing.
     alignment_prefix
         Prefix such as "SEQRES" or "ATOM".
     alignment_directory
         Output directory for temporary and final alignment files.
-
-    Returns
-    -------
-    list[AlignmentJob]
-        One job per local PDB FASTA record.
+    chain_to_uniprot_map
+        Optional ``{chain_id: uniprot_accession}`` mapping from DBREF records.
+        When provided together with ``fasta_directory``, each chain's alignment
+        uses its own DBREF-named UniProt FASTA, so multi-protein complexes get
+        correct chain-by-chain alignments instead of all chains being aligned
+        against a single (often wrong) UniProt.
+    fasta_directory
+        Directory containing the per-accession ``UniProt_<accession>.fasta``
+        files; required for chain-specific lookup.
     """
     pdb_records = read_fasta_records(pdb_fasta_path)
     if not pdb_records:
         print(f"[WARNING] No FASTA records found in {pdb_fasta_path}")
         return []
 
-    uniprot_records = read_fasta_records(uniprot_fasta_path)
-    if len(uniprot_records) != 1:
-        raise ValueError(
-            f"Expected exactly 1 UniProt FASTA record in {uniprot_fasta_path}, "
-            f"but found {len(uniprot_records)}."
-        )
-
-    uniprot_header, uniprot_sequence = uniprot_records[0]
-
     alignment_job_list: list[AlignmentJob] = []
 
     for pdb_header, pdb_sequence in pdb_records:
         chain_label = extract_chain_label_from_header(pdb_header)
         alignment_name = f"{alignment_prefix}_{chain_label}_vs_UniProt"
+
+        # Pick UniProt FASTA: chain-specific if DBREF gives an accession,
+        # otherwise the caller's fallback.
+        if chain_to_uniprot_map and fasta_directory is not None:
+            chain_uniprot_fasta_path = _resolve_uniprot_fasta_for_chain(
+                chain_label=chain_label,
+                fasta_directory=fasta_directory,
+                chain_to_uniprot_map=chain_to_uniprot_map,
+                fallback_uniprot_fasta_path=uniprot_fasta_path,
+            )
+        else:
+            chain_uniprot_fasta_path = uniprot_fasta_path
+
+        uniprot_records = read_fasta_records(chain_uniprot_fasta_path)
+        if len(uniprot_records) != 1:
+            raise ValueError(
+                f"Expected exactly 1 UniProt FASTA record in "
+                f"{chain_uniprot_fasta_path}, but found {len(uniprot_records)}."
+            )
+        uniprot_header, uniprot_sequence = uniprot_records[0]
 
         combined_input_fasta_path = (
             alignment_directory / f"{alignment_name}.input.fasta"

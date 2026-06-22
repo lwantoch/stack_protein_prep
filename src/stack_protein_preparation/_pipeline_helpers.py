@@ -108,14 +108,53 @@ def _copy_representative_protein_component_to_monomer_path(
 
 
 def _find_uniprot_id_for_protein(pdb_dir: Path) -> str:
+    """Return the UniProt accession most likely to represent this PDB's main
+    protein chain.
+
+    For single-protein crystals the answer is trivial: the one UniProt FASTA
+    in ``fasta/`` is the main one.  For multi-protein complexes (e.g. 3OLL
+    with ESR2 + a short NCOA1 coactivator peptide), naïve alphabetical
+    selection picks the wrong accession (Q15788 NCOA1 sorts before Q92731
+    ESR2 even though chain A is ESR2).  We resolve this via the canonical
+    PDB DBREF records: pick the UniProt whose chain spans the most residues
+    in the crystal — that is almost always the principal chain users care
+    about for docking / parametrisation.
+    """
     fasta_dir = pdb_dir / "fasta"
     if not fasta_dir.exists():
         return ""
-    for fasta_path in sorted(fasta_dir.glob("UniProt_*.fasta")):
-        match = re.match(r"^UniProt_([A-Z0-9]+)\.fasta$", fasta_path.name)
-        if match:
-            return match.group(1)
-    return ""
+    available_accessions = {
+        re.match(r"^UniProt_([A-Z0-9]+)\.fasta$", p.name).group(1)
+        for p in fasta_dir.glob("UniProt_*.fasta")
+        if re.match(r"^UniProt_([A-Z0-9]+)\.fasta$", p.name)
+    }
+    if not available_accessions:
+        return ""
+
+    pdb_id = pdb_dir.name.upper()
+    pdb_file_path = pdb_dir / f"{pdb_id}.pdb"
+    if pdb_file_path.is_file():
+        from stack_protein_preparation.sequence_alignment import (
+            parse_dbref_chain_uniprot_map,
+        )
+        chain_to_uniprot = parse_dbref_chain_uniprot_map(pdb_file_path)
+        if chain_to_uniprot:
+            chain_residue_counts: dict[str, int] = {}
+            with pdb_file_path.open("r", encoding="utf-8", errors="replace") as fh:
+                for ln in fh:
+                    if ln.startswith("ATOM") and ln[12:16].strip() == "CA":
+                        chain = ln[21]
+                        chain_residue_counts[chain] = (
+                            chain_residue_counts.get(chain, 0) + 1
+                        )
+            for chain in sorted(
+                chain_residue_counts, key=chain_residue_counts.get, reverse=True
+            ):
+                accession = chain_to_uniprot.get(chain)
+                if accession and accession in available_accessions:
+                    return accession
+
+    return sorted(available_accessions)[0]
 
 
 def _find_template_pdb_for_filler(
