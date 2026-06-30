@@ -432,9 +432,11 @@ def _write_commands_sh(
 #   3. Once all Gaussian jobs complete:  bash run_after_gaussian.sh
 # =============================================================================
 set -euo pipefail
-{naa_gen_and_copy_lines}
-# -- Create step01 directory and copy all required inputs --------------------
+
+# -- Create step01 directory FIRST so subsequent staging commands have a dest -
 mkdir -p step01_gen_inputs
+{naa_gen_and_copy_lines}
+# -- Copy required core inputs ------------------------------------------------
 cp {pdb_id}.in {pdb_id}_mcpb.pdb {mol2_filename} step01_gen_inputs/
 # -- Run MCPB.py step 1 (generates Gaussian input files and model PDBs) ------
 cd step01_gen_inputs
