@@ -491,6 +491,11 @@ def remove_metal_coordinating_hydrogens(
     # Write cleaned PDB
     _write_cleaned_pdb(input_pdb_path, cleaned_pdb_path, remove_serials)
 
+    # Reorient metal-coordinating water hydrogens.  Removing them would leave
+    # an OH- where the structure must have HOH; flipping them keeps the water
+    # complete with both Hs facing away from the metal (the correct geometry).
+    waters_reoriented = reorient_metal_coordinating_water_hydrogens(cleaned_pdb_path)
+
     # Write TSVs
     _write_tsv(removed_tsv_path, _REMOVED_HEADER, removed_rows)
     _write_tsv(kept_tsv_path, _KEPT_HEADER, kept_rows)
@@ -499,8 +504,8 @@ def remove_metal_coordinating_hydrogens(
     result = _make_result(
         "success",
         (
-            f"Removed {len(remove_serials)} hydrogen(s) from {len(metals)} "
-            f"transition-metal site(s)."
+            f"Removed {len(remove_serials)} hydrogen(s) and reoriented "
+            f"{waters_reoriented} water(s) from {len(metals)} transition-metal site(s)."
         ),
         removed_count=len(remove_serials),
         kept_count=len(kept_rows),
@@ -513,6 +518,7 @@ def remove_metal_coordinating_hydrogens(
         "m_h_distance_max_angstrom": m_h_distance_max_angstrom,
         "m_h_slack_angstrom": m_h_slack_angstrom,
         "keep_water_hydrogens": keep_water_hydrogens,
+        "waters_reoriented": waters_reoriented,
     })
     return result
 
@@ -588,6 +594,136 @@ def _write_cleaned_pdb(
                 if serial in remove_serials:
                     continue
             dst.write(line)
+
+
+def reorient_metal_coordinating_water_hydrogens(
+    pdb_path: Path,
+    *,
+    metal_o_max_angstrom: float = 2.8,
+    h_m_clash_max_angstrom: float = 2.5,
+    oh_bond_length: float = 0.96,
+    hoh_angle_deg: float = 104.5,
+) -> int:
+    """Rotate water hydrogens that point toward a coordinated metal so they
+    point away.  Returns the number of waters reoriented (in-place).
+
+    pdb2gmx/propka place water hydrogens based on local hydrogen-bond geometry
+    and have no concept of metal coordination, so a water whose oxygen donates
+    a lone pair to a transition metal often ends up with one or both H atoms
+    pointing AT the metal.  That is electrostatically nonsensical and
+    catastrophic for SCF convergence in the MCPB small/large model.
+
+    The fix: for each HOH whose O is within ``metal_o_max_angstrom`` of a
+    transition metal and whose nearest H is within ``h_m_clash_max_angstrom``
+    of the same metal, recompute both H positions so the H–O–H bisector points
+    from the metal to the oxygen (i.e. both Hs face away from the metal) and
+    the H–O–H angle is the standard 104.5°.  The original H–O–H plane is
+    preserved when possible (we keep the perpendicular component from the
+    original H1 direction); when both Hs are essentially along the M–O axis
+    (degenerate case) we fall back to a deterministic perpendicular.
+    """
+    import math
+    from pathlib import Path as _Path
+
+    pdb_path = _Path(pdb_path)
+    if not pdb_path.is_file():
+        return 0
+
+    lines = pdb_path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+
+    # Parse heavy atoms and waters.  We can't key waters by
+    # (chain, resseq, icode) alone — pdb4amber and similar preprocessors often
+    # strip chain IDs from waters AND reset the resseq, so the same
+    # (chain, resseq, icode) appears for multiple physically distinct waters.
+    # Instead we treat each consecutive O–H–H block as one water, restarting
+    # on every "O" record we see for a water residue.
+    metals: list[tuple[float, float, float]] = []
+    water_atoms: list[dict[str, object]] = []
+    current_water: dict[str, object] | None = None
+    for idx, ln in enumerate(lines):
+        if not (ln.startswith("ATOM") or ln.startswith("HETATM")):
+            continue
+        try:
+            x = float(ln[30:38]); y = float(ln[38:46]); z = float(ln[46:54])
+        except ValueError:
+            continue
+        resname = ln[17:20].strip().upper()
+        atomname = ln[12:16].strip().upper()
+        element = ln[76:78].strip().upper() if len(ln) >= 78 else ""
+        if resname in TRANSITION_METAL_ELEMENTS:
+            metals.append((x, y, z))
+            current_water = None
+            continue
+        if resname not in WATER_RESIDUE_NAMES:
+            current_water = None
+            continue
+        is_oxygen = atomname in {"O", "OW", "OH2"} or element == "O"
+        is_hydrogen = (atomname.startswith("H") and atomname != "HG") or element == "H"
+        if is_oxygen:
+            current_water = {"o": (x, y, z), "o_idx": idx}
+            water_atoms.append(current_water)
+        elif is_hydrogen and current_water is not None:
+            if "h1" not in current_water:
+                current_water["h1"] = (x, y, z); current_water["h1_idx"] = idx
+            elif "h2" not in current_water:
+                current_water["h2"] = (x, y, z); current_water["h2_idx"] = idx
+    if not metals:
+        return 0
+
+    def _vsub(a, b): return (a[0]-b[0], a[1]-b[1], a[2]-b[2])
+    def _vadd(a, b): return (a[0]+b[0], a[1]+b[1], a[2]+b[2])
+    def _vscale(a, s): return (a[0]*s, a[1]*s, a[2]*s)
+    def _vdot(a, b): return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
+    def _vnorm(a):
+        n = math.sqrt(_vdot(a, a))
+        return (a[0]/n, a[1]/n, a[2]/n) if n > 1e-9 else (1.0, 0.0, 0.0)
+    def _vlen(a): return math.sqrt(_vdot(a, a))
+
+    reoriented = 0
+    half_angle = math.radians(hoh_angle_deg / 2.0)
+    cos_h = math.cos(half_angle)
+    sin_h = math.sin(half_angle)
+
+    for w in water_atoms:
+        if "o" not in w or "h1" not in w or "h2" not in w:
+            continue
+        # Nearest metal to this water's O.
+        o = w["o"]
+        best_m = min(metals, key=lambda m: _vlen(_vsub(o, m)))
+        d_om = _vlen(_vsub(o, best_m))
+        if d_om > metal_o_max_angstrom:
+            continue
+        d_mh1 = _vlen(_vsub(w["h1"], best_m))
+        d_mh2 = _vlen(_vsub(w["h2"], best_m))
+        if min(d_mh1, d_mh2) > h_m_clash_max_angstrom:
+            continue
+
+        # Bisector: from metal toward oxygen (Hs should sit on this side).
+        bisector = _vnorm(_vsub(o, best_m))
+        # Pick the H further from the metal to preserve plane.
+        far_h = w["h1"] if d_mh1 >= d_mh2 else w["h2"]
+        rel = _vsub(far_h, o)
+        rel_along = _vscale(bisector, _vdot(rel, bisector))
+        perp_raw = _vsub(rel, rel_along)
+        if _vlen(perp_raw) < 1e-4:
+            # Degenerate: pick deterministic perp.
+            ref = (1.0, 0.0, 0.0) if abs(bisector[0]) < 0.9 else (0.0, 1.0, 0.0)
+            perp_raw = _vsub(ref, _vscale(bisector, _vdot(ref, bisector)))
+        perp = _vnorm(perp_raw)
+
+        new_h1 = _vadd(o, _vscale(_vadd(_vscale(bisector, cos_h), _vscale(perp, sin_h)), oh_bond_length))
+        new_h2 = _vadd(o, _vscale(_vadd(_vscale(bisector, cos_h), _vscale(perp, -sin_h)), oh_bond_length))
+
+        for idx_key, new_xyz in (("h1_idx", new_h1), ("h2_idx", new_h2)):
+            idx = w[idx_key]
+            ln = lines[idx]
+            new_coord = f"{new_xyz[0]:8.3f}{new_xyz[1]:8.3f}{new_xyz[2]:8.3f}"
+            lines[idx] = ln[:30] + new_coord + ln[54:]
+        reoriented += 1
+
+    if reoriented:
+        pdb_path.write_text("".join(lines), encoding="utf-8")
+    return reoriented
 
 
 def _write_report_json(
