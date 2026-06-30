@@ -182,6 +182,62 @@ open(outp, "w", encoding="utf-8").write("".join(out))
 PY
 INPUT_TO_RUN="$TMP_GPU"
 
+# -------- ensure robust SCF for metal sites --------
+# Default DIIS SCF often oscillates for MCPB.py-style metal QM regions
+# (Zn/Fe coordinated by His/Asp/Glu with strong electrostatics).  XQC =
+# Extended Quadratic Convergence is robust against the oscillation and only
+# adds a small overhead when the default DIIS would have converged anyway.
+# We inject SCF=XQC whenever the route does not already specify an SCF
+# algorithm, and replace SCF=QC with SCF=XQC if present (XQC is the strictly
+# more capable variant).  Routes that explicitly request SCF=NoSym, DAMP, etc.
+# are left untouched — the user knows what they want.
+TMP_XQC="${WORKDIR}/${BASE}.xqc.com"
+python3 - "$INPUT_TO_RUN" "$TMP_XQC" <<'PY'
+import sys, re
+
+inp, outp = sys.argv[1], sys.argv[2]
+lines = open(inp, encoding="utf-8", errors="replace").read().splitlines(True)
+
+i = 0
+while i < len(lines) and (lines[i].lstrip().startswith("%") or lines[i].strip() == ""):
+    i += 1
+if i >= len(lines) or not lines[i].lstrip().startswith("#"):
+    open(outp, "w", encoding="utf-8").write("".join(lines))
+    sys.exit(0)
+
+route_start = i
+route_lines = []
+while i < len(lines) and lines[i].lstrip().startswith("#"):
+    route_lines.append(lines[i].rstrip("\n"))
+    i += 1
+route_text = " ".join(r.strip() for r in route_lines)
+
+scf_re = re.compile(r"\bSCF\s*=\s*(?:[A-Za-z0-9]+|\([^)]*\))", flags=re.IGNORECASE)
+m = scf_re.search(route_text)
+if m is None:
+    route_text = route_text + " SCF=XQC"
+else:
+    existing = m.group(0)
+    if "XQC" in existing.upper():
+        pass
+    elif re.match(r"^SCF\s*=\s*QC$", existing, flags=re.IGNORECASE):
+        route_text = scf_re.sub("SCF=XQC", route_text, count=1)
+    elif existing.lstrip().lower().startswith("scf=("):
+        inner = existing[existing.index("(") + 1 : existing.rindex(")")]
+        tokens = [t.strip() for t in inner.split(",")]
+        if not any(t.upper() == "XQC" for t in tokens):
+            tokens = [t for t in tokens if t.upper() != "QC"] + ["XQC"]
+            new = "SCF=(" + ",".join(tokens) + ")"
+            route_text = scf_re.sub(new, route_text, count=1)
+
+route_text = re.sub(r"\s+", " ", route_text).strip()
+out = lines[:route_start] + [route_text + "\n"] + lines[route_start + len(route_lines):]
+open(outp, "w", encoding="utf-8").write("".join(out))
+PY
+INPUT_TO_RUN="$TMP_XQC"
+# Make sure the trap cleans up our extra temp file
+trap 'rm -rf "$GAUSS_SCRDIR" "${WORKDIR}/${BASE}.stripped.com" "${WORKDIR}/${BASE}.gpu.com" "${WORKDIR}/${BASE}.xqc.com" "${WORKDIR}/${BASE}.patched.com" "${WORKDIR}/${BASE}.restart.com" 2>/dev/null; true' EXIT
+
 CHK_GUESS="${WORKDIR}/${BASE}.chk"
 
 # -------- stale-chk guard --------
