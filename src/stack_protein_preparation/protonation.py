@@ -49,9 +49,13 @@ from stack_protein_preparation._protonation_core import (  # noqa: F401  (re-exp
     _infer_protein_dir_from_path,
     _log_exception,
     _preview_text,
+    _rebuild_missing_sidechain_atoms,
+    _reinject_phospho_residues,
     _remove_backbone_incomplete_residues,
+    _remove_standalone_residue_chains,
     _rename_water_pdb_to_sol,
     _run_propka,
+    _strip_phospho_residues,
     _screen_header,
     _screen_item,
     _screen_result,
@@ -273,6 +277,68 @@ def protonate_selected_structure(
         )
         pdb2gmx_input = _cleaned_input
 
+    # Drop chains containing only a single standard residue.  pdb2gmx cannot
+    # cap a residue as both N- and C-terminus simultaneously, so 1-residue
+    # chains (substrate mimetics, crystal peptide fragments) abort the run.
+    _no_singletons = pdb2gmx_input.parent / (pdb2gmx_input.stem + "_no_singletons.pdb")
+    _dropped_chains = _remove_standalone_residue_chains(
+        pdb2gmx_input, _no_singletons, log_path=module_log_path
+    )
+    if _dropped_chains:
+        _append_log_block(
+            module_log_path,
+            "protonate_selected_structure:standalone_chain_drop",
+            [f"Dropped {len(_dropped_chains)} single-residue chain(s) before pdb2gmx:"]
+            + _dropped_chains,
+        )
+        pdb2gmx_input = _no_singletons
+
+    # Rebuild missing sidechain heavy atoms via PDBFixer.  Crystal structures
+    # routinely omit atoms with poor density (LYS-CG, GLU-CG, SER-OG, ARG-CG)
+    # which causes pdb2gmx to abort with "atom X not found in input file".
+    _sidechain_rebuilt = pdb2gmx_input.parent / (pdb2gmx_input.stem + "_sidechain_rebuilt.pdb")
+    _rebuilt_atoms = _rebuild_missing_sidechain_atoms(
+        pdb2gmx_input, _sidechain_rebuilt, log_path=module_log_path
+    )
+    if _rebuilt_atoms:
+        _append_log_block(
+            module_log_path,
+            "protonate_selected_structure:sidechain_rebuild",
+            [f"Rebuilt sidechain atoms on {len(_rebuilt_atoms)} residue(s) before pdb2gmx:"]
+            + _rebuilt_atoms,
+        )
+        pdb2gmx_input = _sidechain_rebuilt
+    elif _sidechain_rebuilt.is_file():
+        # PDBFixer ran but found nothing to add — still adopt its normalised
+        # PDB (element column, atom ordering) as it is what pdb2gmx will see.
+        pdb2gmx_input = _sidechain_rebuilt
+
+    # Strip phospho residues (PTR/TPO/SEP/...) — amber99sb-ildn has no entry
+    # for them and pdb2gmx bails out with "chain does not have consistent
+    # type".  We reinject them into the output so downstream tleap
+    # (leaprc.phosaa14SB) parametrises them.
+    _phospho_stripped = pdb2gmx_input.parent / (pdb2gmx_input.stem + "_phospho_stripped.pdb")
+    _phospho_extract = pdb2gmx_input.parent / (pdb2gmx_input.stem + "_phospho_extract.pdb")
+    _phospho_keys = _strip_phospho_residues(
+        pdb2gmx_input,
+        _phospho_stripped,
+        _phospho_extract,
+        log_path=module_log_path,
+    )
+    if _phospho_keys:
+        _append_log_block(
+            module_log_path,
+            "protonate_selected_structure:phospho_extract",
+            [
+                f"Extracted {len(_phospho_keys)} phospho residue(s) before pdb2gmx:",
+                *[
+                    f"  {resname} {resnum.strip()}{icode.strip()} chain {chain}"
+                    for chain, resnum, icode, resname in _phospho_keys
+                ],
+            ],
+        )
+        pdb2gmx_input = _phospho_stripped
+
     try:
         result = run_gmx_pdb2gmx_protonation(
             input_pdb=pdb2gmx_input,
@@ -308,6 +374,14 @@ def protonate_selected_structure(
 
     if output_nonempty:
         _fill_pdb_element_column(output_pdb)
+        if _phospho_keys and _phospho_extract.is_file():
+            _reinjected = _reinject_phospho_residues(output_pdb, _phospho_extract)
+            if _reinjected:
+                _append_log_block(
+                    module_log_path,
+                    "protonate_selected_structure:phospho_reinject",
+                    [f"Reinjected {_reinjected} phospho-residue atom record(s) into protonated output"],
+                )
         output_atom_count = count_atoms_in_structure_file(output_pdb)
         atom_count_increased = output_atom_count > input_atom_count
     else:

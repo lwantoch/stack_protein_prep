@@ -399,6 +399,256 @@ def _remove_backbone_incomplete_residues(
     return removed
 
 
+# Phospho-amino-acid residue names understood downstream by phosaa14SB (loaded
+# via ``leaprc.phosaa14SB`` in the nonstd_residue_params step).  These are
+# NOT recognised by ``gmx pdb2gmx`` with amber99sb-ildn, so we strip them
+# from the pdb2gmx input and reinject them into the protonated output.
+_PHOSPHO_RESIDUE_NAMES: set[str] = {
+    "SEP", "S1P",       # phosphoserine (-2 / -1)
+    "TPO", "T1P",       # phosphothreonine (-2 / -1)
+    "PTR", "Y1P",       # phosphotyrosine (-2 / -1)
+    "NEP",              # N1-phosphonohistidine (-2)
+    "H1D", "H2D",       # phosphohistidine (ND1)
+    "H1E", "H2E",       # phosphohistidine (NE2)
+}
+
+
+def _strip_phospho_residues(
+    input_pdb: Path,
+    output_pdb: Path,
+    phospho_extract_pdb: Path,
+    log_path: Path | None = None,
+) -> list[tuple[str, str, str, str]]:
+    """Move phospho-residue ATOM/HETATM records to a sidecar PDB.
+
+    ``gmx pdb2gmx -ff amber99sb-ildn`` errors out with "chain does not have
+    consistent type" when a phospho-amino-acid (PTR/TPO/SEP/...) sits in the
+    middle of a protein chain, because amber99sb-ildn has no residue-type
+    definition for them.  Homeyer's phosaa14SB extension is Amber-LEaP only;
+    there is no bundled Gromacs port.
+
+    The community pragmatic route (which our own nonstd_residue_params step
+    already sets up for tleap via ``leaprc.phosaa14SB``) is to remove these
+    residues before pdb2gmx and reinject them into the protonated output.
+    tleap then finds them and applies phosaa14SB parameters, so the final
+    Amber topology remains fully-parametrised.
+
+    Returns a list of extracted-residue keys ``(chain, resseq, icode, resname)``.
+    """
+    lines = input_pdb.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    kept: list[str] = []
+    extracted_lines: list[str] = []
+    extracted_keys: list[tuple[str, str, str, str]] = []
+    seen_keys: set[tuple[str, str, str, str]] = set()
+    for line in lines:
+        if (line.startswith("ATOM  ") or line.startswith("HETATM")) and len(line) >= 27:
+            resname = line[17:20].strip().upper()
+            if resname in _PHOSPHO_RESIDUE_NAMES:
+                key = (line[21], line[22:26], line[26], resname)
+                if key not in seen_keys:
+                    extracted_keys.append(key)
+                    seen_keys.add(key)
+                extracted_lines.append(line)
+                continue
+        kept.append(line)
+
+    output_pdb.parent.mkdir(parents=True, exist_ok=True)
+    output_pdb.write_text("".join(kept), encoding="utf-8")
+
+    if extracted_lines:
+        phospho_extract_pdb.parent.mkdir(parents=True, exist_ok=True)
+        phospho_extract_pdb.write_text("".join(extracted_lines), encoding="utf-8")
+
+    if log_path is not None and extracted_keys:
+        try:
+            with log_path.open("a", encoding="utf-8") as fh:
+                for chain, resnum, icode, resname in extracted_keys:
+                    fh.write(
+                        f"[phospho strip] extracted {resname} "
+                        f"{resnum.strip()}{icode.strip()} chain {chain} "
+                        f"(will reinject into pdb2gmx output)\n"
+                    )
+        except Exception:
+            pass
+
+    return extracted_keys
+
+
+def _reinject_phospho_residues(
+    protonated_pdb: Path,
+    phospho_extract_pdb: Path,
+) -> int:
+    """Insert stripped phospho-residue records back into a protonated PDB.
+
+    The records are inserted just before the first ``TER``/``END`` record so
+    downstream tleap sees a single assembled structure.  Numbering and chain
+    IDs from the extract PDB are preserved verbatim — the reinjected atoms
+    will still have their original serial numbers, but tleap only cares about
+    residue ordering (by resseq+chain) rather than serial numbering.
+
+    Returns the number of atom records reinjected.
+    """
+    if not phospho_extract_pdb.is_file():
+        return 0
+    extract_lines = [
+        line
+        for line in phospho_extract_pdb.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+        if line.startswith("ATOM  ") or line.startswith("HETATM")
+    ]
+    if not extract_lines:
+        return 0
+
+    protonated_lines = protonated_pdb.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    insertion_index = len(protonated_lines)
+    for i, line in enumerate(protonated_lines):
+        if line.startswith("TER") or line.startswith("END"):
+            insertion_index = i
+            break
+
+    merged = protonated_lines[:insertion_index] + extract_lines + protonated_lines[insertion_index:]
+    protonated_pdb.write_text("".join(merged), encoding="utf-8")
+    return len(extract_lines)
+
+
+def _rebuild_missing_sidechain_atoms(
+    input_pdb: Path,
+    output_pdb: Path,
+    log_path: Path | None = None,
+) -> list[str]:
+    """Rebuild missing heavy sidechain atoms via OpenMM's PDBFixer.
+
+    Crystal structures routinely omit side-chain atoms that have insufficient
+    electron density (disordered lysine tails, exposed glutamate CG, mobile
+    arginine CGs, unresolved serine OG).  These trigger pdb2gmx errors like
+    "atom CG used in that entry is not found in the input file" because
+    amber99sb-ildn expects the complete residue.
+
+    PDBFixer's ``findMissingAtoms`` + ``addMissingAtoms`` places missing heavy
+    atoms via its rotamer library.  We only add heavy atoms — hydrogens are
+    still added later by pdb2gmx so protonation state assignments (propka,
+    metal-coordinating HID/HIE) are not preempted.
+    """
+    from io import StringIO
+    try:
+        from pdbfixer import PDBFixer
+        from openmm.app import PDBFile
+    except Exception as exc:
+        msg = f"pdbfixer/openmm unavailable, skipping sidechain rebuild: {exc!r}"
+        if log_path is not None:
+            try:
+                with log_path.open("a", encoding="utf-8") as fh:
+                    fh.write(f"[sidechain rebuild] {msg}\n")
+            except Exception:
+                pass
+        if input_pdb != output_pdb:
+            output_pdb.write_text(input_pdb.read_text(encoding="utf-8"), encoding="utf-8")
+        return []
+
+    fixer = PDBFixer(filename=str(input_pdb))
+    # We only fix missing SIDE-CHAIN atoms — do not add whole missing residues
+    # here (gap-filling belongs to earlier pipeline steps that have UniProt/
+    # MODELLER context).  Setting missingResidues to empty prevents PDBFixer
+    # from extrapolating N/C-terminal chain extensions.
+    fixer.missingResidues = {}
+    fixer.findNonstandardResidues()  # populates internal state
+    fixer.findMissingAtoms()
+
+    added_descriptions: list[str] = []
+    for residue, missing_atoms in (fixer.missingAtoms or {}).items():
+        chain_id = residue.chain.id
+        resseq = residue.id
+        rn = residue.name
+        names = ", ".join(a.name for a in missing_atoms)
+        added_descriptions.append(
+            f"{rn} {resseq} chain {chain_id}: added {names}"
+        )
+
+    if added_descriptions:
+        fixer.addMissingAtoms()
+
+    output_pdb.parent.mkdir(parents=True, exist_ok=True)
+    buf = StringIO()
+    PDBFile.writeFile(fixer.topology, fixer.positions, buf, keepIds=True)
+    output_pdb.write_text(buf.getvalue(), encoding="utf-8")
+
+    if log_path is not None and added_descriptions:
+        try:
+            with log_path.open("a", encoding="utf-8") as fh:
+                for msg in added_descriptions:
+                    fh.write(f"[sidechain rebuild] {msg}\n")
+        except Exception:
+            pass
+
+    return added_descriptions
+
+
+def _remove_standalone_residue_chains(
+    input_pdb: Path,
+    output_pdb: Path,
+    log_path: Path | None = None,
+) -> list[str]:
+    """Drop chains that contain only a single standard amino-acid residue.
+
+    ``gmx pdb2gmx`` cannot handle a chain of length 1 because that residue
+    would need both an N-terminal and a C-terminal cap simultaneously and no
+    residue-type entry exists for that combination ("no residue type for 'X'
+    as a standalone (starting & ending) residue").  These 1-residue chains
+    are typically substrate mimetics, sequencing tags, or unresolved
+    crystal-packing peptide fragments and are safe to drop for the
+    protonation step.
+    """
+    STANDARD_AA = {
+        "ALA","ARG","ASN","ASP","CYS","GLN","GLU","GLY","HIS","HIE","HID","HIP",
+        "ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TRP","TYR","VAL",
+        "CYX","ASH","GLH","LYN",
+    }
+    lines = input_pdb.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+
+    chain_res_count: dict[str, set[tuple[str, str]]] = {}
+    for line in lines:
+        if not (line.startswith("ATOM  ") or line.startswith("HETATM")):
+            continue
+        if len(line) < 27:
+            continue
+        resname = line[17:20].strip().upper()
+        if resname not in STANDARD_AA:
+            continue
+        chain = line[21]
+        resnum = line[22:26]
+        icode = line[26]
+        chain_res_count.setdefault(chain, set()).add((resnum, icode))
+
+    single_res_chains = {c for c, r in chain_res_count.items() if len(r) == 1}
+    if not single_res_chains:
+        if input_pdb != output_pdb:
+            output_pdb.write_text("".join(lines), encoding="utf-8")
+        return []
+
+    dropped_summaries: list[str] = []
+    for chain in sorted(single_res_chains):
+        (resnum, _icode) = next(iter(chain_res_count[chain]))
+        dropped_summaries.append(f"dropped chain {chain} (1 standard residue at {resnum.strip()})")
+
+    output_pdb.parent.mkdir(parents=True, exist_ok=True)
+    cleaned: list[str] = []
+    for line in lines:
+        if (line.startswith("ATOM  ") or line.startswith("HETATM")) and len(line) >= 27:
+            if line[21] in single_res_chains:
+                continue
+        cleaned.append(line)
+    output_pdb.write_text("".join(cleaned), encoding="utf-8")
+
+    if log_path is not None:
+        try:
+            with log_path.open("a", encoding="utf-8") as fh:
+                for msg in dropped_summaries:
+                    fh.write(f"[standalone-chain drop] {msg}\n")
+        except Exception:
+            pass
+
+    return dropped_summaries
+
+
 def _fill_pdb_element_column(pdb_path: Path) -> None:
     """Fill element symbol column (cols 77-78) for ATOM/HETATM records."""
     raw = pdb_path.read_text(encoding="utf-8")
