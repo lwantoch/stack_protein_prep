@@ -35,7 +35,7 @@
     "octahedral": {"coordination_number": 6, "ideal_angles_degrees": [90, 180]}
   },
   "transition_ion_preferences": {
-    "ZN": ["tetrahedral", "trigonal_bipyramidal", "octahedral"],
+    "ZN": ["tetrahedral", "trigonal_bipyramidal", "square_pyramidal", "octahedral"],
     "CU": ["square_planar", "square_pyramidal", "octahedral"],
     "FE": ["octahedral", "tetrahedral"],
     "MN": ["octahedral"],

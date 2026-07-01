@@ -155,7 +155,7 @@ STANDARD_NONTRANSITION_IONS = {
 }
 
 TRANSITION_ION_GEOMETRY_PREFERENCES = {
-    "ZN": ["tetrahedral", "trigonal_bipyramidal", "octahedral"],
+    "ZN": ["tetrahedral", "trigonal_bipyramidal", "square_pyramidal", "octahedral"],
     "CU": ["square_planar", "square_pyramidal", "octahedral"],
     "FE": ["octahedral", "tetrahedral"],
     "MN": ["octahedral"],
@@ -268,9 +268,16 @@ def find_metal_contacts(
     atom_records: list[PDBAtomRecord],
     contact_cutoff_angstrom: float,
 ) -> list[MetalContact]:
-    """Return donor atoms within the coordination cutoff around one metal."""
+    """Return donor atoms within the coordination cutoff around one metal.
 
-    contacts: list[MetalContact] = []
+    Alternate-location conformers of the same donor atom are collapsed to a
+    single contact keeping the shortest metal–donor distance.  Without this,
+    ligand or side-chain disorder inflates the coordination number (e.g.
+    carbonic anhydrase 7Q0D with a sulfonamide inhibitor in two altlocs
+    shows five donors when biologically it is tetrahedral).
+    """
+
+    raw_contacts: list[MetalContact] = []
     for atom in atom_records:
         if atom is metal_atom:
             continue
@@ -281,7 +288,7 @@ def find_metal_contacts(
         distance = distance_between_atoms(metal_atom, atom)
         if distance > contact_cutoff_angstrom:
             continue
-        contacts.append(
+        raw_contacts.append(
             MetalContact(
                 metal_label=metal_atom.atom_label,
                 metal_element=metal_atom.element,
@@ -298,7 +305,17 @@ def find_metal_contacts(
                 vector_z=atom.z - metal_atom.z,
             )
         )
-    return contacts
+
+    # Collapse altloc duplicates (same chain + resseq + atom_name) to their
+    # nearest-to-metal representative.  Insertion codes and residue names are
+    # not part of the key because altloc conformers preserve those.
+    best_by_key: dict[tuple[str, int, str], MetalContact] = {}
+    for c in raw_contacts:
+        key = (c.donor_chain_id, c.donor_residue_number, c.donor_atom_name.strip())
+        prior = best_by_key.get(key)
+        if prior is None or c.distance_angstrom < prior.distance_angstrom:
+            best_by_key[key] = c
+    return list(best_by_key.values())
 
 
 # Carboxylate residue names and their paired delta/epsilon oxygen atom names

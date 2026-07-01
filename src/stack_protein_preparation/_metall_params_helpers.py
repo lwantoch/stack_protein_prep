@@ -147,10 +147,12 @@ def _get_optional_component_paths(
     water_path = components_dir / f"{pdb_id}_water.pdb"
     ligand_path = components_dir / f"{pdb_id}_ligand.pdb"
     metal_path = components_dir / f"{pdb_id}_metals.pdb"
+    cofactor_path = components_dir / f"{pdb_id}_cofactor.pdb"
     return {
         "water": water_path if water_path.is_file() else None,
         "ligand": ligand_path if ligand_path.is_file() else None,
         "metal": metal_path if metal_path.is_file() else None,
+        "cofactor": cofactor_path if cofactor_path.is_file() else None,
     }
 
 
@@ -300,13 +302,26 @@ def _write_combined_tmp_param_pdb(
     protein_path: Path,
     water_path: Path | None,
     ligand_path: Path | None,
+    cofactor_path: Path | None = None,
 ) -> dict[str, Any]:
-    """Concatenate protein + optional water + optional ligand into one PDB."""
+    """Concatenate protein + optional water + optional ligand + optional
+    cofactor into one PDB.
+
+    The cofactor file is important for metal-contact detection when the metal
+    is embedded in a cofactor residue (heme HEM/HEC/HEB, iron-sulfur clusters
+    FES/SF4/F3S, chlorophyll, etc.).  The porphyrin nitrogens or bridging
+    sulfides ARE the metal's primary donors, so leaving the cofactor out of
+    the environment file causes ``find_metal_contacts`` to see only the axial
+    protein donor (e.g. Cys-SG for cytochromes) plus water, misclassifying an
+    octahedral heme Fe as ``bent`` two-coordinate.
+    """
     source_paths: list[Path] = [protein_path]
     if water_path is not None:
         source_paths.append(water_path)
     if ligand_path is not None:
         source_paths.append(ligand_path)
+    if cofactor_path is not None:
+        source_paths.append(cofactor_path)
 
     line_count = 0
     with output_path.open("w", encoding="utf-8") as out:
@@ -733,6 +748,7 @@ def _process_one_site(
     protein_input: Path,
     water_input: Path | None,
     ligand_input: Path | None,
+    cofactor_input: Path | None,
     metal_input: Path,
     metall_params_dir: Path,
     chimera_executable: str | None,
@@ -787,6 +803,7 @@ def _process_one_site(
         protein_path=protein_input,
         water_path=water_input,
         ligand_path=ligand_input,
+        cofactor_path=cofactor_input,
     )
 
     if metal_atom.raw_line:

@@ -153,6 +153,7 @@ def run_metal_parametrization_for_protein_dir(
     optional = _get_optional_component_paths(components_dir, pdb_id)
     water_input = optional["water"]
     ligand_input = optional["ligand"]
+    cofactor_input = optional["cofactor"]
     metal_input = optional["metal"]
 
     if protein_input is None:
@@ -205,6 +206,10 @@ def run_metal_parametrization_for_protein_dir(
             env_records_for_analysis += read_pdb_atom_records(
                 ligand_input, source_role="env_analysis"
             )
+        if cofactor_input:
+            env_records_for_analysis += read_pdb_atom_records(
+                cofactor_input, source_role="env_analysis"
+            )
     except Exception:
         pass  # Non-fatal; contacts step will re-read from file
 
@@ -222,6 +227,7 @@ def run_metal_parametrization_for_protein_dir(
                 protein_input=protein_input,
                 water_input=water_input,
                 ligand_input=ligand_input,
+                cofactor_input=cofactor_input,
                 metal_input=metal_input,
                 metall_params_dir=metall_params_dir,
                 chimera_executable=chimera_executable,
