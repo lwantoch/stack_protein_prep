@@ -21,6 +21,7 @@ from stack_protein_preparation.filler import (
     read_two_sequence_fasta,
     select_best_model_from_scores,
     split_template_and_target_alignment_records,
+    splice_alphafold_gap_residues_into_crystal,
     validate_template_sequence_consistency,
     write_chain_specific_template_pdb,
     write_modeller_alignment_from_existing_alignment,
@@ -544,3 +545,155 @@ def test_cleanup_model_pdb_keeps_only_atom_records_and_adds_terminators(
     assert "HETATM" not in "\n".join(lines)
     assert lines[-2] == "TER"
     assert lines[-1] == "END"
+
+
+def _atom_line(serial, atom, res, chain, resnum, x=0.0, y=0.0, z=0.0):
+    return (
+        f"ATOM  {serial:5d}  {atom:<3s} {res} {chain}{resnum:4d}    "
+        f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00 20.00           C"
+    )
+
+
+def _hetatm_line(serial, atom, res, chain, resnum, x=0.0, y=0.0, z=0.0, element="C"):
+    return (
+        f"HETATM{serial:5d}  {atom:<3s} {res} {chain}{resnum:4d}    "
+        f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00 20.00          {element:>2s}"
+    )
+
+
+def test_splice_alphafold_gap_residues_into_crystal_preserves_hetatm_and_other_chain(
+    tmp_path: Path,
+) -> None:
+    # Crystal: chain A has residues 1,2,3,5,6 (internal gap at 4), plus
+    # a chain B residue and a heteroatom ligand + a crystallographic water.
+    crystal = tmp_path / "crystal.pdb"
+    crystal.write_text(
+        "\n".join(
+            [
+                _atom_line(1, "CA", "MET", "A", 1),
+                _atom_line(2, "CA", "GLU", "A", 2),
+                _atom_line(3, "CA", "ARG", "A", 3),
+                _atom_line(4, "CA", "PHE", "A", 5),
+                _atom_line(5, "CA", "TYR", "A", 6),
+                _atom_line(6, "CA", "MET", "B", 10),
+                _hetatm_line(7, "C1", "LIG", "A", 300, x=10.0, element="C"),
+                _hetatm_line(8, "O", "HOH", "A", 500, x=20.0, element="O"),
+                "END",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    # AlphaFold-only final model (post trim/renumber): chain A residues 1..8
+    # (includes an N-terminal overhang at 0, a C-terminal overhang at 7-8,
+    #  the true internal gap at 4, and residues that overlap with the crystal).
+    af_final = tmp_path / "final_filled_model.pdb"
+    af_final.write_text(
+        "\n".join(
+            [
+                _atom_line(1, "CA", "GLY", "A", 0),  # terminal overhang -> drop
+                _atom_line(2, "CA", "MET", "A", 1),  # overlaps crystal -> ignore
+                _atom_line(3, "CA", "GLU", "A", 2),  # overlaps -> ignore
+                _atom_line(4, "CA", "ARG", "A", 3),  # overlaps -> ignore
+                _atom_line(5, "CA", "LEU", "A", 4),  # internal gap -> splice in
+                _atom_line(6, "CA", "PHE", "A", 5),  # overlaps -> ignore
+                _atom_line(7, "CA", "TYR", "A", 6),  # overlaps -> ignore
+                _atom_line(8, "CA", "SER", "A", 7),  # terminal overhang -> drop
+                _atom_line(9, "CA", "ASP", "A", 8),  # terminal overhang -> drop
+                "END",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    splice_alphafold_gap_residues_into_crystal(
+        alphafold_final_model_path=af_final,
+        original_crystal_pdb_path=crystal,
+        target_chain_id="A",
+    )
+
+    out = af_final.read_text(encoding="utf-8").splitlines()
+
+    # Chain B is preserved
+    assert any(
+        line.startswith("ATOM") and line[21] == "B" and "MET" in line for line in out
+    ), "chain B residue was dropped by splice"
+
+    # HETATM records preserved (ligand + water)
+    hetatm_lines = [line for line in out if line.startswith("HETATM")]
+    assert any("LIG" in line for line in hetatm_lines), "LIG heteroatom lost"
+    assert any("HOH" in line for line in hetatm_lines), "crystallographic water lost"
+
+    # AF gap residue 4 was spliced in on chain A
+    chain_a_atoms = [
+        (line, int(line[22:26]))
+        for line in out
+        if line.startswith("ATOM") and line[21] == "A"
+    ]
+    resnums_a = sorted({rn for _line, rn in chain_a_atoms})
+    assert resnums_a == [1, 2, 3, 4, 5, 6], (
+        f"target chain resnums after splice = {resnums_a}, expected [1..6]"
+    )
+    # The gap residue must come from the AF file (LEU), not from crystal
+    gap_line = next(line for line, rn in chain_a_atoms if rn == 4)
+    assert "LEU" in gap_line, "gap residue at position 4 was not filled from AF"
+
+    # Terminal AF overhangs (0, 7, 8) must NOT be present
+    assert 0 not in resnums_a and 7 not in resnums_a and 8 not in resnums_a
+
+    # File ends with END
+    assert out[-1] == "END"
+
+
+def test_splice_alphafold_gap_residues_no_internal_gap_leaves_crystal(
+    tmp_path: Path,
+) -> None:
+    # Crystal chain A has a contiguous 1..3 range and one heteroatom.
+    crystal = tmp_path / "crystal.pdb"
+    crystal.write_text(
+        "\n".join(
+            [
+                _atom_line(1, "CA", "MET", "A", 1),
+                _atom_line(2, "CA", "GLU", "A", 2),
+                _atom_line(3, "CA", "ARG", "A", 3),
+                _hetatm_line(4, "C1", "LIG", "A", 300, x=10.0),
+                "END",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    # AF suggests residues 1..5 — resnums 4 and 5 are terminal overhang, not
+    # internal gaps (they lie past crystal_max = 3), so nothing should splice.
+    af_final = tmp_path / "final_filled_model.pdb"
+    af_final.write_text(
+        "\n".join(
+            [
+                _atom_line(1, "CA", "MET", "A", 1),
+                _atom_line(2, "CA", "GLU", "A", 2),
+                _atom_line(3, "CA", "ARG", "A", 3),
+                _atom_line(4, "CA", "LEU", "A", 4),
+                _atom_line(5, "CA", "LEU", "A", 5),
+                "END",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    splice_alphafold_gap_residues_into_crystal(
+        alphafold_final_model_path=af_final,
+        original_crystal_pdb_path=crystal,
+        target_chain_id="A",
+    )
+
+    out = af_final.read_text(encoding="utf-8").splitlines()
+    resnums_a = sorted(
+        {int(line[22:26]) for line in out if line.startswith("ATOM") and line[21] == "A"}
+    )
+    assert resnums_a == [1, 2, 3], (
+        f"terminal overhangs must not be spliced: got {resnums_a}"
+    )
+    assert any(line.startswith("HETATM") and "LIG" in line for line in out)

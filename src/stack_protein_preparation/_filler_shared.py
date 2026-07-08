@@ -271,18 +271,113 @@ def _get_uniprot_range_from_mapping(mapping_path: Path) -> str | None:
     return f"{min(uniprot_positions)}-{max(uniprot_positions)}"
 
 
+def _read_observed_protein_residues(template_pdb_path: Path) -> list[tuple[int, str]]:
+    """Ordered (author_resnum, one_letter) for each resolved protein residue."""
+    parsed = _parse_first_model(template_pdb_path)
+    residues: list[tuple[int, str]] = []
+    seen: set[int] = set()
+    for chain in parsed.model:
+        for residue in chain:
+            if not _is_protein_atom_residue(residue):
+                continue
+            resnum = int(residue.id[1])
+            if resnum not in seen:
+                seen.add(resnum)
+                residues.append((resnum, _residue_to_one_letter(residue)))
+    return residues
+
+
+def _read_seqres_uniprot_rows(seqres_mapping_path: Path) -> list[tuple[int, str]]:
+    """Ordered (uniprot_pos, uniprot_char) for match rows of a SEQRES mapping TSV."""
+    rows: list[tuple[int, str]] = []
+    with seqres_mapping_path.open(encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("#") or not line.strip():
+                continue
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 6 or parts[5].strip() != "match":
+                continue
+            try:
+                uniprot_pos = int(parts[2])
+            except (ValueError, IndexError):
+                continue
+            uniprot_char = parts[4].strip().upper()
+            if uniprot_char and uniprot_char != "-":
+                rows.append((uniprot_pos, uniprot_char))
+    return rows
+
+
+def _build_pdb_to_uniprot_via_seqres(
+    template_pdb_path: Path,
+    seqres_mapping_path: Path,
+) -> dict[int, int]:
+    """Map author PDB residue numbers → UniProt positions using the SEQRES alignment.
+
+    The ATOM alignment is built from the *observed-only* sequence, so its aligner
+    is free to place an internal deletion a few residues away from the true
+    structural break — which collapses the UniProt spacing across a real
+    unresolved loop and makes the gap uninsertable.  The SEQRES alignment covers
+    the full-length chain, so its PDB↔UniProt correspondence is a clean,
+    gap-respecting offset.  We recover ``author_resnum → uniprot`` by voting for
+    the dominant offset ``d = uniprot - author_resnum`` over residues whose
+    one-letter code agrees, then keep only residues whose identity is confirmed
+    at ``author_resnum + d``.  Returns ``{}`` when no offset can be established.
+    """
+    observed = _read_observed_protein_residues(template_pdb_path)
+    seqres_rows = _read_seqres_uniprot_rows(seqres_mapping_path)
+    if not observed or not seqres_rows:
+        return {}
+
+    char_to_uniprot: dict[str, list[int]] = {}
+    for uniprot_pos, uniprot_char in seqres_rows:
+        char_to_uniprot.setdefault(uniprot_char, []).append(uniprot_pos)
+
+    offset_votes: dict[int, int] = {}
+    for resnum, one_letter in observed:
+        if one_letter in ("X", ""):
+            continue
+        for uniprot_pos in char_to_uniprot.get(one_letter, ()):
+            offset = uniprot_pos - resnum
+            offset_votes[offset] = offset_votes.get(offset, 0) + 1
+    if not offset_votes:
+        return {}
+    dominant_offset = max(offset_votes, key=lambda off: (offset_votes[off], -abs(off)))
+
+    valid_uniprot = {(pos, ch) for pos, ch in seqres_rows}
+    result: dict[int, int] = {}
+    for resnum, one_letter in observed:
+        if one_letter in ("X", ""):
+            continue
+        candidate = resnum + dominant_offset
+        if (candidate, one_letter) in valid_uniprot:
+            result[resnum] = candidate
+    return result
+
+
 def _build_pdb_to_uniprot_residue_map(
     template_pdb_path: Path,
     mapping_path: Path,
 ) -> dict[int, int]:
     """Map actual PDB ATOM residue numbers → UniProt residue positions.
 
-    The mapping TSV uses a sequential PDB index (1, 2, 3 …) that does not
-    equal the residue sequence numbers stored in the ATOM records.  We
-    reconstruct the correspondence by reading both sources in order.
+    Prefers the SEQRES alignment (sibling ``SEQRES_chain_*`` TSV), whose
+    full-length correspondence places internal gaps at the true structural
+    break.  Falls back to the ATOM-alignment TSV — which uses a sequential PDB
+    index reconstructed against the resolved residues — only when the SEQRES
+    alignment is unavailable or yields no usable offset.
     """
     if not mapping_path.is_file():
         return {}
+
+    seqres_mapping_path = mapping_path.with_name(
+        mapping_path.name.replace("ATOM_chain_", "SEQRES_chain_", 1)
+    )
+    if seqres_mapping_path.is_file() and seqres_mapping_path != mapping_path:
+        seqres_map = _build_pdb_to_uniprot_via_seqres(
+            template_pdb_path, seqres_mapping_path
+        )
+        if seqres_map:
+            return seqres_map
 
     parsed = _parse_first_model(template_pdb_path)
     pdb_resnums: list[int] = []
@@ -463,6 +558,36 @@ def _trim_final_model_in_place(model_path: Path, effective_residue_range: str) -
     model_path.write_text("".join(kept_lines), encoding="utf-8")
 
 
+def _build_uniprot_to_pdb_with_gap_fill(
+    pdb_to_uniprot_map: dict[int, int],
+) -> dict[int, int]:
+    """Invert the PDB→UniProt map and interpolate PDB numbers for internal gaps.
+
+    The observed map only covers residues the crystal resolved.  The whole point
+    of the AlphaFold fallback is to supply the residues the crystal did *not*
+    resolve (internal gaps), so their UniProt positions are absent from the
+    observed map.  For each internal gap between two adjacent observed anchors
+    (``lo`` → ``hi``), assign gap residues a PDB number by extending the
+    left-anchor offset: ``pdb = pdb_lo + (uniprot - uniprot_lo)``.  The
+    assignment is only accepted when it lands strictly inside the open PDB
+    interval ``(pdb_lo, pdb_hi)`` — i.e. the crystal left as many empty PDB
+    numbers as there are missing residues (an unresolved loop).  When the two
+    numbering systems disagree on the gap width (a genuine insertion/deletion)
+    the residue is left unmapped and will be dropped, since it cannot be
+    renumbered without colliding with an observed residue.
+    """
+    uniprot_to_pdb = {u: p for p, u in pdb_to_uniprot_map.items()}
+    full_map = dict(uniprot_to_pdb)
+    mapped = sorted(uniprot_to_pdb)
+    for lo, hi in zip(mapped, mapped[1:]):
+        pdb_lo, pdb_hi = uniprot_to_pdb[lo], uniprot_to_pdb[hi]
+        for uniprot_pos in range(lo + 1, hi):
+            candidate = pdb_lo + (uniprot_pos - lo)
+            if pdb_lo < candidate < pdb_hi:
+                full_map[uniprot_pos] = candidate
+    return full_map
+
+
 def _renumber_model_from_uniprot_to_pdb(
     model_path: Path,
     pdb_to_uniprot_map: dict[int, int],
@@ -474,16 +599,17 @@ def _renumber_model_from_uniprot_to_pdb(
     downstream comparison and parametrisation FRUTON's outputs must agree with
     the crystal PDB numbering the user supplied via ``pdb_ids.csv``.
 
-    The reverse map (UniProt → PDB) is built from ``pdb_to_uniprot_map``.
-    Lines whose UniProt position is not in the map (i.e. the AlphaFold model
-    extends past the crystal's UniProt span — e.g. a C-terminal stretch the
-    crystal never resolved) are dropped, since they correspond to residues
-    outside the user's authoritative range and would otherwise leak into the
-    final trimmed output.
+    The reverse map (UniProt → PDB) is built from ``pdb_to_uniprot_map`` and
+    then extended so that residues sitting in an *internal* gap — the loops the
+    crystal never resolved and that the AlphaFold model exists to fill — are
+    renumbered into the empty PDB interval rather than discarded.  Only residues
+    that fall outside the crystal's UniProt span (e.g. an N-/C-terminal stretch
+    the crystal never resolved) or across a true insertion/deletion mismatch are
+    dropped, since they have no valid PDB slot.
     """
     if not pdb_to_uniprot_map:
         return
-    uniprot_to_pdb = {u: p for p, u in pdb_to_uniprot_map.items()}
+    uniprot_to_pdb = _build_uniprot_to_pdb_with_gap_fill(pdb_to_uniprot_map)
     rewritten: list[str] = []
     with model_path.open("r", encoding="utf-8") as fh:
         for line in fh:
@@ -496,7 +622,7 @@ def _renumber_model_from_uniprot_to_pdb(
                     continue
                 pdb_pos = uniprot_to_pdb.get(uniprot_pos)
                 if pdb_pos is None:
-                    continue  # drop residues outside the crystal's UniProt span
+                    continue  # terminal overhang or insertion mismatch: no PDB slot
                 rewritten.append(f"{line[:22]}{pdb_pos:4d}{line[26:]}")
             else:
                 rewritten.append(line)
@@ -546,3 +672,149 @@ def cleanup_model_pdb(input_model_path: Path, output_model_path: Path) -> Path:
         fh.write("END\n")
     _debug(f"Cleaned final model written to: {output_model_path}")
     return output_model_path
+
+
+def splice_alphafold_gap_residues_into_crystal(
+    alphafold_final_model_path: Path,
+    original_crystal_pdb_path: Path,
+    target_chain_id: str,
+) -> None:
+    """Rewrite the AlphaFold-only final model in place as crystal + AF-gap splice.
+
+    The AlphaFold fallback emits ``final_filled_model.pdb`` from the aligned
+    (then renumbered and trimmed) AlphaFold model. That file contains ONLY the
+    AlphaFold protein for the target chain — the crystal's other chains,
+    co-crystallised ligands, cofactors, metals and crystallographic waters are
+    dropped by the upstream ``write_chain_specific_template_pdb`` cut and never
+    re-inserted. Downstream docking and MM-GBSA scoring require the full
+    crystallographic environment: the reference pocket geometry comes from the
+    co-crystal ligand, oligomeric interfaces (homodimers, tetramers) come from
+    the extra chains, and bridging waters can be catalytically essential. This
+    helper repairs the fill step in place by rebuilding the model as
+
+      * every ATOM record from the original crystal PDB retained as-is,
+      * every HETATM record from the original crystal retained as-is,
+      * every non-target chain retained as-is,
+      * only ATOM residues whose PDB number sits in an *internal* gap of the
+        target chain (bounded on both sides by observed crystal residues) copied
+        from the aligned+renumbered+trimmed AlphaFold model into the target
+        chain at the correct sequence position.
+
+    Terminal AlphaFold overhang (residue numbers outside the crystal's observed
+    range for the target chain) is discarded — the trim step already enforced
+    the pdb_ids.csv range but on the AF-only model; here the guard is a
+    per-chain range on the crystal itself, which is stricter and correct for
+    docking preparation.
+    """
+    if not alphafold_final_model_path.exists():
+        raise FileNotFoundError(
+            f"AlphaFold final model not found: {alphafold_final_model_path}"
+        )
+    if not original_crystal_pdb_path.exists():
+        raise FileNotFoundError(
+            f"Original crystal PDB not found: {original_crystal_pdb_path}"
+        )
+
+    normalized_chain = _normalize_chain_id(target_chain_id)
+
+    # 1. Collect crystal ATOM records grouped by chain+resnum, HETATMs as-is,
+    #    other-chain ATOM lines as-is, and any CONECT/SSBOND for reference.
+    crystal_target_atoms: dict[int, list[str]] = {}
+    crystal_target_resnums: set[int] = set()
+    crystal_other_chain_lines: list[str] = []
+    crystal_hetatm_lines: list[str] = []
+    crystal_conect_lines: list[str] = []
+
+    with original_crystal_pdb_path.open("r", encoding="utf-8") as fh:
+        for raw_line in fh:
+            line = raw_line.rstrip("\n")
+            if line.startswith("ATOM") and len(line) >= 27:
+                chain_id = _normalize_chain_id(line[21])
+                try:
+                    resnum = int(line[22:26].strip())
+                except ValueError:
+                    if chain_id == normalized_chain:
+                        # Malformed target-chain ATOM: keep in target block so we
+                        # do not silently drop crystal data.
+                        crystal_target_atoms.setdefault(-1, []).append(line)
+                    else:
+                        crystal_other_chain_lines.append(line)
+                    continue
+                if chain_id == normalized_chain:
+                    crystal_target_atoms.setdefault(resnum, []).append(line)
+                    crystal_target_resnums.add(resnum)
+                else:
+                    crystal_other_chain_lines.append(line)
+            elif line.startswith("HETATM"):
+                crystal_hetatm_lines.append(line)
+            elif line.startswith("CONECT"):
+                crystal_conect_lines.append(line)
+            # HEADER, TITLE, REMARK, SEQRES, TER, END, ANISOU: intentionally
+            # skipped — the FRUTON pipeline downstream reparses geometry, and
+            # header preservation is out of scope for the splice step.
+
+    if not crystal_target_resnums:
+        # Crystal target chain is empty — nothing to splice; preserve AF-only
+        # output so the caller's downstream steps still get *some* model.
+        return
+
+    crystal_min = min(crystal_target_resnums)
+    crystal_max = max(crystal_target_resnums)
+
+    # 2. Read AF ATOM lines; retain only residues that fill an *internal* gap
+    #    on the target chain — absent from the crystal and strictly bounded by
+    #    observed crystal residues.
+    af_gap_atoms_by_resnum: dict[int, list[str]] = {}
+    with alphafold_final_model_path.open("r", encoding="utf-8") as fh:
+        for raw_line in fh:
+            line = raw_line.rstrip("\n")
+            if not line.startswith("ATOM") or len(line) < 27:
+                continue
+            try:
+                resnum = int(line[22:26].strip())
+            except ValueError:
+                continue
+            if resnum in crystal_target_resnums:
+                continue
+            if not (crystal_min < resnum < crystal_max):
+                continue  # terminal overhang — drop
+            # AlphaFold is single-chain; force the record onto the target chain.
+            forced = f"{line[:21]}{normalized_chain}{line[22:]}"
+            af_gap_atoms_by_resnum.setdefault(resnum, []).append(forced)
+
+    # 3. Assemble output: target chain (crystal residues + AF-gap residues in
+    #    resnum order) → TER → other crystal chains → TER → crystal HETATMs →
+    #    CONECT → END.
+    merged_target = dict(crystal_target_atoms)
+    for resnum, lines in af_gap_atoms_by_resnum.items():
+        merged_target[resnum] = lines
+
+    output_lines: list[str] = []
+    for resnum in sorted(k for k in merged_target if k != -1):
+        output_lines.extend(merged_target[resnum])
+    if -1 in merged_target:
+        # Malformed target-chain lines with unparseable resnum go at the end
+        # of the target block so the file stays syntactically valid.
+        output_lines.extend(merged_target[-1])
+    if merged_target:
+        output_lines.append("TER")
+
+    if crystal_other_chain_lines:
+        output_lines.extend(crystal_other_chain_lines)
+        output_lines.append("TER")
+
+    output_lines.extend(crystal_hetatm_lines)
+    output_lines.extend(crystal_conect_lines)
+    output_lines.append("END")
+
+    alphafold_final_model_path.write_text(
+        "\n".join(output_lines) + "\n", encoding="utf-8"
+    )
+    _debug(
+        "AF-gap splice into crystal complete: "
+        f"chain={normalized_chain!r} "
+        f"crystal_target_residues={len(crystal_target_resnums)} "
+        f"af_gap_residues={len(af_gap_atoms_by_resnum)} "
+        f"other_chain_atoms={len(crystal_other_chain_lines)} "
+        f"hetatms={len(crystal_hetatm_lines)}"
+    )

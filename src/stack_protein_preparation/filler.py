@@ -57,6 +57,7 @@ from ._filler_shared import (
     find_metal_and_ligand_contact_atoms,
     _get_uniprot_range_from_mapping,
     _build_pdb_to_uniprot_residue_map,
+    splice_alphafold_gap_residues_into_crystal,
 )
 from ._filler_analysis import (
     _alignment_metrics_for_chain,
@@ -149,6 +150,7 @@ __all__ = [
     "crop_pdb_to_range",
     "run_alphafold_fallback_for_chain",
     "run_filler_for_chain",
+    "splice_alphafold_gap_residues_into_crystal",
     "_normalize_chain_id",
     "_extract_chain_id_from_alignment_header",
     "_find_gap_regions_in_sequence",
@@ -665,6 +667,17 @@ def run_filler_for_chain(
             else:
                 trim_range = uniprot_residue_range or effective_residue_range
                 _trim_final_model_in_place(alphafold_model_path, trim_range)
+            # Splice AlphaFold-only fill into the ORIGINAL crystal: recovers
+            # non-target chains, all HETATM records (co-crystal ligands,
+            # cofactors, metals, crystallographic waters) and keeps only the
+            # AlphaFold residues that sit strictly inside an internal gap of
+            # the target chain. Without this step downstream docking / MM-GBSA
+            # loses the entire crystallographic reference environment.
+            splice_alphafold_gap_residues_into_crystal(
+                alphafold_final_model_path=alphafold_model_path,
+                original_crystal_pdb_path=template_pdb_path,
+                target_chain_id=resolved_chain_id,
+            )
             result = _build_result(
                 chain_id=resolved_chain_id,
                 output_dir=output_dir,
