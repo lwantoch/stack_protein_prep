@@ -219,6 +219,187 @@ def write_modeller_hybrid_af_alignment(
     return alignment_file
 
 
+def build_merged_crystal_af_template(
+    crystal_pdb: Path,
+    af_pdb: Path,
+    target_chain_id: str,
+    output_path: Path,
+) -> tuple[Path, set[int], set[int]]:
+    """Merge crystal + AF into a single template PDB for ``loopmodel``.
+
+    For every residue in the crystal's observed range on target_chain_id:
+      * If the crystal has that residue: use the crystal atoms as-is.
+      * Otherwise (gap position): use the AF atoms (already Kabsch-aligned
+        to the crystal upstream).
+
+    Atoms are written in strict residue-number order so MODELLER's PDB
+    reader sees a contiguous chain — this is required for the alignment
+    check to pass.
+
+    Args:
+        crystal_pdb: crystal template PDB (source of anchor coordinates).
+        af_pdb: AF model PDB (source of gap starting coordinates).
+        target_chain_id: chain letter to use for the merged output.
+        output_path: where to write the merged PDB.
+
+    Returns a tuple ``(merged_pdb_path, crystal_residues, gap_residues)`` so
+    the caller can build the ``loopmodel.select_loop_atoms`` range.
+    """
+    from ._filler_analysis import _collect_protein_residue_numbers_by_chain
+
+    crystal_by_chain = _collect_protein_residue_numbers_by_chain(
+        crystal_pdb, {target_chain_id}
+    )
+    crystal_residues = crystal_by_chain.get(target_chain_id, set())
+    if not crystal_residues:
+        raise RuntimeError(
+            f"No crystal residues found on chain {target_chain_id!r} in {crystal_pdb}"
+        )
+
+    observed_min = min(crystal_residues)
+    observed_max = max(crystal_residues)
+    gap_residues = set(range(observed_min, observed_max + 1)) - crystal_residues
+
+    normalized_chain = target_chain_id.strip() if target_chain_id.strip() else " "
+
+    crystal_atoms_by_res: dict[int, list[str]] = {}
+    for line in crystal_pdb.open("r", encoding="utf-8"):
+        if not line.startswith("ATOM") or len(line) < 27:
+            continue
+        try:
+            rn = int(line[22:26])
+        except ValueError:
+            continue
+        if rn in crystal_residues:
+            crystal_atoms_by_res.setdefault(rn, []).append(line)
+
+    af_atoms_by_res: dict[int, list[str]] = {}
+    for line in af_pdb.open("r", encoding="utf-8"):
+        if not line.startswith("ATOM") or len(line) < 27:
+            continue
+        try:
+            rn = int(line[22:26])
+        except ValueError:
+            continue
+        if rn in gap_residues:
+            forced = line[:21] + normalized_chain + line[22:]
+            af_atoms_by_res.setdefault(rn, []).append(forced)
+
+    with output_path.open("w", encoding="utf-8") as fh:
+        for rn in range(observed_min, observed_max + 1):
+            if rn in crystal_atoms_by_res:
+                fh.writelines(crystal_atoms_by_res[rn])
+            elif rn in af_atoms_by_res:
+                fh.writelines(af_atoms_by_res[rn])
+        fh.write("TER\nEND\n")
+
+    _debug(
+        f"Merged crystal+AF template written to {output_path.name}: "
+        f"{len(crystal_atoms_by_res)} crystal residues + "
+        f"{len(af_atoms_by_res)} AF-gap residues, "
+        f"total range {observed_min}-{observed_max}"
+    )
+    return output_path, crystal_residues, gap_residues
+
+
+def write_modeller_loopmodel_alignment(
+    output_dir: Path,
+    template_id: str,
+    target_id: str,
+    full_target_sequence: str,
+) -> Path:
+    """Write a minimal 2-record alignment for ``loopmodel`` builds.
+
+    Both template and target use the same sequence — the target-vs-template
+    identity is what makes MODELLER copy backbone atoms from the merged
+    template PDB verbatim, then re-refine only the residues selected by
+    ``select_loop_atoms`` in the loopmodel script.
+    """
+    alignment_file = output_dir / DEFAULT_ALIGNMENT_FILENAME
+    content = (
+        f">P1;{template_id}\n"
+        f"structureX:{template_id}:FIRST:@:LAST:@::::\n"
+        f"{full_target_sequence}*\n"
+        f">P1;{target_id}\n"
+        f"sequence:{target_id}:FIRST:@:LAST:@::::\n"
+        f"{full_target_sequence}*\n"
+    )
+    alignment_file.write_text(content, encoding="utf-8")
+    _debug(f"Wrote MODELLER loopmodel alignment: {alignment_file}")
+    return alignment_file
+
+
+def write_modeller_loopmodel_script(
+    output_dir: Path,
+    alignment_file: Path,
+    template_id: str,
+    target_id: str,
+    loop_first_residue: int,
+    loop_last_residue: int,
+    chain_id: str = "A",
+    ending_loop_model: int = 20,
+) -> Path:
+    """Write a MODELLER script that rebuilds a defined loop segment.
+
+    The template PDB (merged crystal + AF gap-fill) already contains all
+    residues; ``loopmodel.select_loop_atoms`` marks only the gap residues
+    for re-refinement so the crystal-observed backbone is preserved.
+
+    ``loop_first_residue`` and ``loop_last_residue`` are in **MODELLER's
+    1-based** numbering (offset by ``observed_min - 1`` from crystal PDB
+    numbering). The caller must translate before invoking this helper.
+
+    ``ending_loop_model`` controls the loop ensemble size; the best DOPE
+    is picked by ``select_best_model_from_scores``.
+    """
+    script_path = output_dir / DEFAULT_MODELLER_SCRIPT_FILENAME
+    content = f"""from modeller import *
+from modeller.automodel import *
+
+log.verbose()
+
+env = environ()
+env.io.atom_files_directory = ['.']
+env.io.hetatm = True
+
+
+class GapLoop(loopmodel):
+    def select_loop_atoms(self):
+        return selection(self.residue_range('{loop_first_residue}:{chain_id}',
+                                            '{loop_last_residue}:{chain_id}'))
+
+
+a = GapLoop(
+    env,
+    alnfile='{alignment_file.name}',
+    knowns='{template_id}',
+    sequence='{target_id}',
+    loop_assess_methods=(assess.DOPE,),
+)
+
+a.starting_model = 1
+a.ending_model = 1
+
+a.loop.starting_model = 1
+a.loop.ending_model = {ending_loop_model}
+a.loop.md_level = refine.slow
+
+a.make()
+
+score_file = '{DEFAULT_SCORE_FILENAME}'
+with open(score_file, 'w', encoding='utf-8') as handle:
+    handle.write("model_name\\tdope_score\\tga341_score\\n")
+    for model in a.loop.outputs:
+        if model.get('failure') is None:
+            model_name = model.get('name')
+            dope_score = model.get('DOPE score')
+            handle.write(f"{{model_name}}\\t{{dope_score}}\\t\\n")
+"""
+    script_path.write_text(content, encoding="utf-8")
+    _debug(f"Wrote MODELLER loopmodel script: {script_path}")
+    return script_path
+
+
 def build_crystal_ca_restraints(
     crystal_template_pdb: Path,
     chain_id: str,

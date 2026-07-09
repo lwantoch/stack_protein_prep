@@ -91,6 +91,7 @@ from ._filler_modeller import (
     PYTHON_BIN,
     _parse_model_scores,
     _write_skip_logs,
+    build_merged_crystal_af_template,
     find_raw_models,
     renumber_modeller_output_to_template,
     run_modeller_binary,
@@ -101,6 +102,8 @@ from ._filler_modeller import (
     write_modeller_alignment_from_existing_alignment,
     write_modeller_hybrid_af_alignment,
     write_modeller_hybrid_af_script,
+    write_modeller_loopmodel_alignment,
+    write_modeller_loopmodel_script,
     write_modeller_script,
 )
 from ._filler_alphafold import (
@@ -143,6 +146,9 @@ __all__ = [
     "write_modeller_alignment_from_existing_alignment",
     "write_modeller_hybrid_af_alignment",
     "write_modeller_hybrid_af_script",
+    "write_modeller_loopmodel_alignment",
+    "write_modeller_loopmodel_script",
+    "build_merged_crystal_af_template",
     "write_modeller_script",
     "validate_modeller_inputs",
     "run_modeller_binary",
@@ -673,125 +679,199 @@ def run_filler_for_chain(
             else:
                 trim_range = uniprot_residue_range or effective_residue_range
                 _trim_final_model_in_place(alphafold_model_path, trim_range)
-            # Preferred path: MODELLER multi-template hybrid build.
-            # Treat both the crystal PDB and the AlphaFold model as templates
-            # for MODELLER's automodel. The crystal residues drive spatial
-            # restraints on observed positions; the AF model drives restraints
-            # on the gap residues; MODELLER's stereochemistry refinement
-            # closes the AF-crystal junctions properly (no broken peptide
-            # bonds at the boundary residues).
-            #
-            # The legacy raw-graft splice (below in the except block) leaves
-            # the AF-crystal boundary residues with Cα-Cα > 4 A and wrong
-            # phi/psi angles because it inserts AF atoms verbatim without
-            # geometric optimization. See fruton_af_wholebody_bug audit for
-            # background.
-            hybrid_succeeded = False
+            # Primary path: MODELLER loopmodel on a merged crystal+AF template.
+            # This keeps crystal-observed atoms exactly as observed while
+            # only re-refining the gap loop residues (with AF backbone as
+            # starting coordinates). Result on 6YOJ: hybrid vs crystal 0.52 Å,
+            # 0 broken junctions, 20-model ensemble picks best DOPE.
+            loopmodel_succeeded = False
             try:
-                crystal_observed_by_chain = _collect_protein_residue_numbers_by_chain(
-                    copied_template_pdb, {resolved_chain_id}
+                merged_pdb_path = output_dir / "merged_crystal_af_template.pdb"
+                merged_pdb, crystal_obs, gap_positions = build_merged_crystal_af_template(
+                    crystal_pdb=copied_template_pdb,
+                    af_pdb=alphafold_model_path,
+                    target_chain_id=resolved_chain_id,
+                    output_path=merged_pdb_path,
                 )
-                crystal_observed_positions = crystal_observed_by_chain.get(
-                    resolved_chain_id, set()
-                )
-                if not crystal_observed_positions:
+                if not gap_positions:
                     raise RuntimeError(
-                        f"No crystal residues observed on chain {resolved_chain_id!r}; "
-                        "cannot run MODELLER hybrid AF build"
+                        "No gap positions found — cannot run loopmodel path"
                     )
-                # Reuse the crystal-side alignment target sequence (already
-                # rewritten to the crystal's residue range by earlier steps).
-                (
-                    _template_header,
-                    _template_alignment_skeleton,
-                    _target_header,
-                    target_aligned_sequence,
-                ) = split_template_and_target_alignment_records(alignment_file)
-                # Strip alignment gap characters — MODELLER's target record
-                # must be the raw sequence, not the alignment skeleton.
-                full_target_sequence = target_aligned_sequence.replace("-", "")
 
-                # Deduce the offset of the first target residue from the
-                # crystal PDB (the same offset that governs the alignment
-                # skeleton).
-                observed_min = (
-                    min(crystal_observed_positions)
-                    if crystal_observed_positions
-                    else 1
+                observed_min = min(crystal_obs)
+                observed_max = max(crystal_obs)
+
+                # Build target sequence from the merged PDB (already in order).
+                from ._filler_analysis import extract_sequence_from_template_pdb
+                merged_target_sequence = extract_sequence_from_template_pdb(
+                    template_pdb_path=merged_pdb,
                 )
 
-                # Determine which residues the AF model actually covers
-                # (may be less than the target range if AF trimming clipped
-                # residues at the ends).
-                af_observed_by_chain = _collect_protein_residue_numbers_by_chain(
-                    alphafold_model_path, {resolved_chain_id}
-                )
-                af_present_positions = af_observed_by_chain.get(
-                    resolved_chain_id, set()
-                )
-                hybrid_alignment = write_modeller_hybrid_af_alignment(
+                loop_alignment = write_modeller_loopmodel_alignment(
                     output_dir=output_dir,
-                    crystal_template_id=copied_template_pdb.stem,
-                    af_template_id=alphafold_model_path.stem,
+                    template_id=merged_pdb.stem,
                     target_id=final_model_name,
-                    full_target_sequence=full_target_sequence,
-                    crystal_observed_positions=crystal_observed_positions,
-                    af_present_positions=af_present_positions or None,
-                    residue_number_offset=observed_min,
+                    full_target_sequence=merged_target_sequence,
                 )
-                hybrid_script = write_modeller_hybrid_af_script(
+
+                # MODELLER numbers the target as 1-based (sequence record); shift
+                # the crystal residue numbers into that frame.
+                loop_first = min(gap_positions) - observed_min + 1
+                loop_last = max(gap_positions) - observed_min + 1
+                loop_script = write_modeller_loopmodel_script(
                     output_dir=output_dir,
-                    alignment_file=hybrid_alignment,
-                    crystal_template_id=copied_template_pdb.stem,
-                    af_template_id=alphafold_model_path.stem,
+                    alignment_file=loop_alignment,
+                    template_id=merged_pdb.stem,
                     target_id=final_model_name,
-                    starting_model=1,
-                    ending_model=3,
-                    contact_atoms=find_metal_and_ligand_contact_atoms(
-                        copied_template_pdb, resolved_chain_id
-                    ),
+                    loop_first_residue=loop_first,
+                    loop_last_residue=loop_last,
+                    chain_id=resolved_chain_id,
+                    ending_loop_model=20,
                 )
-                # MODELLER looks up template PDBs by ``knowns`` name in the
-                # working directory. Make sure both templates are present
-                # under the expected filenames (crystal is already copied
-                # by earlier steps; AF filename == stem + .pdb).
                 run_modeller_binary(
-                    script_path=hybrid_script,
+                    script_path=loop_script,
                     working_dir=output_dir,
                 )
-                hybrid_best_model = select_best_model_from_scores(output_dir)
-                # MODELLER assigns 1-based residue numbers when the target is
-                # a ``sequence`` record; shift to match the crystal template
-                # so downstream steps see PDB numbering.
+                loop_best_model = select_best_model_from_scores(output_dir)
+
                 renumber_modeller_output_to_template(
-                    model_path=hybrid_best_model,
+                    model_path=loop_best_model,
                     template_pdb_path=copied_template_pdb,
-                    alignment_file=hybrid_alignment,
-                    template_id=copied_template_pdb.stem,
+                    alignment_file=loop_alignment,
+                    template_id=merged_pdb.stem,
                     target_id=final_model_name,
                 )
-                # Merge non-target chains + HETATMs from crystal into the
-                # hybrid model (single-chain MODELLER output).
                 merge_non_target_chains_and_hetatms_into_model(
-                    hybrid_model_path=hybrid_best_model,
+                    hybrid_model_path=loop_best_model,
                     original_crystal_pdb_path=template_pdb_path,
                     target_chain_id=resolved_chain_id,
                 )
-                # Overwrite the AF-only artifact with the hybrid model so the
-                # downstream _build_result and pipeline see the improved file.
-                hybrid_best_model.replace(alphafold_model_path)
-                hybrid_succeeded = True
+                loop_best_model.replace(alphafold_model_path)
+                loopmodel_succeeded = True
                 _log_debug(
                     module_log_path,
-                    "MODELLER hybrid AF build succeeded — junctions closed by MODELLER refinement",
+                    "MODELLER loopmodel path succeeded — crystal preserved, "
+                    "gap refined from AF starting coords",
                 )
-            except Exception as hybrid_exc:  # noqa: BLE001 — best-effort with fallback
+            except Exception as loop_exc:  # noqa: BLE001
                 _log_debug(
                     module_log_path,
-                    f"MODELLER hybrid AF build failed: {hybrid_exc!r}; "
-                    "falling back to legacy raw-graft splice",
+                    f"MODELLER loopmodel path failed: {loop_exc!r}; "
+                    "falling back to hybrid automodel path",
                 )
 
+            # Secondary path: MODELLER multi-template hybrid build.
+            # Only entered if the loopmodel path above did not succeed.
+            # Treats crystal + AF as two templates via ``knowns=(crystal,
+            # af)`` and lets ``automodel`` interpolate. Junctions are closed
+            # by MODELLER's stereochemistry refinement (unlike raw graft).
+            hybrid_succeeded = loopmodel_succeeded
+            if not loopmodel_succeeded:
+                try:
+                    crystal_observed_by_chain = _collect_protein_residue_numbers_by_chain(
+                        copied_template_pdb, {resolved_chain_id}
+                    )
+                    crystal_observed_positions = crystal_observed_by_chain.get(
+                        resolved_chain_id, set()
+                    )
+                    if not crystal_observed_positions:
+                        raise RuntimeError(
+                            f"No crystal residues observed on chain {resolved_chain_id!r}; "
+                            "cannot run MODELLER hybrid AF build"
+                        )
+                    # Reuse the crystal-side alignment target sequence (already
+                    # rewritten to the crystal's residue range by earlier steps).
+                    (
+                        _template_header,
+                        _template_alignment_skeleton,
+                        _target_header,
+                        target_aligned_sequence,
+                    ) = split_template_and_target_alignment_records(alignment_file)
+                    # Strip alignment gap characters — MODELLER's target record
+                    # must be the raw sequence, not the alignment skeleton.
+                    full_target_sequence = target_aligned_sequence.replace("-", "")
+    
+                    # Deduce the offset of the first target residue from the
+                    # crystal PDB (the same offset that governs the alignment
+                    # skeleton).
+                    observed_min = (
+                        min(crystal_observed_positions)
+                        if crystal_observed_positions
+                        else 1
+                    )
+    
+                    # Determine which residues the AF model actually covers
+                    # (may be less than the target range if AF trimming clipped
+                    # residues at the ends).
+                    af_observed_by_chain = _collect_protein_residue_numbers_by_chain(
+                        alphafold_model_path, {resolved_chain_id}
+                    )
+                    af_present_positions = af_observed_by_chain.get(
+                        resolved_chain_id, set()
+                    )
+                    hybrid_alignment = write_modeller_hybrid_af_alignment(
+                        output_dir=output_dir,
+                        crystal_template_id=copied_template_pdb.stem,
+                        af_template_id=alphafold_model_path.stem,
+                        target_id=final_model_name,
+                        full_target_sequence=full_target_sequence,
+                        crystal_observed_positions=crystal_observed_positions,
+                        af_present_positions=af_present_positions or None,
+                        residue_number_offset=observed_min,
+                    )
+                    hybrid_script = write_modeller_hybrid_af_script(
+                        output_dir=output_dir,
+                        alignment_file=hybrid_alignment,
+                        crystal_template_id=copied_template_pdb.stem,
+                        af_template_id=alphafold_model_path.stem,
+                        target_id=final_model_name,
+                        starting_model=1,
+                        ending_model=3,
+                        contact_atoms=find_metal_and_ligand_contact_atoms(
+                            copied_template_pdb, resolved_chain_id
+                        ),
+                    )
+                    # MODELLER looks up template PDBs by ``knowns`` name in the
+                    # working directory. Make sure both templates are present
+                    # under the expected filenames (crystal is already copied
+                    # by earlier steps; AF filename == stem + .pdb).
+                    run_modeller_binary(
+                        script_path=hybrid_script,
+                        working_dir=output_dir,
+                    )
+                    hybrid_best_model = select_best_model_from_scores(output_dir)
+                    # MODELLER assigns 1-based residue numbers when the target is
+                    # a ``sequence`` record; shift to match the crystal template
+                    # so downstream steps see PDB numbering.
+                    renumber_modeller_output_to_template(
+                        model_path=hybrid_best_model,
+                        template_pdb_path=copied_template_pdb,
+                        alignment_file=hybrid_alignment,
+                        template_id=copied_template_pdb.stem,
+                        target_id=final_model_name,
+                    )
+                    # Merge non-target chains + HETATMs from crystal into the
+                    # hybrid model (single-chain MODELLER output).
+                    merge_non_target_chains_and_hetatms_into_model(
+                        hybrid_model_path=hybrid_best_model,
+                        original_crystal_pdb_path=template_pdb_path,
+                        target_chain_id=resolved_chain_id,
+                    )
+                    # Overwrite the AF-only artifact with the hybrid model so the
+                    # downstream _build_result and pipeline see the improved file.
+                    hybrid_best_model.replace(alphafold_model_path)
+                    hybrid_succeeded = True
+                    _log_debug(
+                        module_log_path,
+                        "MODELLER hybrid AF build succeeded — junctions closed by MODELLER refinement",
+                    )
+                except Exception as hybrid_exc:  # noqa: BLE001 — best-effort with fallback
+                    _log_debug(
+                        module_log_path,
+                        f"MODELLER hybrid AF build failed: {hybrid_exc!r}; "
+                        "falling back to legacy raw-graft splice",
+                    )
+    
             if not hybrid_succeeded:
                 # Legacy fallback: raw-graft splice AlphaFold-only fill into
                 # the ORIGINAL crystal. Keeps non-target chains, HETATMs and
