@@ -136,22 +136,31 @@ def write_modeller_hybrid_af_alignment(
     target_id: str,
     full_target_sequence: str,
     crystal_observed_positions: set[int],
+    af_present_positions: set[int] | None = None,
     residue_number_offset: int = 1,
 ) -> Path:
     """Build a 3-record .ali file for MODELLER multi-template hybrid build.
 
     Records written:
-      1. Crystal template  — aligned sequence with '-' at gap positions
-      2. AF template       — aligned sequence with '-' at crystal-observed positions
+      1. Crystal template  — residue letter at crystal-observed positions,
+                             '-' where crystal PDB has no atoms
+      2. AF template       — residue letter at AF-present positions,
+                             '-' where AF PDB has no atoms (usually AF covers
+                             all positions, so this record is normally full)
       3. Target            — full sequence, no gaps
 
-    MODELLER's ``automodel`` with ``knowns=(crystal, af)`` will then:
-      * Use crystal atoms as spatial restraints for observed residues
-      * Use AF backbone as spatial restraints for gap residues
-      * Close junctions between the two via its stereochemistry optimizer
+    MODELLER's ``automodel`` with ``knowns=(crystal, af)`` will then interpolate
+    spatially between whichever template has coordinates at each position.
+    Where BOTH templates cover a position (i.e. crystal-observed residues that
+    are also in the AF model), MODELLER weighs both as restraints and picks
+    the geometry that minimises DOPE — for well-resolved crystal residues this
+    is dominated by the crystal (crystal restraints are tighter). For gap
+    positions where only the AF template has coordinates, AF drives the
+    backbone build.
 
-    This replaces the raw graft path (``splice_alphafold_gap_residues_into_crystal``)
-    that leaves broken peptide bonds at the AF-crystal junctions.
+    Junctions between crystal-supported and AF-only regions are closed by
+    MODELLER's stereochemistry refinement, which is exactly what the raw-graft
+    splice fails to do.
 
     Args:
         output_dir: directory to write the .ali file into
@@ -160,6 +169,10 @@ def write_modeller_hybrid_af_alignment(
         target_id: MODELLER target ID (final model name)
         full_target_sequence: 1-letter target sequence, ordered by residue
         crystal_observed_positions: PDB residue numbers observed in the crystal
+        af_present_positions: PDB residue numbers with atoms in the AF PDB.
+            Default None means the AF PDB is treated as covering the full
+            sequence (typical for AF-fallback where the AF model was cropped
+            to the crystal range).
         residue_number_offset: 1-based residue number of the first target position
 
     Returns the path to the written alignment file.
@@ -173,10 +186,12 @@ def write_modeller_hybrid_af_alignment(
         residue_number = offset + residue_number_offset
         if residue_number in crystal_observed_positions:
             crystal_aligned_chars.append(aa)
-            af_aligned_chars.append("-")
         else:
             crystal_aligned_chars.append("-")
+        if af_present_positions is None or residue_number in af_present_positions:
             af_aligned_chars.append(aa)
+        else:
+            af_aligned_chars.append("-")
 
     crystal_aligned = "".join(crystal_aligned_chars)
     af_aligned = "".join(af_aligned_chars)

@@ -688,9 +688,17 @@ def run_filler_for_chain(
             # background.
             hybrid_succeeded = False
             try:
-                crystal_observed_positions = _collect_protein_residue_numbers_by_chain(
-                    copied_template_pdb, resolved_chain_id
+                crystal_observed_by_chain = _collect_protein_residue_numbers_by_chain(
+                    copied_template_pdb, {resolved_chain_id}
                 )
+                crystal_observed_positions = crystal_observed_by_chain.get(
+                    resolved_chain_id, set()
+                )
+                if not crystal_observed_positions:
+                    raise RuntimeError(
+                        f"No crystal residues observed on chain {resolved_chain_id!r}; "
+                        "cannot run MODELLER hybrid AF build"
+                    )
                 # Reuse the crystal-side alignment target sequence (already
                 # rewritten to the crystal's residue range by earlier steps).
                 (
@@ -712,6 +720,15 @@ def run_filler_for_chain(
                     else 1
                 )
 
+                # Determine which residues the AF model actually covers
+                # (may be less than the target range if AF trimming clipped
+                # residues at the ends).
+                af_observed_by_chain = _collect_protein_residue_numbers_by_chain(
+                    alphafold_model_path, {resolved_chain_id}
+                )
+                af_present_positions = af_observed_by_chain.get(
+                    resolved_chain_id, set()
+                )
                 hybrid_alignment = write_modeller_hybrid_af_alignment(
                     output_dir=output_dir,
                     crystal_template_id=copied_template_pdb.stem,
@@ -719,6 +736,7 @@ def run_filler_for_chain(
                     target_id=final_model_name,
                     full_target_sequence=full_target_sequence,
                     crystal_observed_positions=crystal_observed_positions,
+                    af_present_positions=af_present_positions or None,
                     residue_number_offset=observed_min,
                 )
                 hybrid_script = write_modeller_hybrid_af_script(
@@ -742,6 +760,16 @@ def run_filler_for_chain(
                     working_dir=output_dir,
                 )
                 hybrid_best_model = select_best_model_from_scores(output_dir)
+                # MODELLER assigns 1-based residue numbers when the target is
+                # a ``sequence`` record; shift to match the crystal template
+                # so downstream steps see PDB numbering.
+                renumber_modeller_output_to_template(
+                    model_path=hybrid_best_model,
+                    template_pdb_path=copied_template_pdb,
+                    alignment_file=hybrid_alignment,
+                    template_id=copied_template_pdb.stem,
+                    target_id=final_model_name,
+                )
                 # Merge non-target chains + HETATMs from crystal into the
                 # hybrid model (single-chain MODELLER output).
                 merge_non_target_chains_and_hetatms_into_model(
