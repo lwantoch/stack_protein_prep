@@ -57,6 +57,7 @@ from ._filler_shared import (
     find_metal_and_ligand_contact_atoms,
     _get_uniprot_range_from_mapping,
     _build_pdb_to_uniprot_residue_map,
+    merge_non_target_chains_and_hetatms_into_model,
     splice_alphafold_gap_residues_into_crystal,
 )
 from ._filler_analysis import (
@@ -98,6 +99,8 @@ from ._filler_modeller import (
     standardize_model_name,
     validate_modeller_inputs,
     write_modeller_alignment_from_existing_alignment,
+    write_modeller_hybrid_af_alignment,
+    write_modeller_hybrid_af_script,
     write_modeller_script,
 )
 from ._filler_alphafold import (
@@ -138,6 +141,8 @@ __all__ = [
     "validate_template_sequence_consistency",
     "build_modeller_template_alignment_sequence",
     "write_modeller_alignment_from_existing_alignment",
+    "write_modeller_hybrid_af_alignment",
+    "write_modeller_hybrid_af_script",
     "write_modeller_script",
     "validate_modeller_inputs",
     "run_modeller_binary",
@@ -150,6 +155,7 @@ __all__ = [
     "crop_pdb_to_range",
     "run_alphafold_fallback_for_chain",
     "run_filler_for_chain",
+    "merge_non_target_chains_and_hetatms_into_model",
     "splice_alphafold_gap_residues_into_crystal",
     "_normalize_chain_id",
     "_extract_chain_id_from_alignment_header",
@@ -667,17 +673,107 @@ def run_filler_for_chain(
             else:
                 trim_range = uniprot_residue_range or effective_residue_range
                 _trim_final_model_in_place(alphafold_model_path, trim_range)
-            # Splice AlphaFold-only fill into the ORIGINAL crystal: recovers
-            # non-target chains, all HETATM records (co-crystal ligands,
-            # cofactors, metals, crystallographic waters) and keeps only the
-            # AlphaFold residues that sit strictly inside an internal gap of
-            # the target chain. Without this step downstream docking / MM-GBSA
-            # loses the entire crystallographic reference environment.
-            splice_alphafold_gap_residues_into_crystal(
-                alphafold_final_model_path=alphafold_model_path,
-                original_crystal_pdb_path=template_pdb_path,
-                target_chain_id=resolved_chain_id,
-            )
+            # Preferred path: MODELLER multi-template hybrid build.
+            # Treat both the crystal PDB and the AlphaFold model as templates
+            # for MODELLER's automodel. The crystal residues drive spatial
+            # restraints on observed positions; the AF model drives restraints
+            # on the gap residues; MODELLER's stereochemistry refinement
+            # closes the AF-crystal junctions properly (no broken peptide
+            # bonds at the boundary residues).
+            #
+            # The legacy raw-graft splice (below in the except block) leaves
+            # the AF-crystal boundary residues with Cα-Cα > 4 A and wrong
+            # phi/psi angles because it inserts AF atoms verbatim without
+            # geometric optimization. See fruton_af_wholebody_bug audit for
+            # background.
+            hybrid_succeeded = False
+            try:
+                crystal_observed_positions = _collect_protein_residue_numbers_by_chain(
+                    copied_template_pdb, resolved_chain_id
+                )
+                # Reuse the crystal-side alignment target sequence (already
+                # rewritten to the crystal's residue range by earlier steps).
+                (
+                    _template_header,
+                    _template_alignment_skeleton,
+                    _target_header,
+                    target_aligned_sequence,
+                ) = split_template_and_target_alignment_records(alignment_file)
+                # Strip alignment gap characters — MODELLER's target record
+                # must be the raw sequence, not the alignment skeleton.
+                full_target_sequence = target_aligned_sequence.replace("-", "")
+
+                # Deduce the offset of the first target residue from the
+                # crystal PDB (the same offset that governs the alignment
+                # skeleton).
+                observed_min = (
+                    min(crystal_observed_positions)
+                    if crystal_observed_positions
+                    else 1
+                )
+
+                hybrid_alignment = write_modeller_hybrid_af_alignment(
+                    output_dir=output_dir,
+                    crystal_template_id=copied_template_pdb.stem,
+                    af_template_id=alphafold_model_path.stem,
+                    target_id=final_model_name,
+                    full_target_sequence=full_target_sequence,
+                    crystal_observed_positions=crystal_observed_positions,
+                    residue_number_offset=observed_min,
+                )
+                hybrid_script = write_modeller_hybrid_af_script(
+                    output_dir=output_dir,
+                    alignment_file=hybrid_alignment,
+                    crystal_template_id=copied_template_pdb.stem,
+                    af_template_id=alphafold_model_path.stem,
+                    target_id=final_model_name,
+                    starting_model=1,
+                    ending_model=3,
+                    contact_atoms=find_metal_and_ligand_contact_atoms(
+                        copied_template_pdb, resolved_chain_id
+                    ),
+                )
+                # MODELLER looks up template PDBs by ``knowns`` name in the
+                # working directory. Make sure both templates are present
+                # under the expected filenames (crystal is already copied
+                # by earlier steps; AF filename == stem + .pdb).
+                run_modeller_binary(
+                    script_path=hybrid_script,
+                    working_dir=output_dir,
+                )
+                hybrid_best_model = select_best_model_from_scores(output_dir)
+                # Merge non-target chains + HETATMs from crystal into the
+                # hybrid model (single-chain MODELLER output).
+                merge_non_target_chains_and_hetatms_into_model(
+                    hybrid_model_path=hybrid_best_model,
+                    original_crystal_pdb_path=template_pdb_path,
+                    target_chain_id=resolved_chain_id,
+                )
+                # Overwrite the AF-only artifact with the hybrid model so the
+                # downstream _build_result and pipeline see the improved file.
+                hybrid_best_model.replace(alphafold_model_path)
+                hybrid_succeeded = True
+                _log_debug(
+                    module_log_path,
+                    "MODELLER hybrid AF build succeeded — junctions closed by MODELLER refinement",
+                )
+            except Exception as hybrid_exc:  # noqa: BLE001 — best-effort with fallback
+                _log_debug(
+                    module_log_path,
+                    f"MODELLER hybrid AF build failed: {hybrid_exc!r}; "
+                    "falling back to legacy raw-graft splice",
+                )
+
+            if not hybrid_succeeded:
+                # Legacy fallback: raw-graft splice AlphaFold-only fill into
+                # the ORIGINAL crystal. Keeps non-target chains, HETATMs and
+                # crystallographic waters, but the AF-crystal junctions may
+                # have broken peptide bonds.
+                splice_alphafold_gap_residues_into_crystal(
+                    alphafold_final_model_path=alphafold_model_path,
+                    original_crystal_pdb_path=template_pdb_path,
+                    target_chain_id=resolved_chain_id,
+                )
             result = _build_result(
                 chain_id=resolved_chain_id,
                 output_dir=output_dir,

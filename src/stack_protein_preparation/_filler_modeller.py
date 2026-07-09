@@ -129,6 +129,142 @@ def write_modeller_alignment_from_existing_alignment(
     return alignment_file
 
 
+def write_modeller_hybrid_af_alignment(
+    output_dir: Path,
+    crystal_template_id: str,
+    af_template_id: str,
+    target_id: str,
+    full_target_sequence: str,
+    crystal_observed_positions: set[int],
+    residue_number_offset: int = 1,
+) -> Path:
+    """Build a 3-record .ali file for MODELLER multi-template hybrid build.
+
+    Records written:
+      1. Crystal template  — aligned sequence with '-' at gap positions
+      2. AF template       — aligned sequence with '-' at crystal-observed positions
+      3. Target            — full sequence, no gaps
+
+    MODELLER's ``automodel`` with ``knowns=(crystal, af)`` will then:
+      * Use crystal atoms as spatial restraints for observed residues
+      * Use AF backbone as spatial restraints for gap residues
+      * Close junctions between the two via its stereochemistry optimizer
+
+    This replaces the raw graft path (``splice_alphafold_gap_residues_into_crystal``)
+    that leaves broken peptide bonds at the AF-crystal junctions.
+
+    Args:
+        output_dir: directory to write the .ali file into
+        crystal_template_id: MODELLER template ID for the crystal PDB (basename)
+        af_template_id: MODELLER template ID for the AF PDB (basename)
+        target_id: MODELLER target ID (final model name)
+        full_target_sequence: 1-letter target sequence, ordered by residue
+        crystal_observed_positions: PDB residue numbers observed in the crystal
+        residue_number_offset: 1-based residue number of the first target position
+
+    Returns the path to the written alignment file.
+    """
+    if not full_target_sequence:
+        raise ValueError("full_target_sequence must not be empty for hybrid AF alignment")
+
+    crystal_aligned_chars: list[str] = []
+    af_aligned_chars: list[str] = []
+    for offset, aa in enumerate(full_target_sequence):
+        residue_number = offset + residue_number_offset
+        if residue_number in crystal_observed_positions:
+            crystal_aligned_chars.append(aa)
+            af_aligned_chars.append("-")
+        else:
+            crystal_aligned_chars.append("-")
+            af_aligned_chars.append(aa)
+
+    crystal_aligned = "".join(crystal_aligned_chars)
+    af_aligned = "".join(af_aligned_chars)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    alignment_file = output_dir / DEFAULT_ALIGNMENT_FILENAME
+    content = (
+        f">P1;{crystal_template_id}\n"
+        f"structureX:{crystal_template_id}:FIRST:@:LAST:@::::\n"
+        f"{crystal_aligned}*\n"
+        f">P1;{af_template_id}\n"
+        f"structureX:{af_template_id}:FIRST:@:LAST:@::::\n"
+        f"{af_aligned}*\n"
+        f">P1;{target_id}\n"
+        f"sequence:{target_id}:FIRST:@:LAST:@::::\n"
+        f"{full_target_sequence}*\n"
+    )
+    alignment_file.write_text(content, encoding="utf-8")
+    _debug(
+        f"Wrote MODELLER hybrid AF alignment: {alignment_file} "
+        f"(crystal covers {sum(1 for c in crystal_aligned if c != '-')} "
+        f"of {len(full_target_sequence)} positions; "
+        f"AF fills {sum(1 for c in af_aligned if c != '-')})"
+    )
+    return alignment_file
+
+
+def write_modeller_hybrid_af_script(
+    output_dir: Path,
+    alignment_file: Path,
+    crystal_template_id: str,
+    af_template_id: str,
+    target_id: str,
+    starting_model: int = 1,
+    ending_model: int = 3,
+    contact_atoms: list[Any] | None = None,
+) -> Path:
+    """Write MODELLER script for multi-template hybrid AF build.
+
+    Uses ``knowns=(crystal_template_id, af_template_id)`` so MODELLER
+    interpolates between the two templates and closes junctions via its
+    native stereochemistry optimization (spatial restraints + refinement).
+
+    ``ending_model`` defaults to 3 (not 1) because multi-template builds
+    benefit from ensemble selection via DOPE/GA341 scoring; the caller can
+    then use ``select_best_model_from_scores`` to pick the winner.
+    """
+    restraints_block = _render_restraints_block(contact_atoms or [])
+    model_class = "_RestrainedModel" if restraints_block else "automodel"
+
+    script_path = output_dir / DEFAULT_MODELLER_SCRIPT_FILENAME
+    content = f"""from modeller import *
+from modeller.automodel import *
+
+log.verbose()
+
+env = environ()
+env.io.atom_files_directory = ['.']
+env.io.hetatm = True
+{restraints_block}
+a = {model_class}(
+    env,
+    alnfile='{alignment_file.name}',
+    knowns=('{crystal_template_id}', '{af_template_id}'),
+    sequence='{target_id}',
+    assess_methods=(assess.DOPE, assess.GA341),
+)
+
+a.starting_model = {starting_model}
+a.ending_model = {ending_model}
+
+a.make()
+
+score_file = '{DEFAULT_SCORE_FILENAME}'
+with open(score_file, 'w', encoding='utf-8') as handle:
+    handle.write("model_name\\tdope_score\\tga341_score\\n")
+    for model in a.outputs:
+        if model.get('failure') is None:
+            model_name = model.get('name')
+            dope_score = model.get('DOPE score')
+            ga341_score = model.get('GA341 score')
+            handle.write(f"{{model_name}}\\t{{dope_score}}\\t{{ga341_score}}\\n")
+"""
+    script_path.write_text(content, encoding="utf-8")
+    _debug(f"Wrote MODELLER hybrid AF script: {script_path}")
+    return script_path
+
+
 def _render_restraints_block(contact_atoms: list[Any]) -> str:
     """Return the Python snippet that adds position restraints to a MODELLER model."""
     if not contact_atoms:

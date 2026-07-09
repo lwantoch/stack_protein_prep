@@ -818,3 +818,83 @@ def splice_alphafold_gap_residues_into_crystal(
         f"other_chain_atoms={len(crystal_other_chain_lines)} "
         f"hetatms={len(crystal_hetatm_lines)}"
     )
+
+
+def merge_non_target_chains_and_hetatms_into_model(
+    hybrid_model_path: Path,
+    original_crystal_pdb_path: Path,
+    target_chain_id: str,
+) -> None:
+    """Rewrite a MODELLER hybrid model in place, splicing the non-target chains,
+    HETATMs, and CONECT records from the original crystal back in.
+
+    Used by the MODELLER multi-template hybrid AF path where MODELLER only
+    outputs the target chain (single-sequence build). The non-target chains,
+    co-crystallised ligands, cofactors, metals and crystallographic waters
+    from the original crystal must be re-merged for downstream docking / MMBSA.
+
+    Unlike ``splice_alphafold_gap_residues_into_crystal``, this helper does NOT
+    graft AF gap residues on top of crystal — those are already in the hybrid
+    model (built by MODELLER with proper junction closure). It only pulls in
+    the *supporting* crystal context (other chains, ligands, waters).
+    """
+    if not hybrid_model_path.exists():
+        raise FileNotFoundError(f"Hybrid model not found: {hybrid_model_path}")
+    if not original_crystal_pdb_path.exists():
+        raise FileNotFoundError(
+            f"Original crystal PDB not found: {original_crystal_pdb_path}"
+        )
+
+    normalized_chain = _normalize_chain_id(target_chain_id)
+
+    # 1. Read crystal — collect non-target ATOM records, HETATMs, CONECTs.
+    crystal_other_chain_lines: list[str] = []
+    crystal_hetatm_lines: list[str] = []
+    crystal_conect_lines: list[str] = []
+    with original_crystal_pdb_path.open("r", encoding="utf-8") as fh:
+        for raw_line in fh:
+            line = raw_line.rstrip("\n")
+            if line.startswith("ATOM") and len(line) >= 27:
+                chain_id = _normalize_chain_id(line[21])
+                if chain_id != normalized_chain:
+                    crystal_other_chain_lines.append(line)
+            elif line.startswith("HETATM"):
+                crystal_hetatm_lines.append(line)
+            elif line.startswith("CONECT"):
+                crystal_conect_lines.append(line)
+
+    # 2. Read hybrid model — retain all ATOM records (target chain, already
+    #    junction-closed by MODELLER). Strip END and any trailing HETATM/CONECT
+    #    the hybrid model itself may have (there shouldn't be any).
+    hybrid_atom_lines: list[str] = []
+    with hybrid_model_path.open("r", encoding="utf-8") as fh:
+        for raw_line in fh:
+            line = raw_line.rstrip("\n")
+            if line.startswith("ATOM") and len(line) >= 27:
+                # Force onto target chain (MODELLER single-chain output).
+                forced = f"{line[:21]}{normalized_chain}{line[22:]}"
+                hybrid_atom_lines.append(forced)
+
+    # 3. Assemble: target chain (hybrid) → TER → other crystal chains → TER →
+    #    crystal HETATMs → CONECT → END.
+    output_lines: list[str] = []
+    output_lines.extend(hybrid_atom_lines)
+    if hybrid_atom_lines:
+        output_lines.append("TER")
+    if crystal_other_chain_lines:
+        output_lines.extend(crystal_other_chain_lines)
+        output_lines.append("TER")
+    output_lines.extend(crystal_hetatm_lines)
+    output_lines.extend(crystal_conect_lines)
+    output_lines.append("END")
+
+    hybrid_model_path.write_text(
+        "\n".join(output_lines) + "\n", encoding="utf-8"
+    )
+    _debug(
+        "MODELLER hybrid model context merge complete: "
+        f"chain={normalized_chain!r} "
+        f"hybrid_atoms={len(hybrid_atom_lines)} "
+        f"other_chain_atoms={len(crystal_other_chain_lines)} "
+        f"hetatms={len(crystal_hetatm_lines)}"
+    )
