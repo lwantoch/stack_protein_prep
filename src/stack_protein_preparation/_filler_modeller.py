@@ -219,6 +219,54 @@ def write_modeller_hybrid_af_alignment(
     return alignment_file
 
 
+def build_crystal_ca_restraints(
+    crystal_template_pdb: Path,
+    chain_id: str,
+    stdev_angstrom: float = 0.1,
+) -> list[Any]:
+    """Read Cα coordinates from crystal_template_pdb and wrap them in the
+    ``_RestrainedModel`` restraint format used by ``_render_restraints_block``.
+
+    Each returned object has attributes ``atom_name``, ``resseq``, ``x``, ``y``,
+    ``z``, ``stdev`` (matches the ``_CONTACT_RESTRAINTS`` tuple positions).
+    Using a tight ``stdev`` (default 0.1 Å) effectively pins the crystal Cα
+    atoms in place during MODELLER optimization — this keeps the hybrid model
+    from drifting to the AF template in the crystal-observed region, which is
+    the reason for the 1.2 Å drift observed on 6YOJ without this restraint.
+    """
+    from types import SimpleNamespace
+
+    from Bio.PDB import PDBParser
+
+    parser = PDBParser(QUIET=True)
+    structure = parser.get_structure(crystal_template_pdb.stem, crystal_template_pdb)
+    normalized_chain = chain_id.strip() or " "
+    restraints: list[Any] = []
+    for model in structure:
+        for chain in model:
+            if chain.id.strip() != normalized_chain and chain.id != normalized_chain:
+                continue
+            for residue in chain:
+                if residue.id[0] != " ":
+                    continue
+                if "CA" not in residue:
+                    continue
+                ca = residue["CA"]
+                x, y, z = ca.get_coord()
+                restraints.append(
+                    SimpleNamespace(
+                        atom_name="CA",
+                        resseq=int(residue.id[1]),
+                        x=float(x),
+                        y=float(y),
+                        z=float(z),
+                        stdev=float(stdev_angstrom),
+                    )
+                )
+        break  # first model only
+    return restraints
+
+
 def write_modeller_hybrid_af_script(
     output_dir: Path,
     alignment_file: Path,
