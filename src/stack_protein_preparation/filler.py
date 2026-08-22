@@ -58,8 +58,8 @@ from ._filler_shared import (
     _get_uniprot_range_from_mapping,
     _build_pdb_to_uniprot_residue_map,
     merge_non_target_chains_and_hetatms_into_model,
-    splice_alphafold_gap_residues_into_crystal,
 )
+from ._filler_af_splice import splice_af_gaps_into_crystal
 from ._filler_analysis import (
     _alignment_metrics_for_chain,
     _chain_has_protein_atoms,
@@ -162,7 +162,7 @@ __all__ = [
     "run_alphafold_fallback_for_chain",
     "run_filler_for_chain",
     "merge_non_target_chains_and_hetatms_into_model",
-    "splice_alphafold_gap_residues_into_crystal",
+    "splice_af_gaps_into_crystal",
     "_normalize_chain_id",
     "_extract_chain_id_from_alignment_header",
     "_find_gap_regions_in_sequence",
@@ -873,14 +873,15 @@ def run_filler_for_chain(
                     )
     
             if not hybrid_succeeded:
-                # Legacy fallback: raw-graft splice AlphaFold-only fill into
-                # the ORIGINAL crystal. Keeps non-target chains, HETATMs and
-                # crystallographic waters, but the AF-crystal junctions may
-                # have broken peptide bonds.
-                splice_alphafold_gap_residues_into_crystal(
-                    alphafold_final_model_path=alphafold_model_path,
-                    original_crystal_pdb_path=template_pdb_path,
-                    target_chain_id=resolved_chain_id,
+                # MODELLER-hybrid failed. Re-run the per-gap anchor-fitted
+                # splice on the AF-only model so junctions land at true
+                # peptide-bond geometry (~1.33 A C-N) instead of the raw
+                # graft's 2.4-14.5 A boundary breaks. See
+                # project_fruton_af_wholebody_bug memory.
+                splice_af_gaps_into_crystal(
+                    crystal_pdb_path=template_pdb_path,
+                    af_aligned_pdb_path=alphafold_model_path,
+                    output_pdb_path=alphafold_model_path,
                 )
             result = _build_result(
                 chain_id=resolved_chain_id,

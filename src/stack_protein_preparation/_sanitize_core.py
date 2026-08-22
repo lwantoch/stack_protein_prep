@@ -475,103 +475,147 @@ def _repair_sidechain_heavy_atoms(
     pdb_path: Path,
     template_lookup: HeavyAtomTemplateLookup,
 ) -> _RepairResult:
-    """Fill missing standard side-chain heavy atoms with PDBFixer (controlled).
+    """Fill missing standard side-chain heavy atoms with MODELLER's
+    ``complete_pdb`` (controlled).
 
-    Rules:
-    - ``missingResidues`` is emptied before ``addMissingAtoms`` — no loop building.
-    - ``missingTerminals`` is emptied — no OXT / terminal patching.
-    - Backbone atoms (N, CA, C, O) in ``missingAtoms`` are blocked, not repaired.
-    - Non-standard residues are blocked.
-    - ``addMissingHydrogens``, ``addSolvent``, ``replaceNonstandardResidues``,
-      and ``removeHeterogens`` are never called.
-    - After repair, original atom coordinates must be unchanged within 0.01 Å;
-      any drift reverts the file to the pre-repair version.
-    - Newly placed atoms within ``_CLASH_WARN_DIST`` of existing heavy atoms are
-      flagged as warnings but not blocked (PDBFixer's template placement is
-      usually sane; a downstream clash check is the right gate).
+    Replaces the ex-pdbfixer implementation (removed 2026-08-22 per hard-rule
+    ``feedback_no_pdbfixer``).  MODELLER's residue-topology library
+    (``top_heav.lib``) places missing heavy atoms using internal coordinates
+    while preserving existing atom positions.
+
+    Rules preserved from the pdbfixer version:
+    - No loop or residue insertion (MODELLER complete_pdb doesn't build gaps).
+    - After the rebuild, additions are filtered per-atom:
+      * Non-standard residue additions are BLOCKED.
+      * Backbone-heavy additions (N, CA, C, O) are BLOCKED.
+      * Only true side-chain additions are ACCEPTED.
+    - Original atom coordinates must be preserved within 0.01 Å; any drift
+      reverts the file.
+    - Newly placed atoms within ``_CLASH_WARN_DIST`` of existing heavy atoms
+      raise clash warnings (not fatal).
     """
+    from Bio.PDB import PDBParser as _BioPDBParser
 
     try:
-        from pdbfixer import PDBFixer
-        from openmm.app import PDBFile as OpenMMPDBFile
-    except ImportError:
+        from modeller import Environ
+        from modeller.scripts import complete_pdb
+    except Exception as exc:
         return _RepairResult(
             n_repaired=0, n_blocked=0,
             repaired=(), blocked=(),
-            error="PDBFixer / OpenMM not available; skipping repair.",
+            error=f"MODELLER not available; skipping repair: {exc!r}",
         )
 
     import math
+    import shutil
     import tempfile
 
-    # ---- run PDBFixer in controlled mode ------------------------------------
-    fixer = PDBFixer(filename=str(pdb_path))
-    fixer.findMissingResidues()
-    fixer.missingResidues = {}          # no loop / residue insertion
-    fixer.findMissingAtoms()
+    parser = _BioPDBParser(QUIET=True, PERMISSIVE=True)
 
-    allowed: dict = {}
-    blocked_msgs: list[str] = []
-    repaired_msgs: list[str] = []
-
-    for residue, atoms in list((fixer.missingAtoms or {}).items()):
-        resname = residue.name.strip().upper()
-        atom_names = [a.name for a in atoms]
-        label = f"{resname} {residue.chain.id} {residue.id}"
-
-        if not _is_standard_amino_acid_name(resname):
-            blocked_msgs.append(f"{label}: {atom_names} — nonstandard residue")
-            continue
-
-        backbone_hits = [a for a in atom_names if a in _BACKBONE_HEAVY]
-        if backbone_hits:
-            blocked_msgs.append(f"{label}: {backbone_hits} — backbone heavy atom")
-            continue
-
-        allowed[residue] = atoms
-        repaired_msgs.append(f"{label}: {atom_names}")
-
-    if not allowed:
+    # Inventory the ORIGINAL atoms.
+    orig_struct = parser.get_structure("o", str(pdb_path))
+    orig: dict[tuple, tuple] = {}
+    for chain in orig_struct.get_chains():
+        for res in chain.get_residues():
+            for atom in res.get_atoms():
+                if _is_hydrogen_atom(atom_name=atom.get_name(), element=atom.element):
+                    continue
+                orig[(chain.id, res.id, atom.get_name().strip())] = tuple(atom.get_vector().get_array())
+    if len(orig) == 0:
         return _RepairResult(
-            n_repaired=0, n_blocked=len(blocked_msgs),
-            repaired=(), blocked=tuple(blocked_msgs),
-            error=None,
+            n_repaired=0, n_blocked=0,
+            repaired=(), blocked=(),
+            error="Input has no heavy atoms; skipping repair.",
         )
 
-    fixer.missingAtoms = allowed
-    fixer.missingTerminals = {}
-    fixer.addMissingAtoms()
+    # ---- run MODELLER complete_pdb -----------------------------------------
+    env = Environ()
+    env.libs.topology.read(file="$(LIB)/top_heav.lib")
+    env.libs.parameters.read(file="$(LIB)/par.lib")
 
-    # ---- write to a temp file and validate ----------------------------------
     tmp_fd, tmp_path_str = tempfile.mkstemp(suffix=".pdb", prefix="fruton_repair_")
     tmp_path = Path(tmp_path_str)
     try:
         import os
         os.close(tmp_fd)
-        with tmp_path.open("w") as fh:
-            OpenMMPDBFile.writeFile(fixer.topology, fixer.positions, fh)
+        try:
+            mdl = complete_pdb(env, str(pdb_path))
+            mdl.write(file=str(tmp_path))
+        except Exception as exc:
+            return _RepairResult(
+                n_repaired=0, n_blocked=0,
+                repaired=(), blocked=(),
+                error=f"MODELLER complete_pdb failed: {exc!r}",
+            )
+
+        # Discover additions and validate them per the pdbfixer-era rules.
+        rebuilt_struct = parser.get_structure("r", str(tmp_path))
+        rebuilt: dict[tuple, tuple] = {}
+        rebuilt_by_res: dict[tuple[str, tuple, str], list[str]] = {}
+        for chain in rebuilt_struct.get_chains():
+            for res in chain.get_residues():
+                for atom in res.get_atoms():
+                    if _is_hydrogen_atom(atom_name=atom.get_name(), element=atom.element):
+                        continue
+                    key = (chain.id, res.id, atom.get_name().strip())
+                    rebuilt[key] = tuple(atom.get_vector().get_array())
+                    rebuilt_by_res.setdefault((chain.id, res.id, res.resname.strip().upper()), []).append(
+                        atom.get_name().strip()
+                    )
+
+        added_keys = set(rebuilt) - set(orig)
+        allowed_keys: set[tuple] = set()
+        blocked_msgs: list[str] = []
+        repaired_msgs: list[str] = []
+
+        # Group additions by (chain, res-id, resname) for allow/block decisions.
+        added_by_res: dict[tuple[str, tuple, str], list[str]] = {}
+        for chain_id, res_id, atom_name in added_keys:
+            # Find residue name
+            for (cid, rid, rname), _ in rebuilt_by_res.items():
+                if cid == chain_id and rid == res_id:
+                    added_by_res.setdefault((cid, rid, rname), []).append(atom_name)
+                    break
+
+        for (chain_id, res_id, resname), atom_names in added_by_res.items():
+            label = f"{resname} {chain_id} {res_id[1] if isinstance(res_id, tuple) else res_id}"
+            if not _is_standard_amino_acid_name(resname):
+                blocked_msgs.append(f"{label}: {atom_names} — nonstandard residue")
+                continue
+            backbone_hits = [a for a in atom_names if a in _BACKBONE_HEAVY]
+            non_backbone = [a for a in atom_names if a not in _BACKBONE_HEAVY]
+            if backbone_hits:
+                blocked_msgs.append(f"{label}: {backbone_hits} — backbone heavy atom")
+            if non_backbone:
+                for aname in non_backbone:
+                    allowed_keys.add((chain_id, res_id, aname))
+                repaired_msgs.append(f"{label}: {non_backbone}")
+
+        if not allowed_keys:
+            return _RepairResult(
+                n_repaired=0, n_blocked=len(blocked_msgs),
+                repaired=(), blocked=tuple(blocked_msgs),
+                error=None,
+            )
+
+        # Filter the MODELLER output to keep only original atoms + allowed
+        # side-chain additions.  Blocked additions (backbone / non-standard)
+        # are removed.
+        _filter_atoms_by_keyset(tmp_path, tmp_path, keep_keys=set(orig) | allowed_keys)
 
         # Strict diff: original atom coordinates must be preserved.
-        parser = PDBParser(QUIET=True, PERMISSIVE=True)
-        orig = {
-            (ch.id, res.id, atom.get_name().strip()): atom.get_vector().get_array()
-            for ch in parser.get_structure("o", str(pdb_path)).get_chains()
-            for res in ch.get_residues()
-            for atom in res.get_atoms()
-            if not _is_hydrogen_atom(atom_name=atom.get_name(), element=atom.element)
-        }
-        repaired_struct = parser.get_structure("r", str(tmp_path))
-        repaired_atoms = {
-            (ch.id, res.id, atom.get_name().strip()): atom.get_vector().get_array()
-            for ch in repaired_struct.get_chains()
-            for res in ch.get_residues()
-            for atom in res.get_atoms()
-            if not _is_hydrogen_atom(atom_name=atom.get_name(), element=atom.element)
-        }
+        filtered_struct = parser.get_structure("f", str(tmp_path))
+        filtered_atoms: dict[tuple, tuple] = {}
+        for chain in filtered_struct.get_chains():
+            for res in chain.get_residues():
+                for atom in res.get_atoms():
+                    if _is_hydrogen_atom(atom_name=atom.get_name(), element=atom.element):
+                        continue
+                    filtered_atoms[(chain.id, res.id, atom.get_name().strip())] = tuple(atom.get_vector().get_array())
 
-        drifted = []
+        drifted: list[str] = []
         for key, orig_xyz in orig.items():
-            rep_xyz = repaired_atoms.get(key)
+            rep_xyz = filtered_atoms.get(key)
             if rep_xyz is None:
                 drifted.append(f"{key} disappeared")
                 continue
@@ -583,16 +627,16 @@ def _repair_sidechain_heavy_atoms(
             return _RepairResult(
                 n_repaired=0, n_blocked=len(blocked_msgs),
                 repaired=(), blocked=tuple(blocked_msgs),
-                error="Original atom drift detected after PDBFixer repair — file not replaced: "
+                error="Original atom drift detected after MODELLER repair — file not replaced: "
                       + "; ".join(drifted[:5]),
             )
 
         # Clash check on newly added atoms (warn only).
-        new_keys = set(repaired_atoms) - set(orig)
+        new_keys = set(filtered_atoms) - set(orig)
         orig_xyz_list = list(orig.values())
         clash_warnings: list[str] = []
         for key in new_keys:
-            new_xyz = repaired_atoms[key]
+            new_xyz = filtered_atoms[key]
             min_dist = min(
                 math.sqrt(sum((a - b) ** 2 for a, b in zip(new_xyz, o)))
                 for o in orig_xyz_list
@@ -607,8 +651,6 @@ def _repair_sidechain_heavy_atoms(
                 f"clash-warn: {w}" for w in clash_warnings
             )
 
-        # Replace the original output with the repaired version.
-        import shutil
         shutil.move(str(tmp_path), str(pdb_path))
 
     except Exception as exc:
@@ -621,12 +663,48 @@ def _repair_sidechain_heavy_atoms(
         if tmp_path.exists():
             tmp_path.unlink(missing_ok=True)
 
-    n_repaired = sum(len(atoms) for atoms in allowed.values())
     return _RepairResult(
-        n_repaired=n_repaired, n_blocked=len(blocked_msgs),
+        n_repaired=len(allowed_keys), n_blocked=len(blocked_msgs),
         repaired=tuple(repaired_msgs), blocked=tuple(blocked_msgs),
         error=None,
     )
+
+
+def _filter_atoms_by_keyset(
+    input_pdb: Path,
+    output_pdb: Path,
+    keep_keys: set[tuple],
+) -> None:
+    """Rewrite ``input_pdb`` keeping only ATOM records whose
+    (chain_id, res.id, atom_name) key is in ``keep_keys``.  HETATM records
+    are preserved unconditionally.  Uses text-level filtering so we do not
+    reorder / renumber via Bio.PDB.
+    """
+    from Bio.PDB import PDBParser as _BioPDBParser
+    parser = _BioPDBParser(QUIET=True, PERMISSIVE=True)
+    # Build a lookup: (chain_id, res_id_tuple, atom_name) for each ATOM line's
+    # position by re-parsing.  Cheaper here to walk the file text once and
+    # keep only lines whose parsed key matches.
+    struct = parser.get_structure("f", str(input_pdb))
+    lines = input_pdb.read_text(encoding="utf-8", errors="replace").splitlines()
+    accepted: list[str] = []
+    atom_iter = iter(
+        (
+            (chain.id, res.id, atom.get_name().strip())
+            for chain in struct.get_chains()
+            for res in chain.get_residues()
+            for atom in res.get_atoms()
+        )
+    )
+    next_key = next(atom_iter, None)
+    for line in lines:
+        if line.startswith("ATOM  "):
+            if next_key is not None and next_key in keep_keys:
+                accepted.append(line)
+            next_key = next(atom_iter, None)
+        else:
+            accepted.append(line)
+    output_pdb.write_text("\n".join(accepted) + "\n", encoding="utf-8")
 
 
 def _write_structure_with_biopython(

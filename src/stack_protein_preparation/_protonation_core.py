@@ -515,7 +515,14 @@ def _rebuild_missing_sidechain_atoms(
     output_pdb: Path,
     log_path: Path | None = None,
 ) -> list[str]:
-    """Rebuild missing heavy sidechain atoms via OpenMM's PDBFixer.
+    """Rebuild missing heavy sidechain atoms via MODELLER's ``complete_pdb``.
+
+    Replaces the ex-pdbfixer implementation (removed 2026-08-22 per hard-rule
+    ``feedback_no_pdbfixer``).  MODELLER uses its own residue-topology library
+    (``top_heav.lib``) with internal coordinates to place missing heavy atoms;
+    existing atom positions are preserved.  Hydrogens are still added later
+    by pdb2gmx so protonation states (propka, metal-coordinating HID/HIE)
+    are not preempted.
 
     Crystal structures routinely omit side-chain atoms that have insufficient
     electron density (disordered lysine tails, exposed glutamate CG, mobile
@@ -523,61 +530,123 @@ def _rebuild_missing_sidechain_atoms(
     "atom CG used in that entry is not found in the input file" because
     amber99sb-ildn expects the complete residue.
 
-    PDBFixer's ``findMissingAtoms`` + ``addMissingAtoms`` places missing heavy
-    atoms via its rotamer library.  We only add heavy atoms — hydrogens are
-    still added later by pdb2gmx so protonation state assignments (propka,
-    metal-coordinating HID/HIE) are not preempted.
+    HETATM records (ligands, cofactors, waters, ions) are preserved by
+    copying them from the input PDB into the MODELLER output; MODELLER's
+    complete_pdb only knows about standard amino acids.
     """
-    from io import StringIO
-    try:
-        from pdbfixer import PDBFixer
-        from openmm.app import PDBFile
-    except Exception as exc:
-        msg = f"pdbfixer/openmm unavailable, skipping sidechain rebuild: {exc!r}"
+    from Bio.PDB import PDBParser as _BioPDBParser
+
+    def _log(msg: str) -> None:
         if log_path is not None:
             try:
                 with log_path.open("a", encoding="utf-8") as fh:
                     fh.write(f"[sidechain rebuild] {msg}\n")
             except Exception:
                 pass
-        if input_pdb != output_pdb:
-            output_pdb.write_text(input_pdb.read_text(encoding="utf-8"), encoding="utf-8")
+
+    try:
+        from modeller import Environ
+        from modeller.scripts import complete_pdb
+    except Exception as exc:
+        _log(f"modeller unavailable, skipping sidechain rebuild: {exc!r}")
         return []
 
-    fixer = PDBFixer(filename=str(input_pdb))
-    # We only fix missing SIDE-CHAIN atoms — do not add whole missing residues
-    # here (gap-filling belongs to earlier pipeline steps that have UniProt/
-    # MODELLER context).  Setting missingResidues to empty prevents PDBFixer
-    # from extrapolating N/C-terminal chain extensions.
-    fixer.missingResidues = {}
-    fixer.findNonstandardResidues()  # populates internal state
-    fixer.findMissingAtoms()
+    # Inventory heavy-atom set BEFORE rebuild, so we can report exactly which
+    # atoms MODELLER added.
+    _parser = _BioPDBParser(QUIET=True)
+    _before = _parser.get_structure("b", str(input_pdb))
+    _before_atoms = set()
+    for _atom in _before.get_atoms():
+        if _atom.element == "H":
+            continue
+        _res = _atom.get_parent()
+        _chain = _res.get_parent()
+        _before_atoms.add((_chain.id, _res.id[1], _res.resname, _atom.name))
+
+    # MODELLER complete_pdb needs at least 2 protein residues to establish
+    # backbone geometry.  Skip if the input is too small.  Do NOT materialise
+    # output_pdb -- callers use its existence as a signal that the rebuild
+    # produced something worth adopting.
+    _n_protein_residues = len(
+        [r for r in _before.get_residues() if not r.id[0].strip()]
+    )
+    if _n_protein_residues < 2:
+        _log(f"input has {_n_protein_residues} protein residue(s); skipping MODELLER rebuild")
+        return []
+
+    env = Environ()
+    env.libs.topology.read(file="$(LIB)/top_heav.lib")
+    env.libs.parameters.read(file="$(LIB)/par.lib")
+
+    # Write MODELLER output to a temp path first; only promote to output_pdb
+    # if we actually added atoms.  Callers rely on ``output_pdb.is_file()``
+    # to detect whether the rebuild was substantive.
+    import tempfile as _tempfile
+    _tmp_out = Path(_tempfile.mkstemp(suffix="_modeller.pdb")[1])
+    output_pdb.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        mdl = complete_pdb(env, str(input_pdb))
+        mdl.write(file=str(_tmp_out))
+    except Exception as exc:  # noqa: BLE001
+        _log(f"MODELLER complete_pdb failed: {exc!r}")
+        _tmp_out.unlink(missing_ok=True)
+        return []
+
+    # Guard: MODELLER can silently emit an empty/tiny model when it can't
+    # find the MODEL_SEGMENT starting residue (e.g. 1-residue inputs).
+    if not _tmp_out.exists() or _tmp_out.stat().st_size < 50:
+        _log(f"MODELLER output empty or invalid; skipping rebuild")
+        _tmp_out.unlink(missing_ok=True)
+        return []
+
+    # Preserve HETATM records (ligands, cofactors, waters, ions).  MODELLER
+    # complete_pdb only processes standard amino acids; append original
+    # HETATMs back so downstream stages see the full crystal environment.
+    _hetatm_lines: list[str] = []
+    for _line in input_pdb.read_text(encoding="utf-8", errors="replace").splitlines():
+        if _line.startswith("HETATM") or _line.startswith("CONECT"):
+            _hetatm_lines.append(_line)
+    if _hetatm_lines:
+        _existing = _tmp_out.read_text(encoding="utf-8")
+        if "END\n" in _existing:
+            _existing = _existing.replace(
+                "END\n", "\n".join(_hetatm_lines) + "\nEND\n", 1
+            )
+        else:
+            _existing = _existing.rstrip() + "\n" + "\n".join(_hetatm_lines) + "\nEND\n"
+        _tmp_out.write_text(_existing, encoding="utf-8")
+
+    # Diff added atoms from tmp file
+    _after = _parser.get_structure("a", str(_tmp_out))
+    _after_atoms = set()
+    for _atom in _after.get_atoms():
+        if _atom.element == "H":
+            continue
+        _res = _atom.get_parent()
+        _chain = _res.get_parent()
+        _after_atoms.add((_chain.id, _res.id[1], _res.resname, _atom.name))
+    _added = _after_atoms - _before_atoms
+
+    # No-op guard: if MODELLER didn't add any heavy atoms, don't materialise
+    # ``output_pdb`` -- callers use its existence to decide whether to adopt
+    # the rebuild.  This keeps the pipeline byte-identical to the pre-rebuild
+    # input when there's nothing to fix.
+    if not _added:
+        _log("no missing sidechain atoms detected; skipping output write")
+        _tmp_out.unlink(missing_ok=True)
+        return []
+
+    _tmp_out.replace(output_pdb)
 
     added_descriptions: list[str] = []
-    for residue, missing_atoms in (fixer.missingAtoms or {}).items():
-        chain_id = residue.chain.id
-        resseq = residue.id
-        rn = residue.name
-        names = ", ".join(a.name for a in missing_atoms)
+    _by_res: dict[tuple[str, int, str], list[str]] = {}
+    for _cid, _rn, _rname, _aname in sorted(_added):
+        _by_res.setdefault((_cid, _rn, _rname), []).append(_aname)
+    for (_cid, _rn, _rname), _anames in _by_res.items():
         added_descriptions.append(
-            f"{rn} {resseq} chain {chain_id}: added {names}"
+            f"{_rname} {_rn} chain {_cid}: added {', '.join(_anames)}"
         )
-
-    if added_descriptions:
-        fixer.addMissingAtoms()
-
-    output_pdb.parent.mkdir(parents=True, exist_ok=True)
-    buf = StringIO()
-    PDBFile.writeFile(fixer.topology, fixer.positions, buf, keepIds=True)
-    output_pdb.write_text(buf.getvalue(), encoding="utf-8")
-
-    if log_path is not None and added_descriptions:
-        try:
-            with log_path.open("a", encoding="utf-8") as fh:
-                for msg in added_descriptions:
-                    fh.write(f"[sidechain rebuild] {msg}\n")
-        except Exception:
-            pass
+        _log(f"{_rname} {_rn} chain {_cid}: added {', '.join(_anames)}")
 
     return added_descriptions
 

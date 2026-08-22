@@ -21,10 +21,12 @@ from stack_protein_preparation.filler import (
     read_two_sequence_fasta,
     select_best_model_from_scores,
     split_template_and_target_alignment_records,
-    splice_alphafold_gap_residues_into_crystal,
     validate_template_sequence_consistency,
     write_chain_specific_template_pdb,
     write_modeller_alignment_from_existing_alignment,
+)
+from stack_protein_preparation._filler_shared import (
+    splice_alphafold_gap_residues_into_crystal,
 )
 
 

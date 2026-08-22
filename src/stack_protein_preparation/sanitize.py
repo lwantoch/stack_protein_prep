@@ -296,7 +296,7 @@ def sanitize_pdb_for_gromacs(
             )
         )
 
-    # --- Optional PDBFixer sidechain heavy-atom repair ----------------------
+    # --- Optional MODELLER sidechain heavy-atom repair ----------------------
     repaired_heavy_atom_count = 0
     blocked_repair_count = 0
     if repair_missing_sidechain_heavy_atoms and missing_heavy_atom_messages:
@@ -310,7 +310,7 @@ def sanitize_pdb_for_gromacs(
             issues.append(SanitizeIssue(
                 severity="info",
                 code="heavy_atom_repaired",
-                message=f"PDBFixer added missing sidechain atoms: {msg}",
+                message=f"MODELLER added missing sidechain atoms: {msg}",
             ))
         for msg in repair.blocked:
             issues.append(SanitizeIssue(
@@ -322,7 +322,7 @@ def sanitize_pdb_for_gromacs(
             issues.append(SanitizeIssue(
                 severity="error",
                 code="heavy_atom_repair_failed",
-                message=f"PDBFixer repair failed, original file kept: {repair.error}",
+                message=f"MODELLER repair failed, original file kept: {repair.error}",
             ))
 
     hard_error_present = any(issue.severity == "error" for issue in issues)

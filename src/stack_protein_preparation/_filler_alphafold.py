@@ -322,8 +322,108 @@ def run_alphafold_fallback_for_chain(
         f"pairing_mode={alignment_result['alignment_pairing_mode']}, "
         f"output={alignment_result['alignment_output_path']}"
     )
+    # FIX (2026-08-20): splice AF-modelled loops into the crystal template
+    # instead of returning the WHOLE AF-aligned model. The whole-body copy
+    # (previous behaviour) silently dropped chain B, ligands, cofactors and
+    # crystal waters — see memory note `project_fruton_af_wholebody_bug`
+    # (13 MMBSA_200 PDBs + 6 newbench_27 gaps-variant PDBs affected). The
+    # splice keeps every residue present in the crystal template and only
+    # inserts AF residues that fill the missing-residue windows.
     final_model_path = output_dir / final_model_name
+    from stack_protein_preparation._filler_af_splice import (
+        splice_af_gaps_into_crystal,
+    )
+    spliced_path = splice_af_gaps_into_crystal(
+        crystal_pdb_path=template_pdb_path,
+        af_aligned_pdb_path=aligned_model_path,
+        output_pdb_path=final_model_path,
+    )
+
+    # Junction-relaxation (2026-08-22): restrained OpenMM ff14SB min holding
+    # everything but gap±2 heavy atoms rigid, so bad omega / long C-N at the
+    # AF-crystal boundary absorbs strain into the region we intended to
+    # change without perturbing MolProbity-favoured crystal residues.
+    # Gap ranges derive from the detect step in _filler_af_splice.  Failures
+    # (non-standard residues, missing terminal caps, ff14SB parse errors)
+    # fall back to identity and are logged; downstream stages still see a
+    # canonical PDB.
+    try:
+        from stack_protein_preparation._filler_af_splice import (
+            _detect_missing_windows,
+            _protein_residue_map,
+        )
+        from Bio.PDB import PDBParser as _PDBParser
+        _crystal = _PDBParser(QUIET=True).get_structure("c", str(template_pdb_path))
+        _af = _PDBParser(QUIET=True).get_structure("a", str(aligned_model_path))
+        _cmap = _protein_residue_map(_crystal)
+        _amap = _protein_residue_map(_af)
+        _gap_ranges: list[tuple[int, int]] = []
+        for cid, af_by_resi in _amap.items():
+            crystal_by = _cmap.get(cid, {})
+            _gap_ranges.extend(
+                _detect_missing_windows(set(crystal_by.keys()), sorted(af_by_resi.keys()))
+            )
+        if _gap_ranges:
+            from stack_protein_preparation._filler_junction_relax import (
+                relax_junctions,
+            )
+            _relax = relax_junctions(
+                input_pdb_path=spliced_path,
+                output_pdb_path=final_model_path,
+                gap_ranges=_gap_ranges,
+                flank_residues=2,
+            )
+            _debug(
+                f"Junction relax: ran={_relax.ran}, "
+                f"junction_rmsd={_relax.junction_rmsd_angstrom}, "
+                f"restrained_rmsd={_relax.restrained_rmsd_angstrom}, "
+                f"fallback={_relax.fallback_reason}"
+            )
+    except Exception as _relax_exc:  # noqa: BLE001 -- best-effort polish step
+        _debug(f"Junction relax skipped due to unexpected error: {_relax_exc!r}")
+
+    # Quality-gate (2026-08-22): native MolProbity-style analyser on the
+    # spliced+relaxed model, compared against the crystal baseline.  Persists
+    # the report as ``quality_gate.json`` next to the final model so the
+    # downstream reporter / reviewer can inspect specific outlier residues.
+    # Non-blocking: a fail is logged but does not abort the pipeline (a
+    # future iteration will gate on this).
+    try:
+        import json as _json
+        from stack_protein_preparation._filler_quality_check import (
+            check_model_quality,
+        )
+        _gap_res_ids = set()
+        for _lo, _hi in _gap_ranges:
+            for _cid in _amap:
+                for _r in range(_lo, _hi + 1):
+                    _gap_res_ids.add((_cid, _r))
+        _baseline_report = check_model_quality(template_pdb_path)
+        _final_report = check_model_quality(spliced_path, gap_residue_ids=_gap_res_ids)
+        _passed, _reasons = _final_report.passes_relative_gate(_baseline_report)
+        _gate_dict = {
+            "passed": _passed,
+            "reasons": _reasons,
+            "baseline": _baseline_report.to_dict(),
+            "final": _final_report.to_dict(),
+        }
+        _gate_path = output_dir / "quality_gate.json"
+        _gate_path.write_text(_json.dumps(_gate_dict, indent=2, default=str), encoding="utf-8")
+        _debug(
+            f"Quality gate ({'PASS' if _passed else 'FAIL'}): "
+            f"Rama fav {_baseline_report.rama_favoured_pct():.2f}%→{_final_report.rama_favoured_pct():.2f}%, "
+            f"broken bonds {_baseline_report.n_peptide_bonds_broken}→{_final_report.n_peptide_bonds_broken}, "
+            f"clashes {_baseline_report.n_clash_pairs}→{_final_report.n_clash_pairs}"
+        )
+        if not _passed:
+            for _r in _reasons:
+                _debug(f"Quality gate reason: {_r}")
+    except Exception as _qc_exc:  # noqa: BLE001 -- diagnostic only, do not block pipeline
+        _debug(f"Quality gate skipped due to unexpected error: {_qc_exc!r}")
+
+    # Still run the historic post-hoc cleanup (element-column fixups etc.)
+    # so downstream stages see a canonical PDB.
     return cleanup_model_pdb(
-        input_model_path=aligned_model_path,
+        input_model_path=spliced_path,
         output_model_path=final_model_path,
     )

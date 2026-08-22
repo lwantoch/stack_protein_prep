@@ -22,7 +22,6 @@ pytest = "*"
 biopython = ">=1.87,<2"
 modeller = "*"
 pip = "*"
-pdbfixer = ">=1.12,<2"
 pymol-open-source = "*"
 rdkit = "*"
 

@@ -219,12 +219,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/hyperframe-6.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/idna-3.11-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/iniconfig-2.3.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/legacy-cgi-2.6.4-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mmcif_pdbx-2.0.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pdb2pqr-3.6.1-pyhd8ed1ab_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/pdbfixer-1.12-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.1.1-pyh8b19718_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ply-3.11-pyhd8ed1ab_3.conda
@@ -3285,18 +3283,6 @@ packages:
   - pkg:pypi/iniconfig?source=compressed-mapping
   size: 13387
   timestamp: 1760831448842
-- conda: https://conda.anaconda.org/conda-forge/noarch/legacy-cgi-2.6.4-pyhcf101f3_0.conda
-  sha256: 403f11e1a3a9f539aceb009c6f0939098075d2b2efdc6dd9c0d0dd02eb404fc4
-  md5: b22fe9a3d53bc833659823e48f879db9
-  depends:
-  - python >=3.10,<3.13
-  - python
-  license: PSF-2.0
-  license_family: PSF
-  purls:
-  - pkg:pypi/legacy-cgi?source=hash-mapping
-  size: 19854
-  timestamp: 1761574469157
 - conda: https://conda.anaconda.org/conda-forge/noarch/mmcif_pdbx-2.0.1-pyhd8ed1ab_1.conda
   sha256: 853c64f76a1bfc744490a848d1fdf73f780abfd2f26fdf26665163cf12ed62a1
   md5: 3cca464c9baaa17621e417f66dbba26e
@@ -3348,21 +3334,6 @@ packages:
   - pkg:pypi/pdb2pqr?source=hash-mapping
   size: 153419
   timestamp: 1735314851676
-- conda: https://conda.anaconda.org/conda-forge/noarch/pdbfixer-1.12-pyhd8ed1ab_1.conda
-  sha256: 00d71eb14af7634d48c32600c55ae385b8d45b3d4c74b6c75c404f5af358cd4d
-  md5: ae0b5e880fd6f5815fe7d2075200c33b
-  depends:
-  - legacy-cgi
-  - numpy
-  - openmm >=8.2
-  - python >=3.10
-  - setuptools
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/pdbfixer?source=hash-mapping
-  size: 546457
-  timestamp: 1775865529631
 - conda: https://conda.anaconda.org/conda-forge/noarch/pip-26.1.1-pyh8b19718_0.conda
   sha256: 1bd94ef1ae08fd811ef3b26857e46ba460c7430bf1f3ccd94a4d6614fd619bd5
   md5: 35870d32aed92041d31cbb15e822dca3

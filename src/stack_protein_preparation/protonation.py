@@ -234,6 +234,28 @@ def protonate_selected_structure(
     if metal_his_overrides:
         propka_renames.update(metal_his_overrides)
     metal_his_override_count = len(metal_his_overrides)
+
+    # NEW: user-supplied active-site overrides from
+    # <pdb_dir>/active_site_overrides.json.  Highest priority: applied AFTER
+    # PROPKA + metal-based overrides so a literature-driven catalytic HIP or
+    # CYM assignment always wins.
+    from stack_protein_preparation._active_site_overrides import (
+        load_active_site_overrides,
+        load_active_site_overrides_with_reasons,
+    )
+    user_overrides = load_active_site_overrides(protein_dir_guess)
+    n_user_overrides = 0
+    if user_overrides:
+        propka_renames.update(user_overrides)
+        n_user_overrides = len(user_overrides)
+        _screen_item(
+            "user_active_site_overrides_applied", str(n_user_overrides)
+        )
+        for entry in load_active_site_overrides_with_reasons(protein_dir_guess):
+            _screen_item(
+                f"  {entry.get('chain')}/{entry.get('res_num')} -> {entry.get('to')}",
+                str(entry.get("reason", "")),
+            )
     propka_applied = bool(propka_renames)
 
     _screen_item("propka_ran", str(propka_ran))
@@ -400,32 +422,47 @@ def protonate_selected_structure(
     if not protonation_success and any(kw in stderr_lower for kw in _PDBFIXER_TRIGGERS):
         _append_log_block(
             module_log_path,
-            "protonate_selected_structure:pdbfixer_retry_start",
+            "protonate_selected_structure:modeller_retry_start",
             [
-                "pdb2gmx failed with structural defect; attempting pdbfixer repair",
+                "pdb2gmx failed with structural defect; attempting MODELLER repair",
                 f"trigger keywords matched: {[kw for kw in _PDBFIXER_TRIGGERS if kw in stderr_lower]}",
                 f"input: {pdb2gmx_input}",
             ],
         )
         try:
             import tempfile as _tempfile
-            from pdbfixer import PDBFixer as _PDBFixer
-            from openmm.app import PDBFile as _PDBFile
+            from modeller import Environ as _MEnviron
+            from modeller.scripts import complete_pdb as _mcomplete_pdb
 
-            _fixed_dir = _tempfile.mkdtemp(prefix="pdbfixer_retry_")
-            _fixed_path = Path(_fixed_dir) / "pdbfixer_fixed.pdb"
+            _fixed_dir = _tempfile.mkdtemp(prefix="modeller_retry_")
+            _fixed_path = Path(_fixed_dir) / "modeller_fixed.pdb"
 
-            _fixer = _PDBFixer(filename=str(pdb2gmx_input))
-            _fixer.findMissingResidues()
-            _fixer.missingResidues = {}
-            _fixer.findMissingAtoms()
-            _fixer.addMissingAtoms()
-            with open(_fixed_path, "w", encoding="utf-8") as _fh:
-                _PDBFile.writeFile(_fixer.topology, _fixer.positions, _fh)
+            _menv = _MEnviron()
+            _menv.libs.topology.read(file="$(LIB)/top_heav.lib")
+            _menv.libs.parameters.read(file="$(LIB)/par.lib")
+            _mdl = _mcomplete_pdb(_menv, str(pdb2gmx_input))
+            _mdl.write(file=str(_fixed_path))
+
+            # Preserve HETATMs from input (MODELLER only handles standard AAs)
+            _het_lines = [
+                _ln for _ln in Path(pdb2gmx_input).read_text(
+                    encoding="utf-8", errors="replace"
+                ).splitlines()
+                if _ln.startswith("HETATM") or _ln.startswith("CONECT")
+            ]
+            if _het_lines:
+                _existing = _fixed_path.read_text(encoding="utf-8")
+                if "END\n" in _existing:
+                    _existing = _existing.replace(
+                        "END\n", "\n".join(_het_lines) + "\nEND\n", 1
+                    )
+                else:
+                    _existing = _existing.rstrip() + "\n" + "\n".join(_het_lines) + "\nEND\n"
+                _fixed_path.write_text(_existing, encoding="utf-8")
 
             _append_log_block(
                 module_log_path,
-                "protonate_selected_structure:pdbfixer_repair_done",
+                "protonate_selected_structure:modeller_repair_done",
                 [f"fixed pdb written to: {_fixed_path}"],
             )
 
@@ -464,17 +501,17 @@ def protonate_selected_structure(
 
             _append_log_block(
                 module_log_path,
-                "protonate_selected_structure:pdbfixer_retry_result",
+                "protonate_selected_structure:modeller_retry_result",
                 [
                     f"returncode       : {result.returncode}",
                     f"protonation_success: {protonation_success}",
                 ],
             )
-        except Exception as _pdbfixer_exc:
+        except Exception as _modeller_exc:
             _append_log_block(
                 module_log_path,
-                "protonate_selected_structure:pdbfixer_retry_exception",
-                [str(_pdbfixer_exc)],
+                "protonate_selected_structure:modeller_retry_exception",
+                [str(_modeller_exc)],
             )
 
     _append_log_block(
