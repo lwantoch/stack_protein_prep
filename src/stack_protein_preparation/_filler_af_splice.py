@@ -292,7 +292,28 @@ def splice_af_gaps_into_crystal(
         af_resnums_sorted = sorted(af_by_resi.keys())
 
         if cid not in crystal[0]:
-            # Whole chain missing in crystal -- copy verbatim from AF.
+            # Whole chain missing in crystal.  Two failure modes seen on
+            # newbench_27 bench:
+            #   1. 7UL2: crystal = R,D; AF = A.  AF resnums 60-379 overlap
+            #      crystal R:60-...  Copying AF as new chain A duplicates
+            #      the entire structure and produces 5000+ clashes.
+            #   2. 8Q68: crystal = A,B; AF = A.  AF's own chain A is
+            #      already used in crystal.  Actually this hits the
+            #      `cid in crystal` branch below, so it's the reverse
+            #      variant of #1 -- caught by the standard gap loop.
+            #
+            # Safety: only copy the AF chain wholesale if its residue
+            # numbers do NOT overlap ANY crystal chain's residue numbers.
+            # Otherwise skip (leave those AF residues out -- the crystal
+            # has structural evidence for those positions in another chain).
+            _af_resnum_set = set(af_by_resi.keys())
+            _overlaps_any_crystal_chain = False
+            for _other_cid, _other_map in crystal_map.items():
+                if _af_resnum_set & set(_other_map.keys()):
+                    _overlaps_any_crystal_chain = True
+                    break
+            if _overlaps_any_crystal_chain:
+                continue
             new_chain = af[0][cid].copy()
             new_chain.detach_parent()
             crystal[0].add(new_chain)
