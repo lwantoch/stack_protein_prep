@@ -584,7 +584,18 @@ def rollback_bad_gap_fills(
                 if r is not None:
                     residues_to_drop.append((chain_id, r.id))
 
-    # Detach flagged residues
+    # 9E3M artefact fix (2026-08-22): when there is nothing to detach we
+    # pass the input through byte-for-byte instead of rewriting via Bio.PDB
+    # PDBIO.  The rewrite path shifts atom serials, TER records, and the
+    # element column enough that downstream NeighborSearch flags 33 phantom
+    # clashes on unchanged residues (documented in
+    # docs/FRUTON_hardening_2026-08.md, section 4).  Bypass avoids the
+    # artefact entirely and preserves the caller's file formatting.
+    if not residues_to_drop:
+        if str(output_path) != str(input_path):
+            output_path.write_bytes(input_path.read_bytes())
+        return output_path, rolled_back
+
     for chain_id, rid in residues_to_drop:
         try:
             structure[0][chain_id].detach_child(rid)
