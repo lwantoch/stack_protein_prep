@@ -689,8 +689,11 @@ def _remove_standalone_residue_chains(
 
     single_res_chains = {c for c, r in chain_res_count.items() if len(r) == 1}
     if not single_res_chains:
-        if input_pdb != output_pdb:
-            output_pdb.write_text("".join(lines), encoding="utf-8")
+        # Nothing to drop -- do NOT materialise output_pdb.  Callers use its
+        # existence to decide whether to adopt the "cleaned" file; if no
+        # cleaning happened, the pipeline should reuse the input path
+        # verbatim (see test_protonate_protein_structure_keeps_backward_
+        # compatible_single_output).
         return []
 
     dropped_summaries: list[str] = []

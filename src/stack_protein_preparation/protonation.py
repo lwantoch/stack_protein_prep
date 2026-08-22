@@ -313,7 +313,20 @@ def protonate_selected_structure(
             [f"Dropped {len(_dropped_chains)} single-residue chain(s) before pdb2gmx:"]
             + _dropped_chains,
         )
-        pdb2gmx_input = _no_singletons
+        # Guard: if singleton removal left the file with zero ATOM records
+        # (input was a lone 1-residue chain), the "cleaned" file is useless
+        # for pdb2gmx.  Fall back to the input path so downstream handlers
+        # see the original and can emit a proper error / skip.
+        try:
+            _no_singletons_atoms = sum(
+                1 for _ln in _no_singletons.read_text(
+                    encoding="utf-8", errors="replace"
+                ).splitlines() if _ln.startswith("ATOM  ")
+            )
+        except Exception:  # noqa: BLE001
+            _no_singletons_atoms = -1
+        if _no_singletons_atoms > 0:
+            pdb2gmx_input = _no_singletons
 
     # Rebuild missing sidechain heavy atoms via PDBFixer.  Crystal structures
     # routinely omit atoms with poor density (LYS-CG, GLU-CG, SER-OG, ARG-CG)

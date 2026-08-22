@@ -374,6 +374,11 @@ def test_run_mafft_alignment_raises_when_mafft_fails(
         run_mafft_alignment(input_path, output_path)
 
 
+@pytest.mark.skipif(
+    __import__("shutil").which("mafft") is None,
+    reason="mafft binary not on PATH (loaded via CESGA module on SLURM nodes, "
+    "not present in the pixi env used by local pytest runs)",
+)
 def test_run_alignments_for_pdb_directory_creates_seqres_and_atom_jobs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
