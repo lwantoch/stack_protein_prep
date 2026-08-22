@@ -251,6 +251,7 @@ def splice_af_gaps_into_crystal(
     output_pdb_path: str | Path,
     min_gap_plddt: float | None = 50.0,
     enable_rollback: bool = True,
+    reject_uniprot_idr_gaps_for: str | None = None,
 ) -> Path:
     """Splice AF-modelled residues into the missing-residue windows of a
     crystal template with per-gap local anchor alignment.
@@ -277,6 +278,15 @@ def splice_af_gaps_into_crystal(
         with the crystal environment.  Set to False when a downstream
         loop refiner (e.g. MODELLER LoopModel) will polish the fills --
         rolling back too early denies the refiner useful starting points.
+    reject_uniprot_idr_gaps_for
+        Optional UniProt accession.  When provided, MobiDB is queried for
+        annotated intrinsically-disordered regions and gap windows that
+        overlap an IDR (>= 50 % of gap length) are skipped.  Rationale:
+        AF3-class models hallucinate confident conformations for genuine
+        IDRs (Wang et al. arXiv 2510.15939 2025); a crystal will never
+        resolve one, so shipping the fill would mislead a reviewer.
+        Fail-open when MobiDB is unreachable (network unavailable in the
+        pixi env for local runs).
 
     Returns
     -------
@@ -324,6 +334,25 @@ def splice_af_gaps_into_crystal(
         windows = _detect_missing_windows(set(crystal_by_resi.keys()), af_resnums_sorted)
 
         for window in windows:
+            # UniProt IDR gate (2026-08-22): reject fills whose window
+            # overlaps an annotated intrinsically-disordered region for the
+            # parent UniProt entry (MobiDB predictions).  AF3-class models
+            # hallucinate confident IDR conformations; a crystal will never
+            # resolve one.  Fail-open on network failure.
+            if reject_uniprot_idr_gaps_for is not None:
+                lo, hi = window
+                try:
+                    from stack_protein_preparation._uniprot_idr import (
+                        gap_overlaps_uniprot_idr,
+                    )
+                    _is_idr = gap_overlaps_uniprot_idr(
+                        reject_uniprot_idr_gaps_for, lo, hi
+                    )
+                except Exception:  # noqa: BLE001 -- fail-open
+                    _is_idr = None
+                if _is_idr is True:
+                    continue
+
             # pLDDT gate (2026-08-22): reject AF fills whose per-window mean
             # pLDDT falls below ``min_gap_plddt``.  Croll IUCr Acta D 2025
             # shows AF regions with pLDDT < 50 are "barbed wire" — worse

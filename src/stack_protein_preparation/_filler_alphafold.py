@@ -344,6 +344,7 @@ def run_alphafold_fallback_for_chain(
         af_aligned_pdb_path=aligned_model_path,
         output_pdb_path=final_model_path,
         enable_rollback=False,
+        reject_uniprot_idr_gaps_for=uniprot_id,
     )
 
     # Junction-relaxation (2026-08-22): restrained OpenMM ff14SB min holding
