@@ -333,10 +333,17 @@ def run_alphafold_fallback_for_chain(
     from stack_protein_preparation._filler_af_splice import (
         splice_af_gaps_into_crystal,
     )
+    # enable_rollback=False: keep every AF-fill (including geometrically
+    # imperfect ones) so the downstream LoopModel refiner can polish them.
+    # Post-refinement, rollback_bad_gap_fills drops any gaps that STILL
+    # fail the peptide-bond / clash gate.  Rolling back at splice-time was
+    # too aggressive -- it left zero fills on the 5M7U mini-benchmark
+    # because LoopModel never got a chance to fix the near-boundary breaks.
     spliced_path = splice_af_gaps_into_crystal(
         crystal_pdb_path=template_pdb_path,
         af_aligned_pdb_path=aligned_model_path,
         output_pdb_path=final_model_path,
+        enable_rollback=False,
     )
 
     # Junction-relaxation (2026-08-22): restrained OpenMM ff14SB min holding
@@ -416,6 +423,23 @@ def run_alphafold_fallback_for_chain(
                 f"best_dope={_refine.best_dope}, "
                 f"fallback={_refine.fallback_reason}"
             )
+            # Post-refinement rollback: drop any gaps that STILL fail the
+            # peptide-bond / clash gate after LoopModel had a chance to
+            # fix them.  Reviewer-preferable to REMARK 465 the residues
+            # than to ship a broken loop.
+            from stack_protein_preparation._filler_af_splice import (
+                rollback_bad_gap_fills,
+            )
+            _rolled_path, _rolled_gaps = rollback_bad_gap_fills(
+                input_pdb_path=final_model_path,
+                output_pdb_path=final_model_path,
+                gap_ranges_by_chain=_surviving_gaps,
+            )
+            if _rolled_gaps:
+                _debug(
+                    f"Post-refinement rollback dropped {len(_rolled_gaps)} gap "
+                    f"region(s) still failing peptide-bond / clash gate: {_rolled_gaps}"
+                )
     except Exception as _refine_exc:  # noqa: BLE001 -- best-effort polish step
         _debug(f"LoopModel refine skipped due to unexpected error: {_refine_exc!r}")
 

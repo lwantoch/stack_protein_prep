@@ -250,6 +250,7 @@ def splice_af_gaps_into_crystal(
     af_aligned_pdb_path: str | Path,
     output_pdb_path: str | Path,
     min_gap_plddt: float | None = 50.0,
+    enable_rollback: bool = True,
 ) -> Path:
     """Splice AF-modelled residues into the missing-residue windows of a
     crystal template with per-gap local anchor alignment.
@@ -270,6 +271,12 @@ def splice_af_gaps_into_crystal(
         threshold are skipped -- AF confidence < 50 corresponds to Croll
         2025's "barbed-wire" regions where the local backbone is worse
         than no model at all.  Pass ``None`` to disable this filter.
+    enable_rollback
+        When True (default), drop gap fills whose fitted peptide bonds
+        fall outside [1.28, 1.40] A or introduce > 5 heavy-atom clashes
+        with the crystal environment.  Set to False when a downstream
+        loop refiner (e.g. MODELLER LoopModel) will polish the fills --
+        rolling back too early denies the refiner useful starting points.
 
     Returns
     -------
@@ -369,7 +376,7 @@ def splice_af_gaps_into_crystal(
                         if _dist < 1.28 or _dist > 1.40:
                             _has_break = True
                             break
-            if _has_break:
+            if _has_break and enable_rollback:
                 # Skip this window; the gap remains as-crystal (missing
                 # residues), which is what REMARK 465 already declares.
                 continue
@@ -415,7 +422,7 @@ def splice_af_gaps_into_crystal(
                         break
                 if _new_clash_count > _MAX_NEW_CLASHES_PER_GAP:
                     break
-            if _new_clash_count > _MAX_NEW_CLASHES_PER_GAP:
+            if _new_clash_count > _MAX_NEW_CLASHES_PER_GAP and enable_rollback:
                 continue  # rollback
 
             for r in fitted:
@@ -444,3 +451,126 @@ def splice_af_gaps_into_crystal(
     io.set_structure(crystal)
     io.save(str(out))
     return out
+
+
+def rollback_bad_gap_fills(
+    input_pdb_path: str | Path,
+    output_pdb_path: str | Path,
+    gap_ranges_by_chain: list[tuple[str, int, int]],
+    max_broken_bonds_per_gap: int = 0,
+    max_clashes_per_gap: int = 5,
+    peptide_bond_min_angstrom: float = 1.28,
+    peptide_bond_max_angstrom: float = 1.40,
+    clash_distance_angstrom: float = 2.0,
+) -> tuple[Path, list[tuple[str, int, int]]]:
+    """Post-refinement rollback: remove residues in gap ranges that STILL
+    fail the peptide-bond or clash gate after a downstream refiner (e.g.
+    MODELLER LoopModel) had a chance to fix them.
+
+    ``gap_ranges_by_chain``: list of (chain_id, first_resnum, last_resnum)
+    identifying regions that were AF-inserted.  For each range, we compute
+    the same broken-bond + heavy-atom-clash metrics used at splice-time,
+    and if the region still fails we detach those residues from the PDB
+    (they revert to REMARK 465 missing residues, which the FRUTON reporter
+    already flags for the reviewer).
+
+    Returns ``(output_pdb_path, list_of_rolled_back_gaps)``.
+    """
+    import math
+    input_path = Path(input_pdb_path)
+    output_path = Path(output_pdb_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    structure = _PARSER.get_structure("m", str(input_path))
+    # Build lookup: (chain_id, resnum) -> residue
+    resmap: dict[tuple[str, int], object] = {}
+    for chain in structure[0]:
+        for r in chain:
+            if r.id[0].strip():
+                continue
+            resmap[(chain.id, r.id[1])] = r
+
+    # For clash detection across all heavy atoms outside the gap:
+    all_heavy: list[tuple[str, int, str, tuple[float, float, float]]] = []
+    for chain in structure[0]:
+        for r in chain:
+            if r.id[0].strip():
+                continue
+            for a in r:
+                if a.element == "H":
+                    continue
+                all_heavy.append((
+                    chain.id, r.id[1], a.name,
+                    (float(a.coord[0]), float(a.coord[1]), float(a.coord[2])),
+                ))
+
+    rolled_back: list[tuple[str, int, int]] = []
+    residues_to_drop: list[tuple[str, tuple]] = []
+
+    for chain_id, lo, hi in gap_ranges_by_chain:
+        # Count broken bonds inside the gap and at its boundaries
+        broken_count = 0
+        for resnum in range(lo, hi + 1):
+            r_curr = resmap.get((chain_id, resnum))
+            if r_curr is None:
+                continue
+            for neigh_num in (resnum - 1, resnum + 1):
+                r_other = resmap.get((chain_id, neigh_num))
+                if r_other is None:
+                    continue
+                # Direction: prev -> curr uses C(prev) - N(curr)
+                if neigh_num == resnum - 1 and "C" in r_other and "N" in r_curr:
+                    d = r_other["C"].coord - r_curr["N"].coord
+                    dist = math.sqrt(float(d[0]) ** 2 + float(d[1]) ** 2 + float(d[2]) ** 2)
+                    if dist < peptide_bond_min_angstrom or dist > peptide_bond_max_angstrom:
+                        broken_count += 1
+                elif neigh_num == resnum + 1 and "C" in r_curr and "N" in r_other:
+                    d = r_curr["C"].coord - r_other["N"].coord
+                    dist = math.sqrt(float(d[0]) ** 2 + float(d[1]) ** 2 + float(d[2]) ** 2)
+                    if dist < peptide_bond_min_angstrom or dist > peptide_bond_max_angstrom:
+                        broken_count += 1
+
+        # Count clashes: any atom in gap residues within clash_distance of
+        # a heavy atom in a non-adjacent residue.
+        clash_count = 0
+        for resnum in range(lo, hi + 1):
+            r_curr = resmap.get((chain_id, resnum))
+            if r_curr is None:
+                continue
+            for a in r_curr:
+                if a.element == "H":
+                    continue
+                ax, ay, az = float(a.coord[0]), float(a.coord[1]), float(a.coord[2])
+                for ec_id, er_num, _ea_name, (ex, ey, ez) in all_heavy:
+                    if ec_id == chain_id and er_num == resnum:
+                        continue
+                    if ec_id == chain_id and abs(er_num - resnum) <= 2:
+                        continue
+                    dx = ax - ex; dy = ay - ey; dz = az - ez
+                    if dx * dx + dy * dy + dz * dz < clash_distance_angstrom ** 2:
+                        clash_count += 1
+                        if clash_count > max_clashes_per_gap:
+                            break
+                if clash_count > max_clashes_per_gap:
+                    break
+            if clash_count > max_clashes_per_gap:
+                break
+
+        if broken_count > max_broken_bonds_per_gap or clash_count > max_clashes_per_gap:
+            rolled_back.append((chain_id, lo, hi))
+            for resnum in range(lo, hi + 1):
+                r = resmap.get((chain_id, resnum))
+                if r is not None:
+                    residues_to_drop.append((chain_id, r.id))
+
+    # Detach flagged residues
+    for chain_id, rid in residues_to_drop:
+        try:
+            structure[0][chain_id].detach_child(rid)
+        except KeyError:
+            pass
+
+    io = PDBIO()
+    io.set_structure(structure)
+    io.save(str(output_path))
+    return output_path, rolled_back
