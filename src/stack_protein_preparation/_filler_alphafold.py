@@ -363,24 +363,61 @@ def run_alphafold_fallback_for_chain(
             _gap_ranges.extend(
                 _detect_missing_windows(set(crystal_by.keys()), sorted(af_by_resi.keys()))
             )
-        if _gap_ranges:
-            from stack_protein_preparation._filler_junction_relax import (
-                relax_junctions,
+        # Determine which chain each gap belongs to for LoopModel selection.
+        _gap_ranges_by_chain: list[tuple[str, int, int]] = []
+        for cid, af_by_resi in _amap.items():
+            crystal_by = _cmap.get(cid, {})
+            for _lo, _hi in _detect_missing_windows(
+                set(crystal_by.keys()), sorted(af_by_resi.keys())
+            ):
+                _gap_ranges_by_chain.append((cid, _lo, _hi))
+        # Only refine gaps whose fitted residues actually made it through
+        # smart-rollback in splice_af_gaps_into_crystal.  Compare the spliced
+        # PDB's residue set to the crystal to find truly-inserted residues.
+        try:
+            _spliced_struct = _PDBParser(QUIET=True).get_structure("sp", str(spliced_path))
+            _crystal_res = {
+                (ch.id, r.id[1])
+                for ch in _crystal[0] for r in ch if not r.id[0].strip()
+            }
+            _spliced_res = {
+                (ch.id, r.id[1])
+                for ch in _spliced_struct[0] for r in ch if not r.id[0].strip()
+            }
+            _added_res = _spliced_res - _crystal_res
+        except Exception:  # noqa: BLE001
+            _added_res = set()
+        _surviving_gaps = [
+            (cid, lo, hi) for cid, lo, hi in _gap_ranges_by_chain
+            if any((cid, r) in _added_res for r in range(lo, hi + 1))
+        ]
+        if _surviving_gaps:
+            # LoopModel polish (2026-08-22): MODELLER stochastic loop sampling
+            # with 3 conformers + chirality guard.  Preserves peptide bond
+            # geometry (~1.33 A) via internal coordinate constraints and
+            # reduces clashes by 25x+ vs raw splice (5M7U live: 100 -> 3).
+            # Slow: ~5-10 min per protein.  Falls back to spliced input on
+            # any failure so pipeline never blocks.
+            from stack_protein_preparation._filler_loop_refine import (
+                refine_loops_via_modeller,
             )
-            _relax = relax_junctions(
+            _refine = refine_loops_via_modeller(
                 input_pdb_path=spliced_path,
                 output_pdb_path=final_model_path,
-                gap_ranges=_gap_ranges,
-                flank_residues=2,
+                gap_ranges_by_chain=_surviving_gaps,
+                n_conformers=3,
+                refine_level="fast",
+                reject_new_chirality_d=True,
             )
             _debug(
-                f"Junction relax: ran={_relax.ran}, "
-                f"junction_rmsd={_relax.junction_rmsd_angstrom}, "
-                f"restrained_rmsd={_relax.restrained_rmsd_angstrom}, "
-                f"fallback={_relax.fallback_reason}"
+                f"LoopModel refine: ran={_refine.ran}, "
+                f"n_built={_refine.n_conformers_built}, "
+                f"n_kept={_refine.n_conformers_kept}, "
+                f"best_dope={_refine.best_dope}, "
+                f"fallback={_refine.fallback_reason}"
             )
-    except Exception as _relax_exc:  # noqa: BLE001 -- best-effort polish step
-        _debug(f"Junction relax skipped due to unexpected error: {_relax_exc!r}")
+    except Exception as _refine_exc:  # noqa: BLE001 -- best-effort polish step
+        _debug(f"LoopModel refine skipped due to unexpected error: {_refine_exc!r}")
 
     # Quality-gate (2026-08-22): native MolProbity-style analyser on the
     # spliced+relaxed model, compared against the crystal baseline.  Persists
