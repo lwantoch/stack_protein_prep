@@ -417,12 +417,38 @@ def run_alphafold_fallback_for_chain(
                 reject_new_chirality_d=True,
             )
             _debug(
-                f"LoopModel refine: ran={_refine.ran}, "
+                f"LoopModel refine (fast): ran={_refine.ran}, "
                 f"n_built={_refine.n_conformers_built}, "
                 f"n_kept={_refine.n_conformers_kept}, "
                 f"best_dope={_refine.best_dope}, "
                 f"fallback={_refine.fallback_reason}"
             )
+            # Adaptive fallback (2026-08-22): if the fast refinement rejected
+            # every conformer via the chirality guard (n_kept == 0), retry
+            # with refine.slow + 5 conformers.  Slow gives MODELLER enough
+            # sampling headroom to find valid loop geometries; live 1K4Y
+            # test: fast produces 0 fills, slow produces +16 clean fills.
+            # Wall-time cost: ~5x slower (30-60 min vs 5-10 min per protein).
+            if _refine.n_conformers_kept == 0 and _refine.n_conformers_built > 0:
+                _debug(
+                    "Fast refine rejected all conformers -- retrying with "
+                    "refine.slow + 5 conformers"
+                )
+                _refine_slow = refine_loops_via_modeller(
+                    input_pdb_path=spliced_path,
+                    output_pdb_path=final_model_path,
+                    gap_ranges_by_chain=_surviving_gaps,
+                    n_conformers=5,
+                    refine_level="slow",
+                    reject_new_chirality_d=True,
+                )
+                _debug(
+                    f"LoopModel refine (slow): ran={_refine_slow.ran}, "
+                    f"n_built={_refine_slow.n_conformers_built}, "
+                    f"n_kept={_refine_slow.n_conformers_kept}, "
+                    f"best_dope={_refine_slow.best_dope}, "
+                    f"fallback={_refine_slow.fallback_reason}"
+                )
             # Post-refinement rollback: drop any gaps that STILL fail the
             # peptide-bond / clash gate after LoopModel had a chance to
             # fix them.  Reviewer-preferable to REMARK 465 the residues
