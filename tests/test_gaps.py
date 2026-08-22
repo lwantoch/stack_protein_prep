@@ -299,4 +299,6 @@ def test_summarize_gaps_returns_expected_statistics(tmp_path: Path) -> None:
         "total_missing_residues": 3,
         "gap_sizes": [2, 1],
         "chains_with_gaps": ["A", "B"],
+        "geometric_breaks": [],
+        "n_geometric_breaks": 0,
     }
