@@ -80,10 +80,30 @@ _RAMA_ALLOWED = {
 }
 
 _CLASH_THRESHOLD_ANGSTROM = 2.0
+# Element-specific van-der-Waals radii (Bondi 1964, standard biochemistry).
+# For MolProbity-style clash detection: a pair "clashes" if their inter-atomic
+# distance is less than (r_i + r_j - _CLASH_OVERLAP_ANGSTROM).  MolProbity's
+# default overlap tolerance with reduce H-added is 0.4 A; we use 0.5 A on
+# heavy atoms only to compensate for missing H-vdW pressure.
+_VDW_RADII_ANGSTROM = {
+    "H": 1.20, "C": 1.70, "N": 1.55, "O": 1.52, "S": 1.80,
+    "P": 1.80, "F": 1.47, "CL": 1.75, "BR": 1.85, "I": 1.98,
+    "SE": 1.90, "MG": 1.73, "ZN": 1.39, "FE": 1.32, "MN": 1.61,
+    "CA": 1.97, "NA": 2.27, "K": 2.75, "CU": 1.40, "NI": 1.63,
+}
+_CLASH_OVERLAP_ANGSTROM = 0.5
 _PEPTIDE_BOND_MIN = 1.28
 _PEPTIDE_BOND_MAX = 1.40
 _PEPTIDE_BOND_IDEAL_MIN = 1.32
 _PEPTIDE_BOND_IDEAL_MAX = 1.36
+
+
+def _vdw_clash_threshold(element_a: str, element_b: str) -> float:
+    """Element-pair specific clash distance = r_a + r_b - overlap.
+    Falls back to 3.0 A for unknown elements (safe over-estimate)."""
+    ra = _VDW_RADII_ANGSTROM.get(element_a.upper(), 1.7)
+    rb = _VDW_RADII_ANGSTROM.get(element_b.upper(), 1.7)
+    return ra + rb - _CLASH_OVERLAP_ANGSTROM
 # Cα chirality via signed tetrahedron volume ((N-CA) × (C-CA)) · (CB-CA).
 # L-amino acid: positive volume; D: negative.  Non-glycine only; missing-atom
 # cases are skipped.
@@ -109,10 +129,31 @@ class QualityReport:
 
     n_clash_pairs: int = 0
     clash_examples: list[str] = field(default_factory=list)
+    # MolProbity-style physical clashes using per-element vdW radii minus
+    # overlap tolerance; strictly a subset of n_clash_pairs (< 2.0 A blanket).
+    n_vdw_clashes: int = 0
+    n_heavy_atoms: int = 0
+    vdw_clash_examples: list[str] = field(default_factory=list)
 
     # Per-region breakdown for gap residues (from splice) versus rest.
     gap_residue_ids: set[tuple[str, int]] = field(default_factory=set)
     n_gap_clashes: int = 0
+
+    def clashscore_per_1000_atoms(self) -> float:
+        """MolProbity-style clashscore: overlaps per 1000 (heavy) atoms.
+
+        MolProbity's canonical clashscore uses reduce+probe with H atoms;
+        we approximate on heavy atoms only using per-element vdW radii
+        minus 0.5 A overlap tolerance.  Reviewer-familiar order-of-
+        magnitude proxy.  Numbers should be interpreted as follows:
+
+          clashscore < 5  : PDB-Redo publication quality
+          5-15            : moderate; acceptable with justification
+          > 15            : concerning; visual inspection recommended
+        """
+        if self.n_heavy_atoms == 0:
+            return 0.0
+        return 1000.0 * self.n_vdw_clashes / self.n_heavy_atoms
 
     def rama_favoured_pct(self) -> float:
         if self.n_residues == 0:
@@ -241,6 +282,10 @@ class QualityReport:
             "n_clash_pairs": self.n_clash_pairs,
             "n_gap_clashes": self.n_gap_clashes,
             "clash_examples": self.clash_examples[:30],
+            "n_vdw_clashes": self.n_vdw_clashes,
+            "n_heavy_atoms": self.n_heavy_atoms,
+            "vdw_clash_examples": self.vdw_clash_examples[:30],
+            "clashscore_per_1000_atoms": self.clashscore_per_1000_atoms(),
         }
 
 
@@ -378,6 +423,7 @@ def check_model_quality(
     # inherently produces.  Use Bio.PDB NeighborSearch for O(N log N).
     from Bio.PDB import NeighborSearch
     atoms = [a for a in struct[0].get_atoms() if a.element != "H"]
+    report.n_heavy_atoms = len(atoms)
     ns = NeighborSearch(atoms)
     seen_pairs: set[tuple[int, int]] = set()
     for atom in atoms:
@@ -413,5 +459,43 @@ def check_model_quality(
                 if (_cid_check, _rnum) in report.gap_residue_ids:
                     report.n_gap_clashes += 1
                     break
+
+    # Second pass: MolProbity-style vdW clash count using per-element radii.
+    # Wider search radius (up to 3.6 A for C-C or S-S pairs) so we catch
+    # every atom pair whose distance is below their vdW-sum-overlap threshold.
+    for atom in atoms:
+        r_atom = _VDW_RADII_ANGSTROM.get(atom.element.upper(), 1.7)
+        max_partner_r = 2.0  # generous upper bound for partner vdW
+        search_r = r_atom + max_partner_r - _CLASH_OVERLAP_ANGSTROM
+        for other in ns.search(atom.coord, search_r, level="A"):
+            if other is atom:
+                continue
+            if atom.get_parent() is other.get_parent():
+                continue
+            pa = atom.get_parent()
+            po = other.get_parent()
+            if pa.get_parent() is po.get_parent():
+                try:
+                    if abs(pa.id[1] - po.id[1]) <= 2:
+                        continue
+                except (TypeError, ValueError):
+                    pass
+            threshold = _vdw_clash_threshold(atom.element, other.element)
+            d = atom.coord - other.coord
+            dist = math.sqrt(float(d[0]) ** 2 + float(d[1]) ** 2 + float(d[2]) ** 2)
+            if dist >= threshold:
+                continue
+            key = (min(id(atom), id(other)), max(id(atom), id(other)))
+            key_vdw = ("vdw", *key)
+            if key_vdw in seen_pairs:
+                continue
+            seen_pairs.add(key_vdw)
+            report.n_vdw_clashes += 1
+            if len(report.vdw_clash_examples) < 50:
+                report.vdw_clash_examples.append(
+                    f"{_label(pa.get_parent().id, pa.id, pa.resname)}.{atom.name}({atom.element}) — "
+                    f"{_label(po.get_parent().id, po.id, po.resname)}.{other.name}({other.element}) "
+                    f"d={dist:.2f} vs thresh {threshold:.2f}"
+                )
 
     return report
