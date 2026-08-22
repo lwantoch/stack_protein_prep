@@ -347,11 +347,12 @@ def test_metall_params_creates_expected_site_structure(tmp_path: Path) -> None:
     assert (mcpb_dir / "README.md").is_file()
     assert (mcpb_dir / f"{pdb_id}_mcpb.pdb").is_file()
 
-    # .in: ion_ids is a real integer, not TODO
+    # .in: ion_ids is a real integer, not TODO.  MCPB.py syntax is
+    # ``key value`` (space, no ``=``), not the Python-style ``key = value``.
     mcpb_in_text = (mcpb_dir / f"{pdb_id}.in").read_text()
-    assert f"original_pdb = {pdb_id}_mcpb.pdb" in mcpb_in_text
-    assert "ion_ids = TODO" not in mcpb_in_text  # auto-resolved
-    assert "ion_mol2files = ZN.mol2" in mcpb_in_text  # auto-generated
+    assert f"original_pdb {pdb_id}_mcpb.pdb" in mcpb_in_text
+    assert "ion_ids TODO" not in mcpb_in_text  # auto-resolved
+    assert "ion_mol2files ZN.mol2" in mcpb_in_text  # auto-generated
 
     # Zn mol2 exists and contains formal charge 2.0
     mol2_path = mcpb_dir / "ZN.mol2"
@@ -360,7 +361,7 @@ def test_metall_params_creates_expected_site_structure(tmp_path: Path) -> None:
     assert "2.0000" in mol2_text or "2.000" in mol2_text  # formal charge field
 
     # Spin auto-filled for ZN (d10 singlet → 1)
-    assert "charge_m_sm = 2 1" in mcpb_in_text
+    assert "charge_m_sm 2 1" in mcpb_in_text
 
     # commands.sh has MCPB.py step-1 invocation
     cmd_text = (mcpb_dir / "commands.sh").read_text()
