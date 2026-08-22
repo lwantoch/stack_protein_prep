@@ -127,6 +127,18 @@ class QualityReport:
     n_ca_chirality_outliers: int = 0
     ca_chirality_outlier_residues: list[str] = field(default_factory=list)
 
+    # omega peptide bond planarity + cis/trans classification.
+    # trans: |omega - 180| < 30 (or omega ~ 0 also equivalent)
+    # cis:   |omega| < 30
+    # non-planar (bad): everything else -> reviewer red flag.
+    n_omega_checked: int = 0
+    n_omega_trans: int = 0
+    n_omega_cis_pro: int = 0
+    n_omega_cis_nonpro: int = 0  # 0-1 % expected; more = red flag
+    n_omega_non_planar: int = 0  # 0 expected; any = red flag
+    non_planar_omega_residues: list[str] = field(default_factory=list)
+    cis_nonpro_omega_residues: list[str] = field(default_factory=list)
+
     n_clash_pairs: int = 0
     clash_examples: list[str] = field(default_factory=list)
     # MolProbity-style physical clashes using per-element vdW radii minus
@@ -223,6 +235,22 @@ class QualityReport:
             reasons.append(
                 f"Chirality D-outliers gained {chir_gain} (baseline {baseline.n_ca_chirality_outliers} → {self.n_ca_chirality_outliers})"
             )
+        # Omega peptide-bond planarity: FRUTON must not introduce new cis-
+        # nonPro (rare in nature, ~0.05 %) or non-planar peptide bonds
+        # (~0 % in refined crystals).  Reviewer red flags either way.
+        cis_gain = self.n_omega_cis_nonpro - baseline.n_omega_cis_nonpro
+        if cis_gain > 0:
+            reasons.append(
+                f"cis-nonPro peptide bonds gained {cis_gain} "
+                f"(baseline {baseline.n_omega_cis_nonpro} → {self.n_omega_cis_nonpro})"
+            )
+        planar_gain = self.n_omega_non_planar - baseline.n_omega_non_planar
+        if planar_gain > 0:
+            reasons.append(
+                f"non-planar peptide bonds gained {planar_gain} "
+                f"(baseline {baseline.n_omega_non_planar} → {self.n_omega_non_planar})"
+            )
+
         clash_gain = self.n_clash_pairs - baseline.n_clash_pairs
         if clash_gain > clash_gain_max:
             reasons.append(
@@ -286,6 +314,13 @@ class QualityReport:
             "n_heavy_atoms": self.n_heavy_atoms,
             "vdw_clash_examples": self.vdw_clash_examples[:30],
             "clashscore_per_1000_atoms": self.clashscore_per_1000_atoms(),
+            "n_omega_checked": self.n_omega_checked,
+            "n_omega_trans": self.n_omega_trans,
+            "n_omega_cis_pro": self.n_omega_cis_pro,
+            "n_omega_cis_nonpro": self.n_omega_cis_nonpro,
+            "n_omega_non_planar": self.n_omega_non_planar,
+            "cis_nonpro_omega_residues": self.cis_nonpro_omega_residues[:30],
+            "non_planar_omega_residues": self.non_planar_omega_residues[:30],
         }
 
 
@@ -389,6 +424,47 @@ def check_model_quality(
                 report.rama_outlier_residues.append(
                     f"{_label(cid, res.id, res.resname)}: φ={phi_deg:.1f} ψ={psi_deg:.1f} ({klass})"
                 )
+
+        # Omega dihedral CA(i)-C(i)-N(i+1)-CA(i+1): peptide bond planarity.
+        # trans: ~180 deg (or ~-180).  cis: ~0 deg.  Non-planar: everything
+        # else (|omega - 180| > 30 AND |omega - 0| > 30).  Cis-nonPro is
+        # <= 1% in real proteins; anything else is a reviewer red flag.
+        if i + 1 < len(residues):
+            _, _nres = residues[i + 1]
+            if all(a in res for a in ("CA", "C")) and all(a in _nres for a in ("N", "CA")):
+                try:
+                    _omega = math.degrees(calc_dihedral(
+                        res["CA"].get_vector(), res["C"].get_vector(),
+                        _nres["N"].get_vector(), _nres["CA"].get_vector(),
+                    ))
+                    _same_chain_consecutive = (
+                        i + 1 < len(residues)
+                        and residues[i + 1][0] == cid
+                        and isinstance(res.id, tuple) and isinstance(_nres.id, tuple)
+                        and (_nres.id[1] - res.id[1]) == 1
+                    )
+                    if _same_chain_consecutive:
+                        report.n_omega_checked += 1
+                        _abs_omega = abs(_omega)
+                        _is_trans = _abs_omega > 150.0
+                        _is_cis = _abs_omega < 30.0
+                        if _is_trans:
+                            report.n_omega_trans += 1
+                        elif _is_cis:
+                            if _nres.resname == "PRO":
+                                report.n_omega_cis_pro += 1
+                            else:
+                                report.n_omega_cis_nonpro += 1
+                                report.cis_nonpro_omega_residues.append(
+                                    f"{_label(cid, res.id, res.resname)}→{_label(cid, _nres.id, _nres.resname)}: ω={_omega:.1f}°"
+                                )
+                        else:
+                            report.n_omega_non_planar += 1
+                            report.non_planar_omega_residues.append(
+                                f"{_label(cid, res.id, res.resname)}→{_label(cid, _nres.id, _nres.resname)}: ω={_omega:.1f}°"
+                            )
+                except KeyError:
+                    pass
 
         # Cα chirality via signed tetrahedron volume ((N-CA) × (C-CA)) · (CB-CA).
         # L-amino acid: positive volume; D: negative.  Robust to sign convention.
