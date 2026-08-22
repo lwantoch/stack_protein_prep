@@ -42,9 +42,17 @@ def fetch_uniprot_disorder_regions(
     except (HTTPError, URLError, TimeoutError, OSError, ValueError):
         return None
 
-    if not isinstance(payload, list) or not payload:
+    # MobiDB's /api/download endpoint returns a plain dict for a single
+    # accession lookup (as of 2026-08); older releases wrapped it in a
+    # one-element list.  Accept both shapes.
+    if isinstance(payload, list):
+        if not payload:
+            return []
+        record = payload[0]
+    elif isinstance(payload, dict):
+        record = payload
+    else:
         return []
-    record = payload[0]
 
     preferred_keys = (
         "prediction-disorder-mobidb_lite",
