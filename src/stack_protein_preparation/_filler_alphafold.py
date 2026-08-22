@@ -423,16 +423,35 @@ def run_alphafold_fallback_for_chain(
                 f"best_dope={_refine.best_dope}, "
                 f"fallback={_refine.fallback_reason}"
             )
-            # Adaptive fallback (2026-08-22): if the fast refinement rejected
-            # every conformer via the chirality guard (n_kept == 0), retry
-            # with refine.slow + 5 conformers.  Slow gives MODELLER enough
-            # sampling headroom to find valid loop geometries; live 1K4Y
-            # test: fast produces 0 fills, slow produces +16 clean fills.
+            # Adaptive fallback (2026-08-22): retry with refine.slow +
+            # 5 conformers if the fast refinement is unsatisfactory.
+            # Two triggers:
+            #   (a) n_kept == 0 (chirality guard rejected all conformers)
+            #   (b) intermediate model has > 20 new clashes vs baseline
+            #       (Task #64: fast refine sometimes produces high-clash
+            #       loops that slow could relax further)
             # Wall-time cost: ~5x slower (30-60 min vs 5-10 min per protein).
-            if _refine.n_conformers_kept == 0 and _refine.n_conformers_built > 0:
+            _fast_needs_retry = (
+                _refine.n_conformers_kept == 0 and _refine.n_conformers_built > 0
+            )
+            _fast_clash_count = 0
+            if not _fast_needs_retry and final_model_path.is_file():
+                try:
+                    from stack_protein_preparation._filler_quality_check import (
+                        check_model_quality as _qc,
+                    )
+                    _b_qc = _qc(template_pdb_path)
+                    _f_qc = _qc(final_model_path)
+                    _fast_clash_count = _f_qc.n_clash_pairs - _b_qc.n_clash_pairs
+                    if _fast_clash_count > 20:
+                        _fast_needs_retry = True
+                except Exception:  # noqa: BLE001
+                    pass
+            if _fast_needs_retry:
                 _debug(
-                    "Fast refine rejected all conformers -- retrying with "
-                    "refine.slow + 5 conformers"
+                    f"Fast refine unsatisfactory (n_kept={_refine.n_conformers_kept}, "
+                    f"clash_gain={_fast_clash_count}) -- retrying with "
+                    f"refine.slow + 5 conformers"
                 )
                 _refine_slow = refine_loops_via_modeller(
                     input_pdb_path=spliced_path,
