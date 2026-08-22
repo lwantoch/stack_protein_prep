@@ -347,7 +347,7 @@ def splice_af_gaps_into_crystal(
                     continue  # residue-number gap inside the fit -- allow
                 _d = _r_prev["C"].coord - _r_curr["N"].coord
                 _dist = _math.sqrt(float(_d[0]) ** 2 + float(_d[1]) ** 2 + float(_d[2]) ** 2)
-                if _dist > 2.0:
+                if _dist < 1.28 or _dist > 1.40:
                     _has_break = True
                     break
             # Also check the boundary peptide bonds to existing crystal
@@ -358,7 +358,7 @@ def splice_af_gaps_into_crystal(
                     if "C" in _crystal_prev:
                         _d = _crystal_prev["C"].coord - _res["N"].coord
                         _dist = _math.sqrt(float(_d[0]) ** 2 + float(_d[1]) ** 2 + float(_d[2]) ** 2)
-                        if _dist > 2.0:
+                        if _dist < 1.28 or _dist > 1.40:
                             _has_break = True
                             break
                 if (_resnum + 1) in crystal_by_resi and "C" in _res:
@@ -366,7 +366,7 @@ def splice_af_gaps_into_crystal(
                     if "N" in _crystal_next:
                         _d = _res["C"].coord - _crystal_next["N"].coord
                         _dist = _math.sqrt(float(_d[0]) ** 2 + float(_d[1]) ** 2 + float(_d[2]) ** 2)
-                        if _dist > 2.0:
+                        if _dist < 1.28 or _dist > 1.40:
                             _has_break = True
                             break
             if _has_break:
