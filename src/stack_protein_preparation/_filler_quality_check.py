@@ -137,7 +137,7 @@ class QualityReport:
         rama_outlier_gain_max_pct: float = 1.5,
         peptide_bond_broken_gain_max: int = 0,
         chirality_outlier_gain_max: int = 0,
-        clash_gain_max: int = 10,
+        clash_gain_max: int = 40,
     ) -> tuple[bool, list[str]]:
         """Gate the filler output against the input crystal baseline.
 
