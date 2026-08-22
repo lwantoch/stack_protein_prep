@@ -196,16 +196,20 @@ fallback.  Both accept the crystal backbone + ligands as hard-masked
 context and gap-flanking Cα as anchor restraints, and enforce true
 peptide-bond distances at every sampling step.
 
-**Adaptive fallback trigger.**  The current `fast → slow` adaptive
-retry (commit `c6a11ea`) only fires when the chirality guard rejects
-every fast-schedule conformer.  It does NOT fire when a fast
-conformer is chirality-clean but carries many clashes.  Live 7QUE
-test: fast produced 3/3 chirality-clean conformers with 33 clashes;
-the gate still PASSED (33 < 40) but slow refinement may have
-produced fewer clashes at the same DOPE tier.  Extending the
-adaptive trigger to include a clash-count threshold (retry slow if
-`n_clashes > 20`, say) would be a small refinement worth measuring
-on a larger benchmark before shipping.
+**Adaptive fallback trigger.**  The adaptive `fast → slow` retry now
+fires on either chirality rejection (commit `c6a11ea`) or clash-count
+threshold `clash_gain > 20` (commit `0779952`).  Live 7QUE follow-up
+test: fast pass produced 3/3 chirality-clean conformers with clash
+gain 33; the clash-based trigger fires and retries with slow + 5
+conformers.  Slow refinement produced 5/5 chirality-clean conformers
+but the **same clash gain 33** -- these clashes are AF-loop-inherent
+(the modelled loop's residues genuinely overlap the crystal
+environment regardless of refinement schedule).  7QUE is therefore a
+third genuine ceiling case (alongside 5HJS and 8A27) that needs a
+diffusion inpainter, not more MODELLER sampling.  The gate still
+PASSES via the 40-threshold (documented as reviewer-defensible), but
+this represents the empirical upper bound of what MODELLER LoopModel
+can do on FRUTON's benchmark set.
 
 **IDR cross-check.**  A UniProt MobiDB API integration could reject
 gap fills that overlap annotated intrinsically-disordered regions —
