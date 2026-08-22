@@ -196,6 +196,17 @@ fallback.  Both accept the crystal backbone + ligands as hard-masked
 context and gap-flanking Cα as anchor restraints, and enforce true
 peptide-bond distances at every sampling step.
 
+**Adaptive fallback trigger.**  The current `fast → slow` adaptive
+retry (commit `c6a11ea`) only fires when the chirality guard rejects
+every fast-schedule conformer.  It does NOT fire when a fast
+conformer is chirality-clean but carries many clashes.  Live 7QUE
+test: fast produced 3/3 chirality-clean conformers with 33 clashes;
+the gate still PASSED (33 < 40) but slow refinement may have
+produced fewer clashes at the same DOPE tier.  Extending the
+adaptive trigger to include a clash-count threshold (retry slow if
+`n_clashes > 20`, say) would be a small refinement worth measuring
+on a larger benchmark before shipping.
+
 **IDR cross-check.**  A UniProt MobiDB API integration could reject
 gap fills that overlap annotated intrinsically-disordered regions —
 Wang et al. (arXiv:2510.15939 2025) show AF3 confidently hallucinates
