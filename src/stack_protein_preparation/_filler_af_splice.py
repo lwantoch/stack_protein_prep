@@ -374,6 +374,50 @@ def splice_af_gaps_into_crystal(
                 # residues), which is what REMARK 465 already declares.
                 continue
 
+            # CLASH-CHECK (2026-08-22): reject the fill if inserting it
+            # would produce > _MAX_NEW_CLASHES_PER_GAP heavy-atom overlaps
+            # against the existing crystal environment.  164-residue fills
+            # can carry ~1000 steric conflicts (5HJS live test) that would
+            # dominate the quality gate downstream; a reviewer would rather
+            # see REMARK 465 than clashed side chains.
+            _MAX_NEW_CLASHES_PER_GAP = 5
+            _CLASH_A = 2.0
+            _existing_heavy: list[tuple[str, str, int, str, tuple]] = []
+            for _c in crystal[0]:
+                for _r in _c:
+                    if _r.id[0].strip():  # HETATM excluded
+                        continue
+                    for _a in _r:
+                        if _a.element == "H":
+                            continue
+                        _existing_heavy.append((
+                            _c.id, _r.resname, _r.id[1], _a.name,
+                            (float(_a.coord[0]), float(_a.coord[1]), float(_a.coord[2])),
+                        ))
+            _new_clash_count = 0
+            for _fr in fitted:
+                for _fa in _fr:
+                    if _fa.element == "H":
+                        continue
+                    _fx, _fy, _fz = float(_fa.coord[0]), float(_fa.coord[1]), float(_fa.coord[2])
+                    for _ec_id, _er_name, _er_num, _ea_name, (_ex, _ey, _ez) in _existing_heavy:
+                        # Skip same residue / adjacent-residue peptide neighbors
+                        if _er_num == _fr.id[1] and _ec_id == cid:
+                            continue
+                        if _ec_id == cid and abs(_er_num - _fr.id[1]) <= 1:
+                            continue
+                        _dx = _fx - _ex; _dy = _fy - _ey; _dz = _fz - _ez
+                        if _dx * _dx + _dy * _dy + _dz * _dz < _CLASH_A * _CLASH_A:
+                            _new_clash_count += 1
+                            if _new_clash_count > _MAX_NEW_CLASHES_PER_GAP:
+                                break
+                    if _new_clash_count > _MAX_NEW_CLASHES_PER_GAP:
+                        break
+                if _new_clash_count > _MAX_NEW_CLASHES_PER_GAP:
+                    break
+            if _new_clash_count > _MAX_NEW_CLASHES_PER_GAP:
+                continue  # rollback
+
             for r in fitted:
                 if r.id in [c.id for c in crystal_chain]:
                     crystal_chain.detach_child(r.id)
