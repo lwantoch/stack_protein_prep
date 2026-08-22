@@ -151,6 +151,23 @@ class QualityReport:
     gap_residue_ids: set[tuple[str, int]] = field(default_factory=set)
     n_gap_clashes: int = 0
 
+    def one_line_summary(self) -> str:
+        """Reviewer-friendly one-liner summarising the model quality.
+
+        Layout: ``n_residues aa | rama fav/out%, clash/1kA, n_broken bnd,
+        n_cis-nonPro/n_non-planar ω, n_D-chir``.  Fits a table row.
+        """
+        return (
+            f"{self.n_residues} aa | "
+            f"rama fav={self.rama_favoured_pct():.1f}% "
+            f"out={self.rama_outlier_pct():.2f}% | "
+            f"clashscore={self.clashscore_per_1000_atoms():.1f} | "
+            f"broken_bnd={self.n_peptide_bonds_broken} | "
+            f"ω: {self.n_omega_cis_nonpro} cis-nonPro, "
+            f"{self.n_omega_non_planar} non-planar | "
+            f"D-chir={self.n_ca_chirality_outliers}"
+        )
+
     def clashscore_per_1000_atoms(self) -> float:
         """MolProbity-style clashscore: overlaps per 1000 (heavy) atoms.
 
