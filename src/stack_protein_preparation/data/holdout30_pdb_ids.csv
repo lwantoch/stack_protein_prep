@@ -1,0 +1,43 @@
+# FRUTON holdout blind-test set — 30 PDBs NOT in the MMBSA_200 CSV.
+# Curated for family diversity:
+#   6 kinases (protein / lipid / metabolic)
+#   6 hydrolases (protease, phosphatase, nuclease, glycosidase)
+#   4 GPCRs / transmembrane receptors
+#   4 metalloenzymes (Zn, Mg, Fe, Cu — cover different coord chemistry)
+#   4 oxidoreductases (NAD/NADP/FAD/heme cofactor)
+#   3 transferases (methyl / acetyl / phospho)
+#   3 apo carriers (albumin, ferritin, ubiquitin — no cofactor stress-test)
+#
+# Seed date: 2026-08-23.  Rebuild via scripts/build_holdout30.py.
+# The header is intentionally a comment; loader skips it.
+pdb_id
+7T3S
+6WNE
+7L8G
+7MRD
+7SVU
+7O2H
+6UEP
+6XSF
+7BUK
+6R7Y
+7NCC
+7WIY
+6VMS
+7VC8
+7XCT
+7WSY
+6YNE
+7CMV
+7ANA
+7EU8
+6TAX
+7NIP
+6ZQX
+7RPZ
+7QUV
+7T7O
+6OQM
+7Q0G
+7MK2
+7B8Z
