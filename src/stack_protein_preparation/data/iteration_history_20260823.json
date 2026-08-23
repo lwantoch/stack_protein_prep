@@ -1,0 +1,30 @@
+[
+  {
+    "iter_label": "iter-2",
+    "n_pdbs": 48,
+    "gate_pass_pct": 89.6,
+    "n_omega_non_planar": null,
+    "notes": "43/48 from docs/reviewer_evidence_20260823/BASELINE_STATS.md"
+  },
+  {
+    "iter_label": "iter-3",
+    "n_pdbs": 46,
+    "gate_pass_pct": 91.3,
+    "n_omega_non_planar": 6,
+    "notes": "bench_20260823_1513; bench_output/jctc_r2_clash_iter3_post_fruton/, jacs_r1_omega_iter3/"
+  },
+  {
+    "iter_label": "iter-4",
+    "n_pdbs": 46,
+    "gate_pass_pct": 97.8,
+    "n_omega_non_planar": 3,
+    "notes": "bench_20260823_1620; bench_output/jctc_r2_clash_iter4/, jacs_r1_omega_iter4/"
+  },
+  {
+    "iter_label": "iter-5-mini",
+    "n_pdbs": 48,
+    "gate_pass_pct": 97.9,
+    "n_omega_non_planar": null,
+    "notes": "47/48 combined; 431f870 finalize log; only 4X7Q remains FAIL (ω-planarity edge)"
+  }
+]
