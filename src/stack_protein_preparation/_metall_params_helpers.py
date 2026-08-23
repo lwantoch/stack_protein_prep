@@ -893,15 +893,36 @@ def _process_one_site(
     mcpb_pdb = mcpb_dir / f"{pdb_id}_mcpb.pdb"
 
     if not geometry_ok:
+        # Water-proposal helper: when the coord number is BELOW the expected
+        # coord number for this metal AND there is a nearby crystal HOH (2.0-
+        # 3.0 A from the metal), suggest promoting the water to a ligand slot
+        # OR placing a fresh water at the geometric void.  Written as a
+        # user-review file next to GEOMETRY_MISMATCH.txt so the user can
+        # decide + rerun with active_site_overrides or by copying the
+        # proposed water into the coord PDB.
+        _EXPECTED_COORD = {
+            "ZN": 4, "CU": 4, "FE": 6, "MN": 6, "CO": 6, "NI": 6,
+            "CR": 6, "V": 6, "MO": 6, "W": 6, "CD": 4, "HG": 2,
+        }
+        _propose_water_msg = _propose_water_for_incomplete_coordination(
+            metal_atom=metal_in_analysis,
+            contacts=contacts_list,
+            expected_coord=_EXPECTED_COORD.get(element),
+            expected_geometries=expected_geometries,
+            found_geometry=found_geometry,
+            analysis_pdb_path=prepared_variant_pdb,
+        )
         (mcpb_dir / "GEOMETRY_MISMATCH.txt").write_text(
             f"Site {site_folder_name}\n"
             f"Found geometry   : {found_geometry}\n"
             f"Expected for {element:2s}  : {', '.join(expected_geometries) or 'unknown'}\n"
+            f"Coord number     : found={len(contacts_list)}, expected~{_EXPECTED_COORD.get(element, '?')}\n"
             "\n"
             "MCPB scaffold was NOT generated because the coordination geometry\n"
             "does not match the standard geometry for this metal ion.  Possible\n"
             "causes: incomplete coordination sphere, crystal contacts, or wrong\n"
-            "protonation state.  Inspect the site manually before proceeding.\n",
+            "protonation state.  Inspect the site manually before proceeding.\n"
+            + (f"\n{_propose_water_msg}\n" if _propose_water_msg else ""),
             encoding="utf-8",
         )
     else:
@@ -1019,3 +1040,139 @@ def _process_one_site(
         f"Site {site_folder_name} prepared; H removed={cleanup_result.removed_count}."
     )
     return site_result
+
+
+def _propose_water_for_incomplete_coordination(
+    metal_atom,
+    contacts: list,
+    expected_coord: int | None,
+    expected_geometries: list[str],
+    found_geometry: str,
+    analysis_pdb_path: Path,
+) -> str:
+    """Return a user-readable proposal block for GEOMETRY_MISMATCH.txt when
+    the metal coordination sphere is under-populated versus the expected
+    coord number.
+
+    Two proposal modes:
+      1. **Promote existing HOH**: scan the analysis PDB for HOH oxygens
+         within 2.0-3.0 A of the metal.  These are ideal candidates to
+         re-label as coordinated waters (WAT / HOH bound) that MCPB.py
+         includes in the QM cluster.
+      2. **Place new water at geometric void**: compute a unit vector
+         opposite the average ligand direction (approximate void direction)
+         and suggest placing a fresh water at 2.1 A along that vector.
+         Written as ``PROPOSED_WATER_XYZ`` lines the user can eyeball in
+         PyMOL / ChimeraX before accepting.
+
+    Empty string when: no expected_coord known, or coord is already full,
+    or there is no clean void direction.  Never mutates the analysis PDB
+    -- the user reviews and re-runs FRUTON with the accepted water added.
+    """
+    if expected_coord is None:
+        return ""
+    n_missing = expected_coord - len(contacts)
+    if n_missing <= 0:
+        return ""
+
+    lines: list[str] = [
+        "=" * 62,
+        "PROPOSED WATER COMPLETION (auto-suggested; user must review)",
+        "=" * 62,
+        f"The site has {len(contacts)} ligand(s) but {expected_coord} are",
+        f"expected for {found_geometry or 'this geometry'}.  Missing {n_missing} ligand(s).",
+        "",
+    ]
+
+    metal_coord = (
+        float(metal_atom.x_orthogonal_coord),
+        float(metal_atom.y_orthogonal_coord),
+        float(metal_atom.z_orthogonal_coord),
+    )
+
+    # Mode 1: scan for nearby HOH oxygens (2.0-3.0 A -- typical M-OW bond)
+    import math
+    nearby_hoh: list[tuple[str, int, float, tuple[float, float, float]]] = []
+    try:
+        for raw in analysis_pdb_path.read_text(
+            encoding="utf-8", errors="replace"
+        ).splitlines():
+            if not (raw.startswith("HETATM") or raw.startswith("ATOM")):
+                continue
+            if len(raw) < 54:
+                continue
+            resname = raw[17:20].strip().upper()
+            if resname not in ("HOH", "WAT", "H2O"):
+                continue
+            atom_name = raw[12:16].strip()
+            if atom_name not in ("O", "OW"):
+                continue
+            try:
+                x = float(raw[30:38]); y = float(raw[38:46]); z = float(raw[46:54])
+                resnum = int(raw[22:26])
+            except ValueError:
+                continue
+            d = math.sqrt(
+                (x - metal_coord[0]) ** 2
+                + (y - metal_coord[1]) ** 2
+                + (z - metal_coord[2]) ** 2
+            )
+            if 2.0 <= d <= 3.0:
+                nearby_hoh.append((raw[21], resnum, d, (x, y, z)))
+    except Exception:  # noqa: BLE001
+        pass
+
+    if nearby_hoh:
+        nearby_hoh.sort(key=lambda t: t[2])
+        lines.append(f"Mode 1 -- Promote existing HOH ({len(nearby_hoh)} candidate(s)):")
+        for chain, resnum, dist, xyz in nearby_hoh[:5]:
+            lines.append(
+                f"  HOH {chain}:{resnum} at ({xyz[0]:.2f}, {xyz[1]:.2f}, {xyz[2]:.2f}) "
+                f"is {dist:.2f} A from metal -> good coordination-water candidate"
+            )
+        lines.append("")
+        lines.append("Action: verify the water is real (not a symmetry mate),")
+        lines.append("then either (a) accept AS IS -- MCPB.py includes HETATMs in")
+        lines.append("the QM cluster automatically -- or (b) if MCPB.py did not pick")
+        lines.append("it up, add the resname to the FRUTON active-site override list.")
+        lines.append("")
+
+    # Mode 2: geometric void direction (opposite the average ligand direction)
+    if contacts:
+        vx = vy = vz = 0.0
+        for c in contacts:
+            try:
+                # contacts are PDBAtomRecord-like objects
+                lx = float(c.atom.x_orthogonal_coord)
+                ly = float(c.atom.y_orthogonal_coord)
+                lz = float(c.atom.z_orthogonal_coord)
+            except AttributeError:
+                continue
+            dx = lx - metal_coord[0]
+            dy = ly - metal_coord[1]
+            dz = lz - metal_coord[2]
+            norm = math.sqrt(dx * dx + dy * dy + dz * dz) or 1.0
+            vx += dx / norm; vy += dy / norm; vz += dz / norm
+        void_norm = math.sqrt(vx * vx + vy * vy + vz * vz)
+        if void_norm > 0.1:
+            ux = -vx / void_norm; uy = -vy / void_norm; uz = -vz / void_norm
+            wat_xyz = (
+                metal_coord[0] + 2.1 * ux,
+                metal_coord[1] + 2.1 * uy,
+                metal_coord[2] + 2.1 * uz,
+            )
+            lines.append("Mode 2 -- Place new water at geometric void:")
+            lines.append(
+                f"  PROPOSED_WATER_XYZ  {wat_xyz[0]:8.3f} {wat_xyz[1]:8.3f} {wat_xyz[2]:8.3f}"
+            )
+            lines.append(
+                f"  (direction opposite average ligand vector, 2.1 A from metal)"
+            )
+            lines.append("")
+            lines.append("Action: open the analysis PDB in PyMOL / ChimeraX, verify")
+            lines.append("the void is a physically reasonable water pocket (no clashes")
+            lines.append("with sidechains), then add HETATM record with resname HOH")
+            lines.append("at the proposed XYZ and rerun FRUTON.")
+        else:
+            lines.append("Mode 2 -- no clean void direction (ligands nearly symmetric).")
+    return "\n".join(lines)
