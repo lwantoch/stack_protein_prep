@@ -249,6 +249,9 @@ def run_metal_parametrization_for_protein_dir(
                 "kept_h_count": 0,
                 "manual_review_count": 0,
                 "coordination_number": 0,
+                "found_geometry": "",
+                "geometry_ok": False,
+                "mcpb_scaffold_generated": False,
                 "mcpb_folder": f"site_{idx:03d}_{element}_{chain}_{resseq}/03_mcpb",
                 "message": f"Exception: {exc!r}",
             }

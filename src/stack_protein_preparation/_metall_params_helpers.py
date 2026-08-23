@@ -1124,9 +1124,9 @@ def _propose_water_for_incomplete_coordination(
     ]
 
     metal_coord = (
-        float(metal_atom.x_orthogonal_coord),
-        float(metal_atom.y_orthogonal_coord),
-        float(metal_atom.z_orthogonal_coord),
+        float(metal_atom.x),
+        float(metal_atom.y),
+        float(metal_atom.z),
     )
 
     # Mode 1: scan for nearby HOH oxygens (2.0-3.0 A -- typical M-OW bond)
@@ -1176,20 +1176,17 @@ def _propose_water_for_incomplete_coordination(
         lines.append("it up, add the resname to the FRUTON active-site override list.")
         lines.append("")
 
-    # Mode 2: geometric void direction (opposite the average ligand direction)
+    # Mode 2: geometric void direction (opposite the average ligand direction).
+    # MetalContact.vector_{x,y,z} already holds (donor - metal).
     if contacts:
         vx = vy = vz = 0.0
         for c in contacts:
             try:
-                # contacts are PDBAtomRecord-like objects
-                lx = float(c.atom.x_orthogonal_coord)
-                ly = float(c.atom.y_orthogonal_coord)
-                lz = float(c.atom.z_orthogonal_coord)
+                dx = float(c.vector_x)
+                dy = float(c.vector_y)
+                dz = float(c.vector_z)
             except AttributeError:
                 continue
-            dx = lx - metal_coord[0]
-            dy = ly - metal_coord[1]
-            dz = lz - metal_coord[2]
             norm = math.sqrt(dx * dx + dy * dy + dz * dz) or 1.0
             vx += dx / norm; vy += dy / norm; vz += dz / norm
         void_norm = math.sqrt(vx * vx + vy * vy + vz * vz)
