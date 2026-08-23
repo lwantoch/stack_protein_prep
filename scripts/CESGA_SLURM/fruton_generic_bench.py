@@ -43,6 +43,13 @@ from stack_protein_preparation._component_confidence import (
     Confidence,
     ProteinDeliveryReport,
 )
+from stack_protein_preparation._mcpb_dispatch import decide_mcpb_route
+from stack_protein_preparation._metal_reference import lookup_metal, all_known_pdb_resnames
+from stack_protein_preparation._metal_coord_protonation import (
+    derive_overrides_from_geometry,
+    summarise_overrides,
+)
+from stack_protein_preparation._metal_coord_scan import scan_metal_coordination
 from stack_protein_preparation._filler_af_splice import (
     _detect_missing_windows,
     _protein_residue_map,
@@ -75,6 +82,168 @@ def _resolve_paths(pdb_id: str, fruton_root: Path) -> tuple[Path, Path | None]:
         f"{pdb_id}/fasta/alignments/filler/*/alphafold/alphafold_aligned_model.pdb"
     ))
     return crystal, af_matches[0] if af_matches else None
+
+
+# Standard cofactors already handled by canonical AMBER/leaprc libs — the
+# reviewer accepts these with HIGH confidence (well-parametrised).
+_CANONICAL_COFACTORS = {
+    "NAD", "NAI", "NAP", "NDP", "NHD",   # NAD(P)+/NAD(P)H family
+    "FAD", "FMN",                          # flavin
+    "HEM", "HEA", "HEB", "HEC",           # heme variants
+    "SAM", "SAH",                          # S-adenosyl-methionine / homocysteine
+    "ATP", "ADP", "AMP", "GTP", "GDP", "GMP",   # nucleotides
+    "COA",                                 # coenzyme A
+    "PLP", "TPP", "MDO",                  # cofactors with published GAFF params
+    "BTN",                                 # biotin
+    "MGD",                                 # mo-pterin (partial coverage)
+}
+
+# Crystallographic buffer / cryoprotectant / precipitant HETATM residues.
+# These are NOT biologically part of the protein — they should be STRIPPED
+# before MD (or user opts in to keep them via keep_crystallographic=True).
+# List from PDB Chemical Component Dictionary common-solvent codes.
+_CRYSTALLOGRAPHIC_ARTIFACTS = {
+    # Buffers
+    "TRS", "TRIS", "MES", "HEPES", "HEP", "EPE", "BIS", "MOPS", "PIPES",
+    "TAU", "IMD", "IMZ", "ACY", "ACT", "FMT",
+    # Precipitants / cryoprotectants
+    "GOL", "EDO", "PEG", "PGE", "PG4", "PG5", "P6G", "MPD", "MPO", "BOG",
+    "DMS", "DMF", "DMU", "EOH", "MEO", "MRD",
+    # Inorganic / small ions (usually not biologically relevant unless active-site)
+    "SO4", "PO4", "CL", "BR", "I", "F", "NO3", "CO3", "IOD",
+    # Glycerol variants, polyols
+    "GLC", "MAL", "MTL", "GAL", "SUC",  # sugars (if not in binding site)
+    # Detergents (membrane crystallization)
+    "DTT", "DTV", "BME", "MSE",  # note MSE=selenomet handled elsewhere
+    # Other common
+    "HED", "SPD", "SPM", "PUT",
+}
+
+# Well-parametrised sugar / glycosylation residues via GLYCAM
+_GLYCAN_RESIDUES = {
+    "NAG", "MAN", "BMA", "FUC", "FUL", "GAL", "GLC", "XYL", "SIA", "AFL",
+    "BGC", "GCU", "IDS", "SGN", "RIP", "RAM",
+}
+
+
+def _extract_hetatm_records(pdb_path: Path) -> tuple[list[tuple[str, str, int]], list[tuple[str, str, int]]]:
+    """Return (metals, cofactors) lists of (resname, chain, resnum) tuples.
+
+    Metals are HETATM whose residue name is in the metal reference oracle.
+    Cofactors are HETATM that are NOT metals and NOT water.
+    """
+    metals: list[tuple[str, str, int]] = []
+    cofactors: list[tuple[str, str, int]] = []
+    seen: set[tuple[str, str, int]] = set()
+    known_metals = set(all_known_pdb_resnames())
+    try:
+        for line in pdb_path.read_text(errors="replace").splitlines():
+            if not line.startswith("HETATM"):
+                continue
+            resname = line[17:20].strip().upper()
+            if not resname or resname == "HOH":
+                continue
+            try:
+                chain = line[21].strip() or "?"
+                resnum = int(line[22:26])
+            except ValueError:
+                continue
+            key = (resname, chain, resnum)
+            if key in seen:
+                continue
+            seen.add(key)
+            if resname in known_metals:
+                metals.append(key)
+            else:
+                cofactors.append(key)
+    except Exception:  # noqa: BLE001
+        pass
+    return metals, cofactors
+
+
+def _collect_metal_confidence(
+    metals: list[tuple[str, str, int]],
+    paper_evidence_text: str = "",
+) -> list[ComponentConfidence]:
+    """One ComponentConfidence per detected metal ion, via MCPB dispatch."""
+    out: list[ComponentConfidence] = []
+    for resname, chain, resnum in metals:
+        decision = decide_mcpb_route(resname, paper_evidence_text)
+        name = f"{decision.element}{'+' if decision.element else '?'} {chain}{resnum}"
+        out.append(decision.to_component_confidence(name=name))
+    return out
+
+
+def _collect_cofactor_confidence(
+    cofactors: list[tuple[str, str, int]],
+) -> list[ComponentConfidence]:
+    """One ComponentConfidence per detected HETATM cofactor.
+
+    Four routes based on resname:
+
+      canonical_leaprc: NAD/HEM/FAD/ATP etc. → HIGH (well-parametrised)
+      glycam_glycan:    NAG/MAN/BMA etc. → HIGH (GLYCAM force field)
+      strip_crystal:    buffer/cryoprotectant (GOL/PEG/SO4/…) → HIGH,
+                        will be REMOVED before MD (not parametrised)
+      antechamber_gaff2: everything else → MEDIUM, auto-parametrised but
+                        user should verify partial charges + dihedrals
+    """
+    out: list[ComponentConfidence] = []
+    for resname, chain, resnum in cofactors:
+        name = f"{resname} {chain}{resnum}"
+        if resname in _CANONICAL_COFACTORS:
+            out.append(ComponentConfidence(
+                component_type="cofactor",
+                name=name,
+                confidence=Confidence.HIGH,
+                reason=f"{resname!r} is a canonical cofactor with published AMBER params",
+                method="canonical_leaprc",
+                details={"resname": resname, "route": "keep_and_parametrise"},
+            ))
+        elif resname in _GLYCAN_RESIDUES:
+            out.append(ComponentConfidence(
+                component_type="cofactor",
+                name=name,
+                confidence=Confidence.HIGH,
+                reason=f"{resname!r} is a standard glycan residue (GLYCAM force field)",
+                method="glycam",
+                details={"resname": resname, "route": "keep_and_parametrise"},
+            ))
+        elif resname in _CRYSTALLOGRAPHIC_ARTIFACTS:
+            out.append(ComponentConfidence(
+                component_type="cofactor",
+                name=name,
+                confidence=Confidence.HIGH,
+                reason=(
+                    f"{resname!r} is a common crystallographic buffer / cryo-"
+                    f"protectant / precipitant — not biologically part of the "
+                    f"protein"
+                ),
+                suggested_action=(
+                    f"pipeline will STRIP {resname} before MD; if this instance "
+                    f"is in the active site (per paper), override with "
+                    f"'keep_hetatm=[{resname}]' in the pipeline config"
+                ),
+                method="strip_crystal",
+                details={"resname": resname, "route": "strip_before_md"},
+            ))
+        else:
+            out.append(ComponentConfidence(
+                component_type="cofactor",
+                name=name,
+                confidence=Confidence.MEDIUM,
+                reason=(
+                    f"{resname!r} is a non-canonical HETATM — antechamber + "
+                    f"parmchk2 auto-parametrisation will produce a GAFF2 frcmod"
+                ),
+                suggested_action=(
+                    f"review the auto-generated frcmod for {resname}: check "
+                    f"partial charges (RESP vs AM1-BCC) and any missing dihedrals"
+                ),
+                method="antechamber_gaff2",
+                details={"resname": resname, "route": "keep_and_parametrise"},
+            ))
+    return out
 
 
 def _collect_gap_confidence(
@@ -262,6 +431,49 @@ def _process_one(pdb_id: str, tmp: Path, fruton_root: Path) -> dict:
             delta_n=f_qc.n_residues - b_qc.n_residues,
         ))
         components.extend(_collect_quality_confidence(b_qc, f_qc))
+
+        # Metal + cofactor detection — the user's core reviewer story:
+        # 'pro Zn2+ sind wir sicher, pro Fe4+ vielleicht'.  For each metal
+        # emit a ComponentConfidence via MCPB tier dispatch; for each
+        # cofactor emit a canonical / auto-parametrised confidence.
+        try:
+            metals, cofactors = _extract_hetatm_records(fin if fin.is_file() else crystal)
+            # Look for paper evidence next to the crystal (optional)
+            paper_evidence = ""
+            paper_md = crystal.parent / "paper_evidence.md"
+            if paper_md.is_file():
+                paper_evidence = paper_md.read_text(errors="replace")
+            components.extend(_collect_metal_confidence(metals, paper_evidence))
+            components.extend(_collect_cofactor_confidence(cofactors))
+
+            # Metal-coord PROTONATION overrides (HIS/CYS/ASP/GLU/TYR/LYS/SEC)
+            # via geometry + optional REMARK 620.  One ComponentConfidence per
+            # forced residue.  User mandate 2026-08-24: reviewer test is
+            # 'does the model build cleanly', not publication-fit; every
+            # override carries reason + suggested_action.
+            if metals:
+                mscan = scan_metal_coordination(fin if fin.is_file() else crystal)
+                # Optional: parse REMARK 620 for HIS from the ORIGINAL crystal
+                r620 = {}
+                try:
+                    from stack_protein_preparation._protonation_core import (
+                        parse_metal_coordinating_his_overrides,
+                    )
+                    r620 = parse_metal_coordinating_his_overrides(crystal)
+                except Exception:
+                    pass
+                mp_overrides = derive_overrides_from_geometry(
+                    fin if fin.is_file() else crystal,
+                    r620, paper_evidence, mscan,
+                )
+                if mp_overrides:
+                    print(f"    {summarise_overrides(mp_overrides)} ({pdb_id})", flush=True)
+                    components.extend(o.to_component_confidence() for o in mp_overrides)
+        except Exception as _e:
+            import traceback
+            print(f"    metal/cofactor collect FAILED ({pdb_id}): {type(_e).__name__}: {_e}",
+                  flush=True)
+            print(traceback.format_exc(), flush=True)
 
         # Assemble delivery report
         model_written = fin.is_file()
