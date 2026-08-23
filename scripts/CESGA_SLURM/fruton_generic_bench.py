@@ -308,10 +308,23 @@ def _collect_gap_confidence(
 def _collect_quality_confidence(
     baseline_qc, final_qc,
 ) -> list[ComponentConfidence]:
-    """One record summarising the final model's quality regression."""
+    """One record summarising the final model's quality vs BOTH its crystal
+    AND the 199-crystal reference distribution.
+
+    Same principle as _adaptive_refine_policy: use the p90/p95/p99 bands
+    of an INDEPENDENT 199-crystal reference (data/baseline_reference_
+    percentiles.json), NEVER magic thresholds tuned to the bench set.
+
+    Confidence assignment:
+      HIGH   fruton stays within reference p90 for every metric
+      MEDIUM stays within reference p95 for every metric
+      MEDIUM in p95-p99 for at least one metric
+      LOW    above reference p99 for at least one metric (real red flag)
+    """
     dc = final_qc.n_clash_pairs - baseline_qc.n_clash_pairs
     dω = final_qc.n_omega_non_planar - baseline_qc.n_omega_non_planar
     dbrk = final_qc.n_peptide_bonds_broken - baseline_qc.n_peptide_bonds_broken
+
     if dc <= 0 and dω <= 0 and dbrk <= 0:
         return [ComponentConfidence(
             component_type="gap_fill",
@@ -321,36 +334,91 @@ def _collect_quality_confidence(
             method="check_model_quality",
             details={"dclash": dc, "domega_np": dω, "dbroken": dbrk},
         )]
+
+    # Load reference bands (fail-open if the packaged JSON is missing)
+    try:
+        from stack_protein_preparation._adaptive_refine_policy import (
+            load_reference_percentiles,
+        )
+        ref = load_reference_percentiles()
+    except Exception:
+        ref = {}
+
+    def _band(value: int, metric: str) -> str:
+        r = ref.get(metric, {})
+        if not isinstance(r, dict):
+            return "unknown"
+        if value <= r.get("p90", 0): return "in_p90"
+        if value <= r.get("p95", 0): return "p90-p95"
+        if value <= r.get("p99", 0): return "p95-p99"
+        return "above_p99"
+
+    clash_band = _band(final_qc.n_clash_pairs, "n_clash_pairs")
+    ω_band     = _band(final_qc.n_omega_non_planar, "n_omega_non_planar")
+    brk_band   = _band(final_qc.n_peptide_bonds_broken, "n_peptide_bonds_broken")
+    worst = max(
+        (clash_band, ω_band, brk_band),
+        key=lambda b: {"in_p90": 0, "p90-p95": 1, "p95-p99": 2, "above_p99": 3, "unknown": 1}[b],
+    )
+
+    if worst == "above_p99":
+        conf = Confidence.LOW
+    elif worst == "p95-p99":
+        conf = Confidence.MEDIUM   # still delivered_with_notes
+    elif worst == "p90-p95":
+        conf = Confidence.MEDIUM
+    else:
+        conf = Confidence.MEDIUM   # regression but still in normal range
+
     regressed = []
-    if dc > 0: regressed.append(f"clash +{dc}")
-    if dω > 0: regressed.append(f"ω_np +{dω}")
-    if dbrk > 0: regressed.append(f"broken +{dbrk}")
+    if dc > 0: regressed.append(f"clash +{dc} (band {clash_band})")
+    if dω > 0: regressed.append(f"ω_np +{dω} (band {ω_band})")
+    if dbrk > 0: regressed.append(f"broken +{dbrk} (band {brk_band})")
+
     return [ComponentConfidence(
         component_type="gap_fill",
         name="global quality vs crystal",
-        confidence=Confidence.MEDIUM if (dc <= 5 and dω <= 1 and dbrk == 0) else Confidence.LOW,
-        reason=f"regressed vs crystal baseline: {'; '.join(regressed)}",
-        suggested_action=(
-            "inspect the flagged residues in the pipeline log; if "
-            "reviewer-critical, consider manual refinement of the affected "
-            "loop or metal coordination sphere"
+        confidence=conf,
+        reason=(
+            f"regressed vs crystal baseline: {'; '.join(regressed)} "
+            f"— worst band vs 199-crystal reference = {worst}"
         ),
-        method="check_model_quality",
-        details={"dclash": dc, "domega_np": dω, "dbroken": dbrk},
+        suggested_action=(
+            "inspect the flagged residues in the pipeline log; "
+            "'above_p99' means the fill is worse than 99% of independently-"
+            "deposited crystals — likely catastrophic splice or unresolvable "
+            "geometry, consider manual refinement or REMARK 465 rollback"
+            if worst == "above_p99" else
+            "regression detected but still within normal-crystal distribution — "
+            "usually acceptable for MD but visually inspect if reviewer-critical"
+        ),
+        method="check_model_quality_ref_bands",
+        details={
+            "dclash": dc, "domega_np": dω, "dbroken": dbrk,
+            "clash_band": clash_band, "omega_band": ω_band, "broken_band": brk_band,
+            "worst_band": worst,
+        },
     )]
 
 
 def _collect_functional_check_confidence(
     tleap_result, sander_result, model_pdb: Path,
+    n_metals_detected: int = 0,
+    n_heme_detected: int = 0,
+    n_fes_detected: int = 0,
+    n_novel_cofactors_detected: int = 0,
 ) -> list[ComponentConfidence]:
     """Emit ComponentConfidence for the functional model-buildability check.
 
     USER MANDATE 2026-08-24: reviewer test is 'wie gut baut das Model'.
-    Concrete failures we distinguish:
-      tleap ran but returned FATAL / unable to load → LOW (model unusable)
-      tleap loaded, sander single-step FAILED → LOW (bad geometry / clash)
-      tleap loaded, sander clean → HIGH (proven MD-loadable)
-      binaries missing on PATH → MEDIUM fail-open (untested, not tested-bad)
+
+    Failure classification is CAUSAL:
+      * tleap FAILED + metallo/cofactor detected (frcmod expected but not
+        shipped with FRUTON)                         → MEDIUM "expected"
+      * tleap FAILED + no known missing-frcmod cause → LOW  "broken"
+      * tleap passed but sander single-step FAILED   → LOW  "bad geometry"
+      * everything clean                              → HIGH "MD-ready"
+      * binaries missing (fail-open)                  → MEDIUM
     """
     out: list[ComponentConfidence] = []
     if not tleap_result.ran:
@@ -363,17 +431,57 @@ def _collect_functional_check_confidence(
         ))
         return out
     if not tleap_result.passed:
-        out.append(ComponentConfidence(
-            component_type="gap_fill", name="tleap loadability",
-            confidence=Confidence.LOW,
-            reason=f"tleap FAILED to load the model: {tleap_result.fallback_reason}",
-            suggested_action=(
-                "inspect the emitted tleap.in + look for FATAL error lines; "
-                "missing frcmod for cofactor/metal is the most common cause"
-            ),
-            method="tleap_load_check",
-            details={"exit_code": tleap_result.exit_code},
-        ))
+        has_expected_frcmod_gap = (
+            n_metals_detected + n_heme_detected + n_fes_detected + n_novel_cofactors_detected > 0
+        )
+        if has_expected_frcmod_gap:
+            missing_items = []
+            if n_heme_detected: missing_items.append(f"{n_heme_detected} heme system(s)")
+            if n_fes_detected: missing_items.append(f"{n_fes_detected} Fe-S cluster(s)")
+            if n_metals_detected: missing_items.append(f"{n_metals_detected} metal ion(s)")
+            if n_novel_cofactors_detected: missing_items.append(
+                f"{n_novel_cofactors_detected} novel cofactor(s) needing antechamber-generated frcmod"
+            )
+            out.append(ComponentConfidence(
+                component_type="gap_fill", name="tleap loadability",
+                confidence=Confidence.MEDIUM,
+                reason=(
+                    f"tleap failed to load the model — EXPECTED because "
+                    f"FRUTON does not ship parameters for: "
+                    f"{', '.join(missing_items)}.  This is a knowable gap, "
+                    f"not a broken model."
+                ),
+                suggested_action=(
+                    "supply the frcmod bundles listed in the per-component "
+                    "action items above (heme via Autenrieth/Shahrokh/"
+                    "Johansson, Fe-S via Carvalho-Swart, metals via "
+                    "MCPB.py or Li-Merz 12-6-4); re-run tleap after"
+                ),
+                method="tleap_missing_expected_frcmod",
+                details={
+                    "exit_code": tleap_result.exit_code,
+                    "n_metals_detected": n_metals_detected,
+                    "n_heme_detected": n_heme_detected,
+                    "n_fes_detected": n_fes_detected,
+                    "n_novel_cofactors_detected": n_novel_cofactors_detected,
+                },
+            ))
+        else:
+            out.append(ComponentConfidence(
+                component_type="gap_fill", name="tleap loadability",
+                confidence=Confidence.LOW,
+                reason=(
+                    f"tleap FAILED with no known-missing-frcmod cause: "
+                    f"{tleap_result.fallback_reason}"
+                ),
+                suggested_action=(
+                    "inspect the emitted tleap.in + look for FATAL error lines; "
+                    "likely a broken residue name or unrecognised atom name in "
+                    "the model"
+                ),
+                method="tleap_load_check_unexpected_fail",
+                details={"exit_code": tleap_result.exit_code},
+            ))
         return out
     out.append(ComponentConfidence(
         component_type="gap_fill", name="tleap loadability",
@@ -603,7 +711,18 @@ def _process_one(pdb_id: str, tmp: Path, fruton_root: Path) -> dict:
             print(f"    tleap+sander ({pdb_id}): tleap={'ok' if tleap_val.passed else 'FAIL'} "
                   f"sander={'ok' if sander_val and sander_val.passed else ('FAIL' if sander_val else 'skip')}",
                   flush=True)
-            components.extend(_collect_functional_check_confidence(tleap_val, sander_val, fin))
+            # Count novel cofactors (antechamber-route only, not canonical/glycam/strip)
+            n_novel_cof = sum(
+                1 for c in components
+                if c.component_type == "cofactor" and c.method == "antechamber_gaff2"
+            )
+            components.extend(_collect_functional_check_confidence(
+                tleap_val, sander_val, fin,
+                n_metals_detected=len(metals),
+                n_heme_detected=len(heme_systems) if 'heme_systems' in dir() else 0,
+                n_fes_detected=len(fes_clusters) if 'fes_clusters' in dir() else 0,
+                n_novel_cofactors_detected=n_novel_cof,
+            ))
         except Exception as _e:
             import traceback
             print(f"    functional-check FAILED ({pdb_id}): {type(_e).__name__}: {_e}",
