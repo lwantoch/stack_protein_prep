@@ -873,6 +873,36 @@ def _process_one_site(
     site_result["found_geometry"] = found_geometry
     site_result["geometry_ok"] = geometry_ok
 
+    # Reference-oracle cross-check (2026-08-23): the PDB Chemical Component
+    # Dictionary usually knows the intended ion identity + oxidation state
+    # (e.g. FE2 vs FE3, CU1 vs CU2, MN vs MN3).  Look the raw metal resname
+    # up in the 89-row TS reference table and validate the observed coord
+    # sphere against known chemistry.  This catches assignment errors like
+    # "resname says ZN but coord sphere is 6-octahedral all-O" (looks more
+    # like Mg or Ca; the crystallographer may have picked the wrong ion).
+    try:
+        from stack_protein_preparation._metal_reference import (
+            lookup_metal, validate_coordination,
+        )
+        _donor_elements = tuple(
+            (c.donor_element or "").strip().upper() for c in contacts_list
+            if getattr(c, "donor_element", None)
+        )
+        _ref_entry = lookup_metal(residue_name)
+        _oracle_ok, _oracle_reasons = validate_coordination(
+            pdb_resname=residue_name,
+            coord_number=len(contacts_list),
+            geometry=found_geometry,
+            donor_elements=_donor_elements,
+        )
+        site_result["reference_ion"] = _ref_entry.pdb_resname if _ref_entry else None
+        site_result["reference_consistent"] = _oracle_ok
+        site_result["reference_advisory"] = _oracle_reasons
+    except Exception:  # noqa: BLE001 -- oracle is advisory, never blocks
+        site_result["reference_ion"] = None
+        site_result["reference_consistent"] = True
+        site_result["reference_advisory"] = []
+
     chimerax_script = contacts_dir / "chimera_contacts.cxc"
     _write_chimerax_cxc_script(
         script_path=chimerax_script,
@@ -912,6 +942,14 @@ def _process_one_site(
             found_geometry=found_geometry,
             analysis_pdb_path=prepared_variant_pdb,
         )
+        _ref_block = ""
+        if site_result.get("reference_ion"):
+            _ref_advisories = site_result.get("reference_advisory") or []
+            _ref_block = (
+                f"\nReference oracle for '{site_result['reference_ion']}':\n"
+                + "\n".join(f"  - {r}" for r in _ref_advisories)
+                + "\n"
+            )
         (mcpb_dir / "GEOMETRY_MISMATCH.txt").write_text(
             f"Site {site_folder_name}\n"
             f"Found geometry   : {found_geometry}\n"
@@ -922,6 +960,7 @@ def _process_one_site(
             "does not match the standard geometry for this metal ion.  Possible\n"
             "causes: incomplete coordination sphere, crystal contacts, or wrong\n"
             "protonation state.  Inspect the site manually before proceeding.\n"
+            + _ref_block
             + (f"\n{_propose_water_msg}\n" if _propose_water_msg else ""),
             encoding="utf-8",
         )
