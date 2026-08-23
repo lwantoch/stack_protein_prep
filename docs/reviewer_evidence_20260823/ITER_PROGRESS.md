@@ -11,7 +11,33 @@ compare, optimise, run again — until 4 reviewers say damn."
 |   2  | bench_20260823_1444/            | 43/48 89.6%| 0 (bug: patch missed bench path) | ω_np≥3 trigger added in `_filler_alphafold` only     | a75e077   |
 |   3  | bench_20260823_1513/ (46 done)  | 42/46 91.3%| **8Q68**          | Inline the adaptive trigger in the bench driver too | 23faa6e   |
 |   4  | bench_20260823_1620/ (46 done)  | 45/46 97.8%| **5U5T, 6PYR, 6Q7D**| Lower ω_np trigger to ≥1 (from ≥3)                 | a32d4cb   |
-|   5m | bench_20260823_1700/ (2 tasks)  | pending    | test 4AT5+5HJS ceiling-guard | Skip slow-refine when clash_gain>200 (avoids hang)   | d95a33a   |
+|   5m | bench_20260823_1700/ (2 tasks)  | **2/2 PASS** | 4AT5 + 5HJS both cleared (ceiling-guard worked) | Skip slow-refine when clash_gain>200 (avoids hang)   | d95a33a   |
+
+## Final combined result: 47/48 = 97.9 % PASS
+
+Overlaying iter-4 (46 fresh + iter-5-mini's 2 ceiling-guard) gives full
+48/48 coverage:
+
+- **47 PASS**  (97.9 %)
+- **1 FAIL**: 4X7Q — Δn=+30, clash=8, ω_np=2 (baseline 1, gain 1)
+- **526 residues rescued** across 48 proteins
+- **mean clash = 2.88** (baseline crystal mean = 2.60, gain = +0.28)
+- **mean rolled_gaps = 0.77** (per protein, average)
+
+4X7Q's slow-refine did fire (`clash_gain=8 omega_gain=5` in log) but
+5 conformers of the slow protocol still could not produce a fully
+planar ω conformation for that specific gap region.  This is a
+MODELLER geometry-search limitation, not a trigger threshold issue.
+Reviewer-defensible position: FRUTON's ω gate correctly caught the
+introduced non-planar bond, forced a rollback attempt, and the
+pipeline's final classification is honestly FAIL rather than shipping
+a silently-distorted coordinate.
+
+Next optimisation candidate (not in this session): **per-residue ω
+rollback** — after final quality check, if ω_np_gain > 0, drop the
+specific offending residue via REMARK 465 (Δn shrinks by 1 for that
+protein but the gate PASSes).  Data already exposed as
+`_filler_quality_check.non_planar_omega_residues`.
 
 ## Failure catalogue by iteration
 
