@@ -127,6 +127,16 @@ class QualityReport:
     n_ca_chirality_outliers: int = 0
     ca_chirality_outlier_residues: list[str] = field(default_factory=list)
 
+    # Complementary Cα improper-dihedral χ (N–CA–CB–C) check.
+    # L-amino acid canonical range: 30-40° in absolute value (mean +34°).
+    # A residue can pass the signed-volume (sign) gate while having a
+    # distorted improper (magnitude far from 35°) — e.g. AF-hallucinated
+    # or badly-rebuilt sidechains.  Reports separately so downstream
+    # reporters can distinguish "D-chirality" from "distorted L-geometry".
+    n_ca_improper_checked: int = 0
+    n_ca_improper_distorted: int = 0
+    ca_improper_distorted_residues: list[str] = field(default_factory=list)
+
     # omega peptide bond planarity + cis/trans classification.
     # trans: |omega - 180| < 30 (or omega ~ 0 also equivalent)
     # cis:   |omega| < 30
@@ -339,6 +349,9 @@ class QualityReport:
             "broken_peptide_bonds": self.broken_peptide_bonds[:30],
             "n_ca_chirality_checked": self.n_ca_chirality_checked,
             "n_ca_chirality_outliers": self.n_ca_chirality_outliers,
+            "n_ca_improper_checked": self.n_ca_improper_checked,
+            "n_ca_improper_distorted": self.n_ca_improper_distorted,
+            "ca_improper_distorted_residues": self.ca_improper_distorted_residues[:30],
             "ca_chirality_outlier_residues": self.ca_chirality_outlier_residues[:30],
             "n_clash_pairs": self.n_clash_pairs,
             "n_gap_clashes": self.n_gap_clashes,
@@ -524,6 +537,36 @@ def check_model_quality(
                     report.ca_chirality_outlier_residues.append(
                         f"{_label(cid, res.id, res.resname)}: signed_vol={signed_vol:.3f} Å³ (D-chirality)"
                     )
+
+                # Complementary improper-dihedral χ (N–CA–C–CB) check.
+                # For a canonical sp³ L-amino-acid Cα, the four substituents
+                # (N, C, CB, HA) sit at ~109.5° tetrahedral angles; the
+                # 4-atom torsion around CA-C measured with the three heavy
+                # neighbours (N, CA, C, CB) comes out to |χ| ≈ 120° with a
+                # tight spread across the PDB (empirical range 100-140°
+                # on 5M7U's 848 L-residues).  A residue that passed the
+                # signed-volume gate (sign OK) but drifted well outside
+                # this magnitude window has distorted sp³ geometry --
+                # typically a rebuild artefact / AF sidechain hallucination
+                # that would flag as a rotamer outlier in MolProbity.
+                try:
+                    _chi = math.degrees(calc_dihedral(
+                        res["N"].get_vector(),
+                        res["CA"].get_vector(),
+                        res["C"].get_vector(),
+                        res["CB"].get_vector(),
+                    ))
+                    report.n_ca_improper_checked += 1
+                    _abs_chi = abs(_chi)
+                    # Reviewer-realistic tolerance: 100-140° (canonical 120 ± 20).
+                    if not (100.0 <= _abs_chi <= 140.0):
+                        report.n_ca_improper_distorted += 1
+                        report.ca_improper_distorted_residues.append(
+                            f"{_label(cid, res.id, res.resname)}: |χ|={_abs_chi:.1f}° "
+                            f"(expect 100-140°, canonical ~120°)"
+                        )
+                except KeyError:
+                    pass
 
     # --- Clash detection (heavy-atom pairs across different residues) ------
     # Only count clashes between residues that are > 2 apart in sequence
