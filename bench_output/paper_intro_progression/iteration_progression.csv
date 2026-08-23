@@ -3,3 +3,4 @@ iter-2,48,89.6,,43/48 from docs/reviewer_evidence_20260823/BASELINE_STATS.md
 iter-3,46,91.3,6,"bench_20260823_1513; bench_output/jctc_r2_clash_iter3_post_fruton/, jacs_r1_omega_iter3/"
 iter-4,46,97.8,3,"bench_20260823_1620; bench_output/jctc_r2_clash_iter4/, jacs_r1_omega_iter4/"
 iter-5-mini,48,97.9,,47/48 combined; 431f870 finalize log; only 4X7Q remains FAIL (ω-planarity edge)
+final (train+val),48,95.8,,commit b73576d finalize: train 100% (22/22) + val 92.3% (24/26); 2 needs_review = 7QUE + 8Q68 catastrophic splices above p99 of 199-crystal reference

@@ -113,8 +113,9 @@ Freeform bullets:
 Provenance: `bench_output/paper_intro_progression/PROVENANCE.md`
 
 Freeform bullets:
-- **4 iterations plotted** (iter-2 → iter-5-mini)
-- **Δ gate PASS = +8.3 pp** (89.6 → 97.9)
+- **5 iterations plotted** (iter-2 → final train+val)
+- **Δ gate PASS iter-2 → iter-5-mini = +8.3 pp** (89.6 → 97.9)
+- **Final train+val combined = 95.8 %** (46/48) per commit `b73576d`
 - **Δ non-planar ω = −50 %** (6 → 3, iter-3 to iter-4 measured)
-- **1 residual FAIL** at iter-5-mini: 4X7Q (ω-planarity edge case)
+- **2 residual needs_review** at final: 7QUE + 8Q68 (catastrophic
 

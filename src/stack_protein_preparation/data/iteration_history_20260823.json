@@ -26,5 +26,12 @@
     "gate_pass_pct": 97.9,
     "n_omega_non_planar": null,
     "notes": "47/48 combined; 431f870 finalize log; only 4X7Q remains FAIL (ω-planarity edge)"
+  },
+  {
+    "iter_label": "final (train+val)",
+    "n_pdbs": 48,
+    "gate_pass_pct": 95.8,
+    "n_omega_non_planar": null,
+    "notes": "commit b73576d finalize: train 100% (22/22) + val 92.3% (24/26); 2 needs_review = 7QUE + 8Q68 catastrophic splices above p99 of 199-crystal reference"
   }
 ]
