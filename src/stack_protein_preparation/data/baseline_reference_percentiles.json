@@ -1,0 +1,13 @@
+{
+  "_provenance": {
+    "description": "Quality-metric percentiles across 199 raw deposited PDB crystals from FRUTON-NEW/, computed 2026-08-23 by baseline_quality_check_full.py. Used as an INDEPENDENT reference distribution for the adaptive-refine policy (see _adaptive_refine_policy.py). None of the 48 AF-available bench proteins are calibrated against these numbers - the ceiling is derived from a population that is disjoint in intent (raw crystals, no gap-fill) from the bench population (crystals + AF splice + refine).",
+    "population": "raw crystal PDBs from /mnt/netapp1/Store_othcxlwa/FRUTON-NEW/",
+    "n_pdbs": 199,
+    "computed": "2026-08-23",
+    "source_json": "$LUSTRE/MMBSA_200/baseline_qc_20260823_1513/artefacts/baseline_quality_check_results.json"
+  },
+  "n_clash_pairs":              {"p50": 1, "p90":  7, "p95": 12, "p99": 30, "max": 33},
+  "n_omega_non_planar":         {"p50": 0, "p90":  1, "p95":  1, "p99":  2, "max":  3},
+  "n_omega_cis_nonpro":         {"p50": 0, "p90":  1, "p95":  2, "p99":  3, "max":  5},
+  "n_peptide_bonds_broken":     {"p50": 0, "p90":  1, "p95":  2, "p99":  7, "max": 10}
+}

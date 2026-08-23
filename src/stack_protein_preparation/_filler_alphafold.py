@@ -435,40 +435,32 @@ def run_alphafold_fallback_for_chain(
             _fast_needs_retry = (
                 _refine.n_conformers_kept == 0 and _refine.n_conformers_built > 0
             )
-            _fast_clash_count = 0
-            _fast_omega_gain = 0
+            _fast_policy_reason: str = ""
             if not _fast_needs_retry and final_model_path.is_file():
                 try:
                     from stack_protein_preparation._filler_quality_check import (
                         check_model_quality as _qc,
                     )
+                    from stack_protein_preparation._adaptive_refine_policy import (
+                        decide_refine_action,
+                    )
                     _b_qc = _qc(template_pdb_path)
                     _f_qc = _qc(final_model_path)
-                    _fast_clash_count = _f_qc.n_clash_pairs - _b_qc.n_clash_pairs
-                    _fast_omega_gain = (
-                        _f_qc.n_omega_non_planar - _b_qc.n_omega_non_planar
-                    )
-                    # 2026-08-23 iter-4: trigger slow on ANY ω-non-planar gain.
-                    # Iter-3 (bench_20260823_1513) rescued 8Q68 (24 → 0) at
-                    # threshold 3 but 4 singleton fails all had gain=1;
-                    # lowering to ≥1 catches them without regressing
-                    # already-clean fills (slow refine's larger conformer
-                    # pool only wins when it has better options).
-                    #
-                    # Ceiling guard: clash_gain > 200 means the splice is
-                    # catastrophically bad (4AT5=582, 5HJS=1000 observed);
-                    # slow-refine cannot recover such inputs and stalls
-                    # for >1 h.  Skip retry and let rollback handle it.
-                    if _fast_clash_count > 200:
-                        _fast_needs_retry = False
-                    elif _fast_clash_count > 20 or _fast_omega_gain >= 1:
+                    # Principle-driven trigger: retry_slow when FRUTON
+                    # regresses any quality metric vs its own crystal;
+                    # skip_ceiling when output exceeds p99 of an
+                    # INDEPENDENT 199-crystal reference distribution.
+                    # No hand-picked per-benchmark thresholds.
+                    _decision = decide_refine_action(_b_qc, _f_qc)
+                    _fast_policy_reason = _decision.reason
+                    if _decision.action == "retry_slow":
                         _fast_needs_retry = True
                 except Exception:  # noqa: BLE001
                     pass
             if _fast_needs_retry:
                 _debug(
                     f"Fast refine unsatisfactory (n_kept={_refine.n_conformers_kept}, "
-                    f"clash_gain={_fast_clash_count}, omega_np_gain={_fast_omega_gain}) "
+                    f"policy={_fast_policy_reason or 'kept 0 conformers'}) "
                     f"-- retrying with refine.slow + 5 conformers"
                 )
                 _refine_slow = refine_loops_via_modeller(

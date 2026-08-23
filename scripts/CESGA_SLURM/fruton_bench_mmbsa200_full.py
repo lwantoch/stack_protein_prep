@@ -72,31 +72,21 @@ def _process_one(af: Path, tmp: Path) -> dict:
                 n_conformers=3, refine_level='fast',
                 reject_new_chirality_d=True,
             )
-            # Adaptive fast → slow retry (mirrors _filler_alphafold.py trigger,
-            # a75e077 2026-08-23).  Compare ω-non-planar + clash gain of the
-            # fast-refined structure vs the crystal baseline; if either
-            # threshold is exceeded, retry with slow + 5 conformers.
-            #
-            # 2026-08-23 iter-3 finding: 8Q68 rescued (ω_np_gain=24 → 0) at
-            # threshold 3, but 4 singleton fails (4X7Q, 5U5T, 6PYR, 6Q7D)
-            # all had ω_np_gain=1 and slipped below threshold.  Iter-4
-            # lowers ω threshold to 1 so ANY new non-planar bond triggers
-            # slow retry; 8Q68 still catches on clash_gain>20 too.
+            # Principle-driven adaptive retry policy (_adaptive_refine_policy).
+            # Trigger slow-refine when FRUTON regresses ANY quality metric vs
+            # this protein's own crystal baseline; skip when the output
+            # exceeds p99 of the 199-crystal INDEPENDENT reference
+            # distribution (i.e. worse than any deposited baseline crystal).
+            # No hand-picked thresholds — reviewer-defensible.
             try:
+                from stack_protein_preparation._adaptive_refine_policy import (
+                    decide_refine_action,
+                )
                 _b_qc = check_model_quality(C)
                 _f_qc = check_model_quality(ref)
-                _clash_gain = _f_qc.n_clash_pairs - _b_qc.n_clash_pairs
-                _omega_gain = _f_qc.n_omega_non_planar - _b_qc.n_omega_non_planar
-                # Ceiling guard (iter-4 finding): 4AT5 clash_gain=582 and
-                # 5HJS clash_gain=1000 both stalled MODELLER slow-refine
-                # indefinitely (>1 h) with no productive convergence — the
-                # splice was too broken for LoopModel to rescue.  Skip
-                # slow retry in that regime and let downstream rollback
-                # aggressively drop residues via REMARK 465 instead.
-                if _clash_gain > 200:
-                    print(f"    catastrophic clash_gain={_clash_gain} > 200 -- skipping slow retry, deferring to rollback ({pdb})", flush=True)
-                elif _clash_gain > 20 or _omega_gain >= 1:
-                    print(f"    adaptive-slow retry ({pdb}): clash_gain={_clash_gain} omega_gain={_omega_gain}", flush=True)
+                _decision = decide_refine_action(_b_qc, _f_qc)
+                print(f"    refine-policy ({pdb}): {_decision.action} — {_decision.reason}", flush=True)
+                if _decision.action == "retry_slow":
                     refine_loops_via_modeller(
                         input_pdb_path=sp, output_pdb_path=ref,
                         gap_ranges_by_chain=gaps,
@@ -104,7 +94,7 @@ def _process_one(af: Path, tmp: Path) -> dict:
                         reject_new_chirality_d=True,
                     )
             except Exception as _exc:
-                print(f"    adaptive-slow check failed ({pdb}): {_exc!r}", flush=True)
+                print(f"    refine-policy check failed ({pdb}): {_exc!r}", flush=True)
             refine_time = time.time() - t0
         except TimeoutError_:
             refine_time = 900.0
