@@ -39,11 +39,14 @@ Pure Python + stdlib.  License-free scaffolding.
 from __future__ import annotations
 
 import json
-import shutil
-import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
+
+from stack_protein_preparation._external_generator_runner import (
+    execute_generator_subprocess,
+    resolve_binary_from_candidates,
+)
 
 
 DEFAULT_BINARY_CANDIDATES: tuple[str, ...] = (
@@ -110,12 +113,15 @@ class BoltzSteeringAttempt:
 
 
 def _resolve_binary(candidates: Iterable[str] | None = None) -> str | None:
-    """First-on-PATH from ``candidates`` (default DEFAULT_BINARY_CANDIDATES)."""
-    for name in (candidates or DEFAULT_BINARY_CANDIDATES):
-        found = shutil.which(name)
-        if found:
-            return found
-    return None
+    """First-on-PATH from ``candidates`` (default DEFAULT_BINARY_CANDIDATES).
+
+    Thin wrapper preserved for test-suite import stability; new code
+    should call resolve_binary_from_candidates from
+    _external_generator_runner directly.
+    """
+    return resolve_binary_from_candidates(
+        candidates or DEFAULT_BINARY_CANDIDATES,
+    )
 
 
 def _write_steering_manifest(
@@ -201,59 +207,20 @@ def attempt_template_steering(
 
     manifest = _write_steering_manifest(output_dir, spec, context_pdb)
 
-    cmd = [
-        binary,
-        "--manifest", str(manifest),
-        "--output-dir", str(output_dir),
-        "--n-candidates", str(n_candidates),
-    ]
-    try:
-        proc = subprocess.run(
-            cmd,
-            capture_output=True, text=True,
-            timeout=timeout_seconds,
-        )
-    except subprocess.TimeoutExpired:
-        return BoltzSteeringAttempt(
-            ran=True, accepted=False,
-            fallback_reason=f"boltz timed out after {timeout_seconds}s",
-            used_binary=binary,
-        )
-    except OSError as exc:
-        return BoltzSteeringAttempt(
-            ran=False, accepted=False,
-            fallback_reason=f"failed to spawn {binary}: {exc!r}",
-            used_binary=binary,
-        )
-
-    if proc.returncode != 0:
-        return BoltzSteeringAttempt(
-            ran=True, accepted=False,
-            fallback_reason=(
-                f"boltz exit={proc.returncode}; "
-                f"stderr={proc.stderr.strip()[:300]}"
-            ),
-            used_binary=binary,
-            diagnostics=[proc.stdout[-500:], proc.stderr[-500:]],
-        )
-
-    candidates = sorted(output_dir.glob("candidate_*.pdb"))
-    if not candidates:
-        return BoltzSteeringAttempt(
-            ran=True, accepted=False,
-            fallback_reason="boltz ran but produced no candidate_*.pdb",
-            used_binary=binary,
-            diagnostics=[proc.stdout[-500:]],
-        )
-
+    run = execute_generator_subprocess(
+        binary=binary,
+        manifest_path=manifest,
+        output_dir=output_dir,
+        n_candidates=n_candidates,
+        timeout_seconds=timeout_seconds,
+        tool_name_for_messages="boltz",
+    )
     return BoltzSteeringAttempt(
-        ran=True, accepted=True,
-        candidate_pdbs=candidates,
-        used_binary=binary,
-        diagnostics=[
-            f"n_candidates={len(candidates)}",
-            f"binary={binary}",
-        ],
+        ran=run.ran, accepted=run.accepted,
+        fallback_reason=run.fallback_reason,
+        candidate_pdbs=list(run.candidate_pdbs),
+        diagnostics=list(run.diagnostics),
+        used_binary=run.used_binary,
     )
 
 
