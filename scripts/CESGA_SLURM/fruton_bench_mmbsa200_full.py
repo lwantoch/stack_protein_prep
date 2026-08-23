@@ -76,12 +76,18 @@ def _process_one(af: Path, tmp: Path) -> dict:
             # a75e077 2026-08-23).  Compare ω-non-planar + clash gain of the
             # fast-refined structure vs the crystal baseline; if either
             # threshold is exceeded, retry with slow + 5 conformers.
+            #
+            # 2026-08-23 iter-3 finding: 8Q68 rescued (ω_np_gain=24 → 0) at
+            # threshold 3, but 4 singleton fails (4X7Q, 5U5T, 6PYR, 6Q7D)
+            # all had ω_np_gain=1 and slipped below threshold.  Iter-4
+            # lowers ω threshold to 1 so ANY new non-planar bond triggers
+            # slow retry; 8Q68 still catches on clash_gain>20 too.
             try:
                 _b_qc = check_model_quality(C)
                 _f_qc = check_model_quality(ref)
                 _clash_gain = _f_qc.n_clash_pairs - _b_qc.n_clash_pairs
                 _omega_gain = _f_qc.n_omega_non_planar - _b_qc.n_omega_non_planar
-                if _clash_gain > 20 or _omega_gain >= 3:
+                if _clash_gain > 20 or _omega_gain >= 1:
                     print(f"    adaptive-slow retry ({pdb}): clash_gain={_clash_gain} omega_gain={_omega_gain}", flush=True)
                     refine_loops_via_modeller(
                         input_pdb_path=sp, output_pdb_path=ref,

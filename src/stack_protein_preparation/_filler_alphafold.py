@@ -448,11 +448,13 @@ def run_alphafold_fallback_for_chain(
                     _fast_omega_gain = (
                         _f_qc.n_omega_non_planar - _b_qc.n_omega_non_planar
                     )
-                    # 2026-08-23: also trigger slow on ω-non-planar gain ≥ 3.
-                    # Observed on 8Q68 in bench_20260823_1414: fast-refine
-                    # produced +197 residues but 24 broken ω bonds; the old
-                    # trigger only fired on clash>20 and missed this cleanly.
-                    if _fast_clash_count > 20 or _fast_omega_gain >= 3:
+                    # 2026-08-23 iter-4: trigger slow on ANY ω-non-planar gain.
+                    # Iter-3 (bench_20260823_1513) rescued 8Q68 (24 → 0) at
+                    # threshold 3 but 4 singleton fails all had gain=1;
+                    # lowering to ≥1 catches them without regressing
+                    # already-clean fills (slow refine's larger conformer
+                    # pool only wins when it has better options).
+                    if _fast_clash_count > 20 or _fast_omega_gain >= 1:
                         _fast_needs_retry = True
                 except Exception:  # noqa: BLE001
                     pass
