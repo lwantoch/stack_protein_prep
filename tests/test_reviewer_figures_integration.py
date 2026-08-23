@@ -6,6 +6,11 @@ tiny synthetic bench dataset in a single fixture directory, exercising
 the full reviewer-facing pipeline.  If any script's CLI or module
 contract regresses this test catches it in one shot.
 
+Also asserts that the two fallback scaffolds (_rfdiffusion2_gap +
+_boltz2_template_steering) degrade correctly to the "MODELLER
+LoopModel + rollback" advice when their external binaries are not on
+PATH — this is the license-free operating mode CESGA + laptops run in.
+
 Uses the shipped family_by_pdb_seed.json so the family script picks up
 canonical labels.  All matplotlib output uses the Agg backend so no
 display is needed.
@@ -14,6 +19,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -228,3 +234,139 @@ def test_full_reviewer_bundle_composition(synthetic_bench, tmp_path: Path):
     assert (outdir / "ablation" / "ablation_comparison.png").is_file()
     assert (outdir / "ablation" / "ablation_comparison.md").is_file()
     assert (outdir / "ablation" / "ablation_comparison.json").is_file()
+
+
+# ---------------------------------------------------------------------------
+# Fallback scaffolds — verify both degrade cleanly to "MODELLER + rollback"
+# when their external binary is missing (the default CESGA / laptop mode).
+# ---------------------------------------------------------------------------
+
+
+def _fake_pdb(path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "ATOM      1  CA  ALA A   1       0.000   0.000   0.000  1.00  0.00           C\n"
+        "ATOM      2  CA  ALA A  10      15.000   0.000   0.000  1.00  0.00           C\n"
+        "TER\nEND\n"
+    )
+    return path
+
+
+def test_rfdiffusion2_fallback_when_binary_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    """No rfdiffusion binary → ran=False, MODELLER fallback advised."""
+    from stack_protein_preparation import _rfdiffusion2_gap as rd
+    import shutil as _sh
+    monkeypatch.setattr(_sh, "which", lambda name: None)
+
+    ctx = _fake_pdb(tmp_path / "ctx.pdb")
+    spec = rd.GapConstraintSpec(
+        chain="A", first_resnum=2, last_resnum=9,
+        sequence="AAAAAAAA",
+        anchor_ca_by_resnum={1: (0.0, 0.0, 0.0), 10: (15.0, 0.0, 0.0)},
+    )
+    r = rd.attempt_gap_fill(ctx, spec, tmp_path / "out")
+    assert r.ran is False
+    assert r.accepted is False
+    assert "no constrained-diffusion binary" in r.fallback_reason
+    assert "MODELLER LoopModel" in r.fallback_reason
+
+
+def test_boltz2_fallback_when_binary_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    """No boltz binary → ran=False, MODELLER fallback advised."""
+    from stack_protein_preparation import _boltz2_template_steering as bt
+    import shutil as _sh
+    monkeypatch.setattr(_sh, "which", lambda name: None)
+
+    ctx = _fake_pdb(tmp_path / "ctx.pdb")
+    tpl = _fake_pdb(tmp_path / "tpl.pdb")
+    spec = bt.BoltzTemplateSteeringSpec(
+        chain="A", first_resnum=2, last_resnum=9,
+        sequence="AAAAAAAA",
+        template_pdb=tpl,
+    )
+    r = bt.attempt_template_steering(ctx, spec, tmp_path / "out")
+    assert r.ran is False
+    assert r.accepted is False
+    assert "no boltz binary" in r.fallback_reason
+    assert "MODELLER LoopModel" in r.fallback_reason
+
+
+def test_both_scaffolds_never_touch_network_when_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    """When binaries are missing, neither scaffold should attempt a
+    subprocess spawn — subprocess.run must NOT be called in the
+    fail-open path."""
+    from stack_protein_preparation import _rfdiffusion2_gap as rd
+    from stack_protein_preparation import _boltz2_template_steering as bt
+    import shutil as _sh
+    monkeypatch.setattr(_sh, "which", lambda name: None)
+
+    call_count = {"n": 0}
+    orig_run = subprocess.run
+
+    def _tracking_run(*args, **kwargs):
+        call_count["n"] += 1
+        return orig_run(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", _tracking_run)
+
+    ctx = _fake_pdb(tmp_path / "ctx.pdb")
+    rd_spec = rd.GapConstraintSpec(
+        chain="A", first_resnum=2, last_resnum=9,
+        sequence="AAAAAAAA",
+        anchor_ca_by_resnum={1: (0.0, 0.0, 0.0), 10: (15.0, 0.0, 0.0)},
+    )
+    rd.attempt_gap_fill(ctx, rd_spec, tmp_path / "out_rd")
+
+    bt_spec = bt.BoltzTemplateSteeringSpec(
+        chain="A", first_resnum=2, last_resnum=9,
+        sequence="AAAAAAAA",
+        template_pdb=_fake_pdb(tmp_path / "tpl.pdb"),
+    )
+    bt.attempt_template_steering(ctx, bt_spec, tmp_path / "out_bt")
+
+    assert call_count["n"] == 0, (
+        f"scaffolds spawned {call_count['n']} subprocess.run calls when "
+        "binaries were missing; fail-open contract is that no subprocess "
+        "should be attempted at all"
+    )
+
+
+def test_scaffolds_produce_json_serialisable_dicts_on_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    """Bench harnesses will json.dumps the results; must not raise."""
+    from stack_protein_preparation import _rfdiffusion2_gap as rd
+    from stack_protein_preparation import _boltz2_template_steering as bt
+    import shutil as _sh
+    monkeypatch.setattr(_sh, "which", lambda name: None)
+
+    ctx = _fake_pdb(tmp_path / "ctx.pdb")
+    rd_res = rd.attempt_gap_fill(
+        ctx,
+        rd.GapConstraintSpec(
+            chain="A", first_resnum=2, last_resnum=9,
+            sequence="AAAAAAAA",
+            anchor_ca_by_resnum={1: (0.0, 0.0, 0.0)},
+        ),
+        tmp_path / "out_rd",
+    )
+    bt_res = bt.attempt_template_steering(
+        ctx,
+        bt.BoltzTemplateSteeringSpec(
+            chain="A", first_resnum=2, last_resnum=9,
+            sequence="AAAAAAAA",
+            template_pdb=_fake_pdb(tmp_path / "tpl.pdb"),
+        ),
+        tmp_path / "out_bt",
+    )
+    # Both must serialise; no dataclass field should be a Path that
+    # confuses json (they're stored as list[Path] and stringified in
+    # to_dict()).
+    json.dumps(rd_res.to_dict())
+    json.dumps(bt_res.to_dict())
