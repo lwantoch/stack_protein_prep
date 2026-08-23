@@ -200,20 +200,36 @@ def _process_one(pdb_id: str, tmp: Path, fruton_root: Path) -> dict:
                 n_conformers=3, refine_level="fast",
                 reject_new_chirality_d=True,
             )
-            # Principle-driven adaptive slow retry
+            # Principle-driven adaptive slow retry (regression-based, no
+            # magic thresholds).  Debug-print the decision so the SLURM
+            # log shows whether the trigger fired for a given PDB.
             try:
                 b_qc = check_model_quality(crystal)
                 f_qc_fast = check_model_quality(ref)
                 decision = decide_refine_action(b_qc, f_qc_fast)
+                print(
+                    f"    refine-policy ({pdb_id}): {decision.action} "
+                    f"regressed={sorted(decision.regressed_metrics)} "
+                    f"ceiling={sorted(decision.exceeded_ceilings)}",
+                    flush=True,
+                )
                 if decision.action == "retry_slow":
+                    print(f"    retry_slow ({pdb_id}): running slow-refine 5 conformers",
+                          flush=True)
                     refine_loops_via_modeller(
                         input_pdb_path=sp, output_pdb_path=ref,
                         gap_ranges_by_chain=gaps,
                         n_conformers=5, refine_level="slow",
                         reject_new_chirality_d=True,
                     )
+                    print(f"    retry_slow ({pdb_id}): slow-refine done", flush=True)
             except Exception as _e:
-                pass
+                # Do NOT swallow silently — reviewer-defensibility requires
+                # the log to say what went wrong when the policy failed.
+                import traceback
+                print(f"    refine-policy FAILED ({pdb_id}): {type(_e).__name__}: {_e}",
+                      flush=True)
+                print(traceback.format_exc(), flush=True)
             refine_time = time.time() - t0
         except TimeoutError_:
             refine_time = float(PER_PROTEIN_TIMEOUT_SECONDS)
