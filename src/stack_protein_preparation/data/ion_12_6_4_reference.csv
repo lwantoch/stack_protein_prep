@@ -1,0 +1,36 @@
+pdb_resname,element,formal_charge,amber_atom_type,ion_size_class,li_merz_paper,leaprc_route,notes
+LI,Li,+1,Li+,monovalent,Li-Merz JCTC 2015 (11:1645),leaprc.water.tip3p,monovalent covered by standard 12-6 in most cases
+NA,Na,+1,Na+,monovalent,Joung-Cheatham JPCB 2008 (112:9020),leaprc.water.tip3p,polarizable variant available; 12-6 sufficient
+K,K,+1,K+,monovalent,Joung-Cheatham 2008,leaprc.water.tip3p,K-selectivity filter caveat: consider explicit polarization
+RB,Rb,+1,Rb+,monovalent,Joung-Cheatham 2008,leaprc.water.tip3p,SAD-phasing use; K+ surrogate
+CS,Cs,+1,Cs+,monovalent,Joung-Cheatham 2008,leaprc.water.tip3p,large ionic radius; heavy-atom derivative
+MG,Mg,+2,Mg2+,divalent-rigid,Li-Merz JCTC 2013 (9:2733),leaprc.water.tip3p_ion12-6-4,strict CN=6 octahedral; 12-6-4 mandatory to avoid 12-6 overbinding
+CA,Ca,+2,Ca2+,divalent-flex,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,EF-hand CN=7 support requires 12-6-4
+SR,Sr,+2,Sr2+,divalent-flex,Li-Merz 2013 extension,leaprc.water.tip3p_ion12-6-4,Ca2+ surrogate; 12-6-4 recommended
+BA,Ba,+2,Ba2+,divalent-flex,Li-Merz 2013 extension,leaprc.water.tip3p_ion12-6-4,heavy-atom probe; 12-6-4 recommended
+ZN,Zn,+2,Zn2+,divalent-catalytic,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,catalytic Zn sites usually need MCPB.py bonded model
+FE2,Fe,+2,Fe2+ HS,divalent-openshell,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,high-spin default; non-heme mononuclear Fe(II)
+FE,Fe,+3,Fe3+ HS,trivalent-openshell,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,default PDB FE resname (Fe(III) common)
+FE3,Fe,+3,Fe3+ HS,trivalent-openshell,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,explicit Fe(III) resname; equivalent to FE
+MN,Mn,+2,Mn2+ HS,divalent-openshell,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,octahedral d5 HS default
+MN3,Mn,+3,Mn3+ HS,trivalent-openshell,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,Jahn-Teller distortion at 6-coord
+CO,Co,+2,Co2+ HS,divalent-openshell,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,octahedral / tetrahedral toggle
+3CO,Co,+3,Co3+ LS,trivalent-openshell,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,cobalamin-adjacent Co(III); often LS d6
+NI,Ni,+2,Ni2+,divalent-openshell,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,octahedral / square-planar
+3NI,Ni,+3,Ni3+ LS,trivalent-openshell,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,rare biological state
+CU1,Cu,+1,Cu+,monovalent-soft,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,linear/trigonal; Cys/Met soft donors
+CU,Cu,+2,Cu2+,divalent-openshell,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,Jahn-Teller elongation; type-1 sites need MCPB
+CD,Cd,+2,Cd2+,divalent-borderline,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,Zn surrogate; larger ionic radius
+HG,Hg,+2,Hg2+,divalent-soft,Li-Merz JCTC 2013,leaprc.water.tip3p_ion12-6-4,linear/tetrahedral; strong S-affinity
+AL,Al,+3,Al3+,trivalent,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,hard cation; O-donors only
+GA,Ga,+3,Ga3+,trivalent,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,Fe(III) surrogate
+IN,In,+3,In3+,trivalent,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,radioimaging; MCPB recommended
+Y,Y,+3,Y3+,trivalent-ln-like,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,MRI probe; Ln3+ surrogate
+CE,Ce,+3,Ce3+,lanthanide,Li-Merz JCTC 2020 (16:4429),leaprc.water.tip3p_ion12-6-4_HFE,Ln3+ 12-6-4 set (HFE-tuned)
+ND,Nd,+3,Nd3+,lanthanide,Li-Merz JCTC 2020,leaprc.water.tip3p_ion12-6-4_HFE,Ln3+ 12-6-4 set
+SM,Sm,+3,Sm3+,lanthanide,Li-Merz JCTC 2020,leaprc.water.tip3p_ion12-6-4_HFE,Ln3+ 12-6-4 set
+EU,Eu,+3,Eu3+,lanthanide,Li-Merz JCTC 2020,leaprc.water.tip3p_ion12-6-4_HFE,Ln3+ MRI probe
+GD,Gd,+3,Gd3+,lanthanide,Li-Merz JCTC 2020,leaprc.water.tip3p_ion12-6-4_HFE,Ln3+ MRI contrast agent
+TB,Tb,+3,Tb3+,lanthanide,Li-Merz JCTC 2020,leaprc.water.tip3p_ion12-6-4_HFE,Ln3+ luminescence probe
+YB,Yb,+3,Yb3+,lanthanide,Li-Merz JCTC 2020,leaprc.water.tip3p_ion12-6-4_HFE,Ln3+ pseudo-contact shift probe
+PB,Pb,+2,Pb2+,divalent-soft-lone-pair,Li-Merz JCTC 2015,leaprc.water.tip3p_ion12-6-4,hemidirected / holodirected coord modes
