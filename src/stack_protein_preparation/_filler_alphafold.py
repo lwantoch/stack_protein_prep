@@ -454,7 +454,14 @@ def run_alphafold_fallback_for_chain(
                     # lowering to ≥1 catches them without regressing
                     # already-clean fills (slow refine's larger conformer
                     # pool only wins when it has better options).
-                    if _fast_clash_count > 20 or _fast_omega_gain >= 1:
+                    #
+                    # Ceiling guard: clash_gain > 200 means the splice is
+                    # catastrophically bad (4AT5=582, 5HJS=1000 observed);
+                    # slow-refine cannot recover such inputs and stalls
+                    # for >1 h.  Skip retry and let rollback handle it.
+                    if _fast_clash_count > 200:
+                        _fast_needs_retry = False
+                    elif _fast_clash_count > 20 or _fast_omega_gain >= 1:
                         _fast_needs_retry = True
                 except Exception:  # noqa: BLE001
                     pass

@@ -87,7 +87,15 @@ def _process_one(af: Path, tmp: Path) -> dict:
                 _f_qc = check_model_quality(ref)
                 _clash_gain = _f_qc.n_clash_pairs - _b_qc.n_clash_pairs
                 _omega_gain = _f_qc.n_omega_non_planar - _b_qc.n_omega_non_planar
-                if _clash_gain > 20 or _omega_gain >= 1:
+                # Ceiling guard (iter-4 finding): 4AT5 clash_gain=582 and
+                # 5HJS clash_gain=1000 both stalled MODELLER slow-refine
+                # indefinitely (>1 h) with no productive convergence — the
+                # splice was too broken for LoopModel to rescue.  Skip
+                # slow retry in that regime and let downstream rollback
+                # aggressively drop residues via REMARK 465 instead.
+                if _clash_gain > 200:
+                    print(f"    catastrophic clash_gain={_clash_gain} > 200 -- skipping slow retry, deferring to rollback ({pdb})", flush=True)
+                elif _clash_gain > 20 or _omega_gain >= 1:
                     print(f"    adaptive-slow retry ({pdb}): clash_gain={_clash_gain} omega_gain={_omega_gain}", flush=True)
                     refine_loops_via_modeller(
                         input_pdb_path=sp, output_pdb_path=ref,
