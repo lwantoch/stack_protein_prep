@@ -50,6 +50,11 @@ from stack_protein_preparation._metal_coord_protonation import (
     summarise_overrides,
 )
 from stack_protein_preparation._metal_coord_scan import scan_metal_coordination
+from stack_protein_preparation._metallo_cofactor import (
+    detect_heme_systems, detect_fes_clusters,
+)
+from stack_protein_preparation._tleap_generator import write_tleap_script
+from stack_protein_preparation._tleap_pmemd_validation import validate_full
 from stack_protein_preparation._filler_af_splice import (
     _detect_missing_windows,
     _protein_residue_map,
@@ -335,6 +340,78 @@ def _collect_quality_confidence(
     )]
 
 
+def _collect_functional_check_confidence(
+    tleap_result, sander_result, model_pdb: Path,
+) -> list[ComponentConfidence]:
+    """Emit ComponentConfidence for the functional model-buildability check.
+
+    USER MANDATE 2026-08-24: reviewer test is 'wie gut baut das Model'.
+    Concrete failures we distinguish:
+      tleap ran but returned FATAL / unable to load → LOW (model unusable)
+      tleap loaded, sander single-step FAILED → LOW (bad geometry / clash)
+      tleap loaded, sander clean → HIGH (proven MD-loadable)
+      binaries missing on PATH → MEDIUM fail-open (untested, not tested-bad)
+    """
+    out: list[ComponentConfidence] = []
+    if not tleap_result.ran:
+        out.append(ComponentConfidence(
+            component_type="gap_fill", name="tleap loadability",
+            confidence=Confidence.MEDIUM,
+            reason=f"tleap not available: {tleap_result.fallback_reason}",
+            suggested_action="run 'module load amber' before FRUTON to verify tleap-loadability",
+            method="fail_open_no_tleap",
+        ))
+        return out
+    if not tleap_result.passed:
+        out.append(ComponentConfidence(
+            component_type="gap_fill", name="tleap loadability",
+            confidence=Confidence.LOW,
+            reason=f"tleap FAILED to load the model: {tleap_result.fallback_reason}",
+            suggested_action=(
+                "inspect the emitted tleap.in + look for FATAL error lines; "
+                "missing frcmod for cofactor/metal is the most common cause"
+            ),
+            method="tleap_load_check",
+            details={"exit_code": tleap_result.exit_code},
+        ))
+        return out
+    out.append(ComponentConfidence(
+        component_type="gap_fill", name="tleap loadability",
+        confidence=Confidence.HIGH,
+        reason="tleap loaded the model + emitted valid prmtop/rst7",
+        method="tleap_load_check",
+    ))
+    if sander_result is None:
+        return out
+    if not sander_result.ran:
+        out.append(ComponentConfidence(
+            component_type="gap_fill", name="sander stability",
+            confidence=Confidence.MEDIUM,
+            reason=f"sander not available: {sander_result.fallback_reason}",
+            method="fail_open_no_sander",
+        ))
+        return out
+    if not sander_result.passed:
+        out.append(ComponentConfidence(
+            component_type="gap_fill", name="sander stability",
+            confidence=Confidence.LOW,
+            reason=f"sander zero-step check FAILED: {sander_result.fallback_reason}",
+            suggested_action=(
+                "sander refused the topology or hit an atom-clash at t=0; "
+                "look at mdout for the offending residue"
+            ),
+            method="sander_zero_step",
+        ))
+        return out
+    out.append(ComponentConfidence(
+        component_type="gap_fill", name="sander stability",
+        confidence=Confidence.HIGH,
+        reason="sander single-step succeeded — model is MD-ready",
+        method="sander_zero_step",
+    ))
+    return out
+
+
 def _process_one(pdb_id: str, tmp: Path, fruton_root: Path) -> dict:
     crystal, af = _resolve_paths(pdb_id, fruton_root)
     if not crystal.is_file():
@@ -443,8 +520,42 @@ def _process_one(pdb_id: str, tmp: Path, fruton_root: Path) -> dict:
             paper_md = crystal.parent / "paper_evidence.md"
             if paper_md.is_file():
                 paper_evidence = paper_md.read_text(errors="replace")
+            # Detect heme systems + Fe-S clusters FIRST — these consume
+            # the underlying HETATMs and metals; residual metals + cofactors
+            # go through the generic dispatchers.
+            heme_systems = detect_heme_systems(fin if fin.is_file() else crystal)
+            fes_clusters = detect_fes_clusters(fin if fin.is_file() else crystal)
+
+            heme_resnames = {"HEM", "HEB", "HEC", "HEA", "HAS", "HEO", "HEZ", "SRM", "COH"}
+            fes_resnames = {"SF4", "F4S", "F3S", "FES", "FE2", "FEO", "CFN", "ICS"}
+            # Consumed HETATMs — don't double-emit via generic cofactor collector
+            consumed_cofactor_resnames = heme_resnames | fes_resnames
+            residual_cofactors = [
+                c for c in cofactors if c[0] not in consumed_cofactor_resnames
+            ]
+
+            # Emit metallo-cofactor ComponentConfidence + auto-collect
+            # HIS overrides (axial heme His → HID) + CYS overrides
+            # (bridging Cys in Fe-S → CYM).
+            metallo_his_overrides: list[tuple[str, int, str, str]] = []
+            metallo_cys_overrides: list[tuple[str, int, str, str]] = []
+            for h in heme_systems:
+                components.append(h.to_component_confidence())
+                metallo_his_overrides.extend(h.his_overrides())
+            for f in fes_clusters:
+                components.append(f.to_component_confidence())
+                metallo_cys_overrides.extend(f.cys_overrides())
+            if heme_systems or fes_clusters:
+                print(
+                    f"    metallo-cofactor ({pdb_id}): {len(heme_systems)} heme system(s), "
+                    f"{len(fes_clusters)} Fe-S cluster(s); "
+                    f"auto {len(metallo_his_overrides)} HID/HIE + "
+                    f"{len(metallo_cys_overrides)} CYM overrides",
+                    flush=True,
+                )
+
             components.extend(_collect_metal_confidence(metals, paper_evidence))
-            components.extend(_collect_cofactor_confidence(cofactors))
+            components.extend(_collect_cofactor_confidence(residual_cofactors))
 
             # Metal-coord PROTONATION overrides (HIS/CYS/ASP/GLU/TYR/LYS/SEC)
             # via geometry + optional REMARK 620.  One ComponentConfidence per
@@ -472,6 +583,30 @@ def _process_one(pdb_id: str, tmp: Path, fruton_root: Path) -> dict:
         except Exception as _e:
             import traceback
             print(f"    metal/cofactor collect FAILED ({pdb_id}): {type(_e).__name__}: {_e}",
+                  flush=True)
+            print(traceback.format_exc(), flush=True)
+
+        # FUNCTIONAL check: does tleap actually load the final model?
+        # Does sander accept it at t=0?  This is the core reviewer test
+        # ('wie gut baut das Model') per user mandate 2026-08-24.
+        try:
+            tleap_dir = tmp / f"{pdb_id}_tleap"
+            ion_names = [m[0] for m in metals]
+            tleap_result = write_tleap_script(
+                fin, tleap_dir,
+                ion_resnames=ion_names,
+                cofactor_param_dir=None,     # would be produced by cofactor pipeline
+                nonstandard_param_dir=None,
+                neutralise=True,
+            )
+            tleap_val, sander_val = validate_full(tleap_result.tleap_in_path)
+            print(f"    tleap+sander ({pdb_id}): tleap={'ok' if tleap_val.passed else 'FAIL'} "
+                  f"sander={'ok' if sander_val and sander_val.passed else ('FAIL' if sander_val else 'skip')}",
+                  flush=True)
+            components.extend(_collect_functional_check_confidence(tleap_val, sander_val, fin))
+        except Exception as _e:
+            import traceback
+            print(f"    functional-check FAILED ({pdb_id}): {type(_e).__name__}: {_e}",
                   flush=True)
             print(traceback.format_exc(), flush=True)
 

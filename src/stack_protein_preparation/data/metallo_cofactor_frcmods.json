@@ -1,0 +1,111 @@
+{
+  "_provenance": {
+    "description": "Registry of published metallo-cofactor parameter sources for FRUTON. Each entry documents where to fetch the frcmod / mol2 / lib bundle. FRUTON does NOT ship these files (license constraints + sizes) but the pipeline emits the reference in the audit CSV so the user knows exactly which source to consult.",
+    "compiled": "2026-08-24",
+    "research_sources_consulted": [
+      "Autenrieth JCC 2004 25:1613",
+      "Shahrokh JCC 2012 33:119 (PMC3242737)",
+      "Johansson Data in Brief 2016 8:1055 (PMC4979044)",
+      "Carvalho & Swart JCIM 2014 doi:10.1021/ci400718m",
+      "Björnsson group / ASH docs for FeMo-co (PMC8908755)",
+      "easyPARM v2 JCTC 2025 doi:10.1021/acs.jctc.4c01272",
+      "MCPB.py heme tutorial (Amber Tutorial 20)"
+    ]
+  },
+  "heme": {
+    "HEM_bis_His": {
+      "reference": "Autenrieth 2004 hemall",
+      "citation": "Autenrieth F et al. JCC 25:1613 (2004)",
+      "primary_url": "https://github.com/choderalab/ambermini/tree/master/share/amber/dat/contrib/heme",
+      "files_needed": ["frcmod.hemall", "hemall.lib"],
+      "matches": ["cytochrome b5", "cytochrome b", "neuroglobin"],
+      "redox_states_supported": ["Fe(II)", "Fe(III)"],
+      "notes": "hemall provides separate parameter blocks for oxidised vs reduced; user must pick at build time"
+    },
+    "HEM_his_met": {
+      "reference": "Autenrieth 2004 hemall (His-Met variant)",
+      "citation": "Autenrieth F et al. JCC 25:1613 (2004)",
+      "primary_url": "https://github.com/choderalab/ambermini/tree/master/share/amber/dat/contrib/heme",
+      "matches": ["cytochrome c (soluble)"],
+      "redox_states_supported": ["Fe(II)", "Fe(III)"]
+    },
+    "HEM_his_only": {
+      "reference": "Giammona 1984 / hemall 5-coord Fe(II) HS",
+      "citation": "Giammona DA, PhD thesis UC Davis (1984)",
+      "primary_url": "https://github.com/choderalab/ambermini/tree/master/share/amber/dat/contrib/heme",
+      "matches": ["deoxy-myoglobin", "deoxy-hemoglobin"],
+      "redox_states_supported": ["Fe(II) high-spin"]
+    },
+    "HEM_his_O2": {
+      "reference": "hemall O2-bound + Case-group parameters",
+      "matches": ["oxy-myoglobin", "oxy-hemoglobin"],
+      "redox_states_supported": ["Fe(II)-O2 low-spin"]
+    },
+    "HEC_covalent": {
+      "reference": "hemall + manual CAB/CAC-Sγ thioether patch",
+      "citation": "Autenrieth 2004 base + Amber tutorial 20",
+      "matches": ["cytochrome c (all)", "multiheme cytochromes"],
+      "notes": "CXXCH motif detection: 2 Cys residues within 2.5 Å of heme CAB and CAC → thioether covalent. Both Cys must be CYX-analog with heme-linked topology. FRUTON auto-detects + emits CYM override with method='hem_cxxch_patch'."
+    },
+    "HEA_CcO": {
+      "reference": "Johansson 2016 heme a / heme a3 / CuA / CuB",
+      "citation": "Johansson MP, Data in Brief 8:1055 (2016)",
+      "primary_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4979044/",
+      "matches": ["cytochrome c oxidase subunit I", "ba3 oxidase"],
+      "notes": "Complete active site parameters including CuB-heme a3 bridging"
+    },
+    "HEA_bd_oxidase": {
+      "reference": "Johansson 2021 bd oxidase parameters",
+      "primary_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8481974/",
+      "matches": ["cytochrome bd oxidase (E. coli)"]
+    },
+    "HEM_P450_cys_thiolate": {
+      "reference": "Shahrokh 2012 P450 4-state bundle",
+      "citation": "Shahrokh K et al. JCC 33:119 (2012)",
+      "primary_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3242737/",
+      "matches": ["cytochrome P450 family"],
+      "states_supported": ["Fe(III) resting", "Fe(II) reduced", "Fe(II)-O2 oxy", "Compound I Fe(IV)=O porphyrin cation radical"],
+      "notes": "Four separate frcmod+mol2 sets; user picks state via FRUTON_HEME_STATE env var or paper evidence. Cys ligand becomes CYM."
+    },
+    "HEM_peroxidase_cpd_I_II": {
+      "reference": "Shahrokh Cpd I / II as starting template",
+      "matches": ["HRP", "APX", "CcP", "chloroperoxidase"],
+      "notes": "MANUAL_REVIEW — Cys→His axial substitution needed; validate Fe=O bond length 1.76-1.87 Å against paper"
+    }
+  },
+  "fes_cluster": {
+    "SF4_4Fe4S": {
+      "reference": "Carvalho & Swart 2014",
+      "citation": "Carvalho ATP, Swart M. JCIM 54:613 (2014) doi:10.1021/ci400718m",
+      "primary_url": "https://pubs.acs.org/doi/10.1021/ci400718m",
+      "redox_states_supported": ["[4Fe-4S]+", "[4Fe-4S]2+", "[4Fe-4S]3+"],
+      "notes": "Bonded model with Seminario force constants from broken-symmetry DFT. 4× CYM anchors required. Per-redox-state frcmod: FRUTON emits with default redox_state='2+' unless paper says otherwise."
+    },
+    "F3S_3Fe4S": {
+      "reference": "Carvalho & Swart 2014",
+      "citation": "Carvalho ATP, Swart M. JCIM 54:613 (2014)",
+      "primary_url": "https://pubs.acs.org/doi/10.1021/ci400718m",
+      "redox_states_supported": ["[3Fe-4S]+", "[3Fe-4S]0"],
+      "notes": "Defective cubane. 3× CYM anchors required."
+    },
+    "FES_2Fe2S": {
+      "reference": "Carvalho & Swart 2014 (Cys4) OR nitrobenzene dioxygenase set (Rieske 2Cys+2His)",
+      "citation_cys4": "Carvalho ATP, Swart M. JCIM 54:613 (2014)",
+      "citation_rieske": "Molina-Molina JCTC 10:2 (2014) doi:10.1021/ct500205z",
+      "primary_url": "https://pubs.acs.org/doi/10.1021/ci400718m",
+      "redox_states_supported": ["[2Fe-2S]+", "[2Fe-2S]2+"],
+      "notes": "TWO variants: (a) Cys4 (standard ferredoxin/adrenodoxin) → Carvalho-Swart; (b) Rieske (2Cys + 2His) → Molina-Molina custom set. Auto-detect Rieske: FES + 2 His within 2.6 Å of Fe."
+    },
+    "CFN_FeMoCo": {
+      "reference": "no static frcmod available — Björnsson group QM/MM only",
+      "citation": "Björnsson group ASH workflow (PMC8908755)",
+      "primary_url": "https://ash.readthedocs.io/en/latest/QM-MM-protein.html",
+      "notes": "FeMo-cofactor of nitrogenase. NO reliable static MM parameter set exists. Route MUST be MANUAL_REVIEW or QM/MM. FRUTON emits LOW confidence + suggests exclusion from pure-MM benchmark."
+    },
+    "FEO_mononuclear": {
+      "reference": "Li & Merz 2015 12-6-4",
+      "citation": "Li P, Merz KM. JPCB 119:883 (2015) doi:10.1021/jp505875v",
+      "notes": "Not a real cluster; single Fe treated as ion with 12-6-4 LJ nonbonded"
+    }
+  }
+}
