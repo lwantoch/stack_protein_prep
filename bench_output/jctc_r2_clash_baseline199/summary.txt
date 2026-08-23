@@ -1,0 +1,2 @@
+n_clash_pairs: n=199 mean=2.60 p50=1.0 p90=6.2 p99=27.1 max=33 (≤ 4 in 163/199)
+n_vdw_clashes: no data
