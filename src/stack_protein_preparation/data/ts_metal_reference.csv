@@ -1,0 +1,90 @@
+pdb_resname,element,oxidation_state,common_charge,coord_numbers,geometries,donor_preference_hsab,typical_distances_angstrom,spin_state_default,force_field_route,notes
+LI,Li,+1,+1,4;6,tetrahedral;octahedral,hard (O),Li-O 1.95-2.10,diamagnetic,Amber 12-6-4 (Li+/Merz 2015),Rare in PDB; mainly buffer/inhibitor cofactor
+NA,Na,+1,+1,6;5;7,octahedral;pentagonal_bipyramidal;square_pyramidal,hard (O carbonyl/carboxylate/water),Na-O 2.35-2.45,diamagnetic,Amber 12-6-4 (Joung-Cheatham/Merz),Ubiquitous; commonly co-crystallized; loose selectivity
+K,K,+1,+1,6;7;8,octahedral;pentagonal_bipyramidal;square_antiprismatic,hard (O carbonyl/water),K-O 2.70-2.85,diamagnetic,Amber 12-6-4 (Merz 2015),K+ channel selectivity filter (8-coord); typical CN=7 in proteins
+RB,Rb,+1,+1,6;7;8,octahedral;square_antiprismatic,hard (O),Rb-O 2.85-3.00,diamagnetic,Amber 12-6-4,K+ surrogate in crystallography (SAD phasing)
+CS,Cs,+1,+1,8;9;10;12,square_antiprismatic;tricapped_trigonal_prismatic,hard (O),Cs-O 3.00-3.30,diamagnetic,Amber 12-6-4,Heavy-atom SAD phasing; large ionic radius
+MG,Mg,+2,+2,6,octahedral,hard (O water/phosphate/carboxylate),Mg-O 2.05-2.10,diamagnetic,Amber 12-6-4 (Li-Merz JCTC 2013),Rigid CN=6; nucleic-acid/ATP cofactor; strict octahedral geometry
+CA,Ca,+2,+2,7;6;8,pentagonal_bipyramidal;octahedral;square_antiprismatic,hard (O carboxylate/carbonyl/water),Ca-O 2.35-2.55,diamagnetic,Amber 12-6-4 (Li-Merz 2013),EF-hand (CN=7); flexible CN; Asp/Glu chelation
+SR,Sr,+2,+2,7;8;9,pentagonal_bipyramidal;square_antiprismatic,hard (O),Sr-O 2.55-2.70,diamagnetic,Amber 12-6-4,Ca2+ surrogate for SAD/probe; MRI substitution studies
+BA,Ba,+2,+2,8;9;10,square_antiprismatic;tricapped_trigonal_prismatic,hard (O),Ba-O 2.75-2.90,diamagnetic,Amber 12-6-4,Heavy-atom derivative; Ca2+ surrogate
+SC,Sc,+3,+3,6;7,octahedral;pentagonal_bipyramidal,hard (O),Sc-O 2.10-2.20,diamagnetic (d0),LJ params scarce; MCPB.py recommended,Very rare in PDB; d0 Lewis acid
+TI,Ti,+4,+4,6,octahedral;distorted_octahedral,hard (O),Ti-O 1.90-2.00,diamagnetic (d0),MCPB.py mandatory,Titanocene/anticancer complexes; hydrolysis-prone
+V,V,+3,+3,6,octahedral,hard/borderline (O; N-His),V-O 1.95-2.05; V-N 2.10,S=1 (d2 HS),MCPB.py; some Bryce set,Amavadin-type; vanadium haloperoxidase precursor
+VO,V,+4,+4,5;6,square_pyramidal (vanadyl VO2+);distorted_octahedral,borderline (O; N-His),V=O 1.60-1.65; V-N 2.10; V-O 1.95-2.20,S=1/2 (d1),MCPB.py mandatory,Vanadyl VO2+ cation; short apical V=O bond
+VO4,V,+5,+5,4;5,tetrahedral (vanadate);trigonal_bipyramidal (TS-analog),hard (O),V-O 1.68-1.75; apical 1.90,diamagnetic (d0),GAFF/MCPB.py hybrid,Phosphate TS-analog; V(V) vanadate binds phosphatase active sites
+CR,Cr,+3,+3,6,octahedral,hard (O; N-His),Cr-O 1.98-2.02; Cr-N 2.05,S=3/2 (d3 HS),MCPB.py mandatory,Kinetically inert; Cr(III) mostly biological form
+MN,Mn,+2,+2,6;5;7,octahedral;square_pyramidal;pentagonal_bipyramidal,borderline-hard (O carboxylate/water; N-His),Mn-O 2.15-2.20; Mn-N 2.20,S=5/2 (d5 HS),Amber 12-6-4 (Li-Merz 2015),Most common Mn state; concanavalin/superoxide dismutase
+MN3,Mn,+3,+3,6,Jahn-Teller octahedral;square_pyramidal,hard (O),Mn-O 1.90-2.10 (axial elong.),S=2 (d4 HS),MCPB.py recommended,Mn(III) in Mn-SOD/manganese peroxidase; JT distortion
+MN5,Mn,+4,+4,6,octahedral,hard (O oxo/hydroxo),Mn-O 1.85-1.95; Mn=O 1.75,S=3/2 (d3 HS),MCPB.py mandatory,PSII OEC oxo-bridged (S-state cycle)
+FE,Fe,+2,+2,6;5;4,octahedral (HS);square_pyramidal;tetrahedral,borderline (S-Cys; N-His; O),Fe-S 2.30; Fe-N(His) 2.15; Fe-O 2.10,S=2 (d6 HS) or S=0 (LS heme),Amber 12-6-4 (Li-Merz 2015); MCPB for heme,Fe(II) deoxy-heme LS/HS switches; rubredoxin CN=4
+FE2,Fe,+2,+2,6;5;4,octahedral;square_pyramidal;tetrahedral,borderline (S; N-His; O),Fe-N 2.15; Fe-S 2.30,S=2 HS (non-heme),Amber 12-6-4,Explicit Fe(II) resname; non-heme mononuclear
+FE3,Fe,+3,+3,6;5,octahedral;square_pyramidal;trigonal_bipyramidal,hard (O carboxylate/oxo/phenolate; N-His),Fe-O 2.00-2.05; Fe-N 2.10; Fe=O 1.65,S=5/2 (d5 HS) or 1/2 LS,Amber 12-6-4 (Li-Merz 2013); MCPB heme,Fe(III) met-heme; transferrin O-phenolate ~1.87
+HEM,Fe,+3,+3,5;6,square_pyramidal;octahedral,borderline (N-porphyrin; N-His; O),Fe-Np 2.00; Fe-N(His) 2.10; Fe-O2 1.75,S=5/2 (met) or 0 (LS),MCPB.py; heme parameter libraries (Giammona/Shahrokh),Protoporphyrin IX Fe(III); axial H2O or OH
+HEC,Fe,+3,+3,6,octahedral,borderline (N-porphyrin; S-Met; N-His),Fe-Np 2.00; Fe-S(Met) 2.30,S=1/2 LS,MCPB.py; c-type heme libraries,Cytochrome c heme covalent Cys thioether; 6-coord LS
+HEB,Fe,+3,+3,5;6,square_pyramidal;octahedral,borderline (N-porph; N-His),Fe-Np 2.00; Fe-N 2.10,S=5/2 or 1/2,MCPB.py,Heme b variant
+SF4,Fe,+2/+3 mixed,+2/+3,4 (per Fe),tetrahedral,soft-borderline (S-Cys/sulfide),Fe-S 2.25-2.30; Fe-Fe 2.70,cluster mixed-valence,MCPB.py; Carvalho/Cerqueira parameter sets,[4Fe-4S] cubane; 4 Cys ligands
+FES,Fe,+2/+3,+2/+3,4 (per Fe),tetrahedral,soft-borderline (S-Cys/sulfide),Fe-S 2.25; Fe-Fe 2.70,antiferromag. coupled,MCPB.py,[2Fe-2S] Rieske variant with 2 His+2 Cys sometimes; classical 4 Cys
+F3S,Fe,+2/+3,+2/+3,4 (per Fe),tetrahedral,soft-borderline (S-Cys/sulfide),Fe-S 2.25; Fe-Fe 2.70,mixed valence,MCPB.py,[3Fe-4S] cluster; ferredoxin variant
+FCO,Fe,+3,+3,5;6,square_pyramidal;octahedral,borderline,Fe-C 1.85 (CO); Fe-N 2.00,S=0 LS,MCPB.py,Fe-CO bound heme; carbonmonoxy form
+CO,Co,+2,+2,6;4;5,octahedral;tetrahedral;square_pyramidal,borderline (N-His; S-Cys; O),Co-N 2.10; Co-O 2.10; Co-S 2.25,S=3/2 HS (d7),Amber 12-6-4 (Li-Merz 2015),Zn substitution probe (spectroscopic); CN=4 tetrahedral common
+3CO,Co,+3,+3,6,octahedral,borderline (N; O),Co-N 1.95; Co-O 1.90,S=0 LS (d6),MCPB.py,Kinetically inert Co(III); B12 alkyl-Co corrinoid
+NCO,Co,+3,+3,6,octahedral,soft (CN- carbanion),Co-C 1.90; Co-N 1.95,S=0 LS,MCPB.py,Cobalamin/coenzyme B12 corrin family
+NI,Ni,+2,+2,6;4;5,octahedral;square_planar;square_pyramidal,borderline (N-His; S-Cys),Ni-N 2.10 (Oh); 1.90 (sq_planar); Ni-S 2.20,S=1 (Oh HS) or 0 (sq_planar LS),Amber 12-6-4 (Li-Merz 2015),Urease binuclear; sq-planar in [NiFe]-H2ase
+3NI,Ni,+3,+3,6,octahedral,borderline,Ni-S 2.15; Ni-N 2.00,S=1/2 (d7 LS),MCPB.py,[NiFe]-hydrogenase Ni-C state
+CU,Cu,+2,+2,4;5;6,square_planar;square_pyramidal;Jahn-Teller_octahedral,borderline-soft (N-His; S-Cys; O; S-Met apical),Cu-N(His) 2.00; Cu-S(Cys) 2.15; Cu-O 1.95; Cu-S(Met) 2.90,S=1/2 (d9),Amber 12-6-4 (Li-Merz 2013); MCPB for T1 sites,Type-1 (blue) Cu 3+1; Type-2 (normal) sq-planar; JT elongated Oh
+CU1,Cu,+1,+1,2;3;4,linear;trigonal_planar;tetrahedral,soft (S-Cys/Met; N-His),Cu-S(Cys) 2.15; Cu-S(Met) 2.30; Cu-N 2.05,diamagnetic (d10),MCPB.py; some Bryce params,Cu(I) copper chaperones; digonal SS in Atx1/Ccc2
+CU3,Cu,+3,+3,4,square_planar,borderline,Cu-N 1.85; Cu-O 1.90,S=0 LS (d8),MCPB.py mandatory,Rare; galactose oxidase (Cu-tyrosyl radical alt. form)
+CUA,Cu,+1.5 mixed,+1.5,3 (per Cu),trigonal_planar,soft (S-Cys bridging; N-His; S-Met),Cu-S 2.25; Cu-Cu 2.45,delocalized S=1/2,MCPB.py,Binuclear CuA cytochrome c oxidase/N2OR
+ZN,Zn,+2,+2,4;5;6,tetrahedral;trigonal_bipyramidal;square_pyramidal;octahedral,borderline (N-His; S-Cys; O-Asp/Glu; water),Zn-N(His) 2.05; Zn-S(Cys) 2.35; Zn-O 2.05,diamagnetic (d10),Amber 12-6-4 (Li-Merz 2013); MCPB.py for catalytic,Most-common transition metal in PDB; catalytic tetrahedral; structural Cys4
+Y,Y,+3,+3,7;8;9,pentagonal_bipyramidal;square_antiprismatic;tricapped_trigonal_prismatic,hard (O),Y-O 2.30-2.40,diamagnetic (d0),Amber 12-6-4 (lanthanide-like set),Ca2+ mimic; MRI-adjacent probe
+ZR,Zr,+4,+4,6;7;8,octahedral;pentagonal_bipyramidal;square_antiprismatic,hard (O),Zr-O 2.10-2.20,diamagnetic (d0),MCPB.py,Zirconocene anticancer; rare in PDB
+MO,Mo,+4,+4,4;5;6,tetrahedral;square_pyramidal;trigonal_prismatic,borderline (S-dithiolene of MPT; O oxo/hydroxo),Mo-S 2.35; Mo=O 1.70; Mo-O 2.10,S=1 (d2),MCPB.py mandatory,Mo-cofactor (Moco); molybdopterin; DMSO reductase family
+MOO,Mo,+6,+6,4,tetrahedral,hard (O oxo),Mo=O 1.70-1.76,diamagnetic (d0),GAFF-like O=Mo=O; MCPB refine,Molybdate MoO4 2-; sulfate-binding-protein analog
+MOS,Mo,+6,+6,4,tetrahedral,soft (S-thiolate/sulfide),Mo=S 2.19; Mo-S 2.35,diamagnetic,MCPB.py,Tetrathiomolybdate MoS4; Cu-chelation drug
+4MO,Mo,+4,+4,6;7,trigonal_prismatic;capped_trigonal_prismatic,borderline (S-dithiolene; O oxo),Mo-S 2.35; Mo=O 1.72,S=1 (d2),MCPB.py,Explicit Mo(IV) resname for Moco reduced state
+6MO,Mo,+6,+6,5;6,square_pyramidal;octahedral,hard-borderline (O oxo/hydroxo; S-dithiolene),Mo=O 1.71; Mo-O 2.00; Mo-S 2.40,diamagnetic (d0),MCPB.py,Moco oxidized; sulfite oxidase/xanthine oxidase
+TC,Tc,+7,+7,4,tetrahedral,hard (O),Tc=O 1.72,diamagnetic (d0),MCPB.py,Pertechnetate TcO4-; nuclear-medicine tracer
+TCN,Tc,+5,+5,5;6,square_pyramidal;octahedral,borderline (N; O oxo),Tc=O 1.68; Tc-N 2.00,S=1 (d2),MCPB.py,99mTc radiopharmaceutical scaffolds
+RU,Ru,+2,+2,6,octahedral,soft (N-imidazole/pyridine; C-arene),Ru-N 2.05; Ru-C 2.20,S=0 LS (d6),MCPB.py,RAPTA/NAMI-A anticancer; polypyridyl DNA probes
+3RU,Ru,+3,+3,6,octahedral,borderline (N; Cl-; O),Ru-N 2.10; Ru-Cl 2.35; Ru-O 2.05,S=1/2 LS (d5),MCPB.py,NAMI-A/KP1019 anticancer prodrugs
+RH,Rh,+3,+3,6,octahedral,soft-borderline (N; C; Cl),Rh-N 2.05; Rh-Cl 2.35,S=0 LS (d6),MCPB.py,Rh(III) cyclometalated DNA intercalators
+PD,Pd,+2,+2,4,square_planar,soft (S-Cys; N; Cl),Pd-N 2.00; Pd-Cl 2.30; Pd-S 2.30,diamagnetic (d8 LS),MCPB.py,Pd-drugs; heavy-atom derivatives
+AG,Ag,+1,+1,2;3;4,linear;trigonal_planar;tetrahedral,soft (S-Cys/Met; N),Ag-S 2.45; Ag-N 2.15,diamagnetic (d10),Amber 12-6-4 (Li-Merz 2015),Antimicrobial; silver-binding metalloregulators
+CD,Cd,+2,+2,4;5;6,tetrahedral;square_pyramidal;octahedral,soft-borderline (S-Cys; N-His; O),Cd-S 2.55; Cd-N 2.30; Cd-O 2.30,diamagnetic (d10),Amber 12-6-4 (Li-Merz 2013),Zn substitution probe (113Cd NMR); metallothionein
+CE,Ce,+3,+3,8;9,square_antiprismatic;tricapped_trigonal_prismatic,hard (O; carboxylate),Ce-O 2.45-2.55,S=1/2 (4f1),Amber 12-6-4 (Ln set; Merz 2020),Ln3+ Ca2+ mimic; Ce(III) most common oxidation state in solution
+CE1,Ce,+4,+4,8;9,square_antiprismatic,hard (O; oxo),Ce-O 2.30-2.40,diamagnetic (4f0),MCPB.py,Ce(IV) rare; oxidative
+ND,Nd,+3,+3,8;9,square_antiprismatic;tricapped_trigonal_prismatic,hard (O),Nd-O 2.40-2.50,S=3/2 (4f3),Amber 12-6-4 (Ln set),Lanthanide-binding tag (LBT) probe
+SM,Sm,+3,+3,8;9,square_antiprismatic;tricapped_trigonal_prismatic,hard (O),Sm-O 2.40-2.50,S=5/2 (4f5),Amber 12-6-4 (Ln set),SAD phasing; Ca2+ mimic
+EU,Eu,+3,+3,8;9,square_antiprismatic;tricapped_trigonal_prismatic,hard (O),Eu-O 2.35-2.45,S=3 (4f6),Amber 12-6-4 (Ln set; Merz 2020),Luminescent probe; LBT; PCS NMR
+GD,Gd,+3,+3,8;9,square_antiprismatic;tricapped_trigonal_prismatic,hard (O; N-macrocycle),Gd-O 2.35-2.45; Gd-N 2.65,S=7/2 (4f7),Amber 12-6-4 (Ln set; Merz 2020),MRI contrast; DOTA/DTPA chelates; PRE NMR
+TB,Tb,+3,+3,8;9,square_antiprismatic;tricapped_trigonal_prismatic,hard (O),Tb-O 2.30-2.40,S=3 (4f8),Amber 12-6-4 (Ln set),Luminescent LBT probe
+YB,Yb,+3,+3,7;8,capped_trigonal_prismatic;square_antiprismatic,hard (O),Yb-O 2.25-2.35,S=1/2 (4f13),Amber 12-6-4 (Ln set),PCS/PRE NMR; small ionic radius
+HF,Hf,+4,+4,6;7;8,octahedral;pentagonal_bipyramidal;square_antiprismatic,hard (O),Hf-O 2.10-2.20,diamagnetic (d0),MCPB.py,Very rare; heavy-atom SAD; Zr analog
+TA,Ta,+5,+5,6;7,octahedral;pentagonal_bipyramidal,hard (O),Ta-O 1.95-2.05,diamagnetic (d0),MCPB.py,Ta6Br12 cluster SAD phasing
+TAB,Ta,+2.5 avg,+2.5 (cluster),cluster,Ta6-octahedron,cluster,Ta-Ta 2.90,delocalized,MCPB.py,Tantalum bromide cluster [Ta6Br12]2+
+W,W,+4,+4,6;7,trigonal_prismatic;capped_trigonal_prismatic,borderline (S-dithiolene; O oxo),W-S 2.40; W=O 1.75,S=1 (d2),MCPB.py,Tungstopterin; W-FDH/AOR hyperthermophiles
+WO4,W,+6,+6,4,tetrahedral,hard (O oxo),W=O 1.76-1.80,diamagnetic (d0),MCPB.py,Tungstate WO4 2-; Mo antagonist
+6WO,W,+6,+6,5;6,square_pyramidal;octahedral,borderline (S-dithiolene; O oxo),W=O 1.75; W-S 2.40,diamagnetic (d0),MCPB.py,W-cofactor oxidized state
+RE,Re,+5,+5,5;6,square_pyramidal;octahedral,borderline (N; O oxo),Re=O 1.70; Re-N 2.05,S=1 (d2),MCPB.py,186/188Re radiotherapy scaffolds
+REO,Re,+7,+7,4,tetrahedral,hard (O),Re=O 1.72,diamagnetic (d0),MCPB.py,Perrhenate ReO4-; TcO4- surrogate
+OS,Os,+6,+6,6,octahedral,borderline-soft (N; O oxo),Os=O 1.72; Os-N 2.05,diamagnetic (d2 LS),MCPB.py,Osmium tetroxide heavy-atom; anticancer Os arenes
+IR,Ir,+3,+3,6,octahedral,soft (C; N),Ir-C 2.00; Ir-N 2.05,diamagnetic (d6 LS),MCPB.py,Iridium(III) cyclometalated luminescent probes
+PT,Pt,+2,+2,4,square_planar,soft (S-Met/Cys; N; Cl; N7-guanine),Pt-N 2.00; Pt-Cl 2.30; Pt-S 2.30,diamagnetic (d8 LS),MCPB.py; cisplatin params (Yao/Lippard),Cisplatin/carboplatin/oxaliplatin DNA/protein adducts
+4PT,Pt,+4,+4,6,octahedral,soft-borderline (N; Cl; O),Pt-N 2.05; Pt-Cl 2.35,diamagnetic (d6 LS),MCPB.py,Pt(IV) prodrugs (satraplatin)
+AU,Au,+1,+1,2,linear,soft (S-Cys/Met; P; CN-),Au-S 2.30; Au-C(CN) 2.00,diamagnetic (d10),MCPB.py; Auranofin params,Auranofin antirheumatic; TrxR inhibition
+AU3,Au,+3,+3,4,square_planar,soft (N; Cl; S),Au-N 2.00; Au-Cl 2.30,diamagnetic (d8 LS),MCPB.py,Au(III) anticancer; isoelectronic to Pt(II)
+HG,Hg,+2,+2,2;3;4,linear;trigonal_planar;tetrahedral,soft (S-Cys),Hg-S 2.35 (linear); 2.55 (Td),diamagnetic (d10),Amber 12-6-4 (Li-Merz 2015); MCPB heavy,MerR/MerA mercury resistance; heavy-atom SAD; strong Cys affinity
+MAC,Hg,+2,+2,4,tetrahedral,soft (S; Cl; N),Hg-Cl 2.45; Hg-N 2.30,diamagnetic,MCPB.py,Mercury complexes phased crystallography
+AL,Al,+3,+3,6;4,octahedral;tetrahedral,hard (O; F),Al-O 1.90; Al-F 1.80,diamagnetic (d0),Amber 12-6-4 (Li-Merz 2015),Al3+ neurotoxic; transferrin binding; AlF3/AlF4 phosphate TS mimic
+ALF,Al,+3,+3,5;6,trigonal_bipyramidal;octahedral,hard (F; O),Al-F 1.79; Al-O 1.90,diamagnetic,MCPB.py; GAFF variants,AlF3/AlF4- phosphoryl-transfer TS-analog for GTPases
+GA,Ga,+3,+3,6;4,octahedral;tetrahedral,hard (O; N),Ga-O 1.95; Ga-N 2.10,diamagnetic (d10),Amber 12-6-4 (Li-Merz 2015),Fe3+ mimic; siderophore binding; imaging (68Ga)
+IN,In,+3,+3,6,octahedral,hard-borderline (O; N),In-O 2.15; In-N 2.30,diamagnetic (d10),Amber 12-6-4,111In radiolabels; heavy-atom SAD
+TL,Tl,+1,+1,6;8,octahedral;square_antiprismatic,soft (S; O),Tl-O 2.85; Tl-S 3.00,diamagnetic,Amber 12-6-4,K+ mimic (SAD probe); toxic
+SN,Sn,+2,+2,3;4,trigonal_pyramidal;see-saw,borderline (S; O),Sn-O 2.20; Sn-S 2.55,diamagnetic (5s2 lone pair),GAFF/MCPB.py,Organotin protein modifications; rare
+SB,Sb,+3,+3,3;4,trigonal_pyramidal;see-saw,soft-borderline (S-Cys; O),Sb-S 2.45; Sb-O 2.00,diamagnetic (5s2),MCPB.py,Antimony(III) antileishmanial (Sb-Cys binding in TrxR)
+PB,Pb,+2,+2,3;4;6,trigonal_pyramidal (lone pair);hemidirected;holodirected octahedral,borderline-soft (S-Cys; O carboxylate; N),Pb-S 2.65; Pb-O 2.45; Pb-N 2.45,diamagnetic (6s2),Amber 12-6-4 (Li-Merz 2015),Pb2+ Zn/Ca replacement; hemidirected vs holodirected coordination
+BI,Bi,+3,+3,3;5;6,trigonal_pyramidal;square_pyramidal;octahedral,soft-borderline (S-Cys; O),Bi-S 2.60; Bi-O 2.30,diamagnetic (6s2),MCPB.py,Antiulcer/H. pylori; ranitidine bismuth citrate; Bi-TrxR
+AS,As,+3,+3,3;4,trigonal_pyramidal;see-saw,soft (S-Cys),As-S 2.25; As-O 1.80,diamagnetic,MCPB.py; GAFF for organic,Arsenite As(III) binds vicinal Cys pairs (ArsA/ArsR); arsenic trioxide APL therapy
+CAC,As,+5,+5,4,tetrahedral,hard (O),As=O 1.68; As-C 1.90,diamagnetic (d0),GAFF,Cacodylate buffer artefact; dimethylarsinate
+ART,As,+5,+5,4,tetrahedral,hard (O),As-O 1.68-1.70,diamagnetic,GAFF/MCPB,Arsenate AsO4 3-; phosphate mimic
