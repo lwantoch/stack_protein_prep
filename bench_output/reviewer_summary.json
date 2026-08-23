@@ -25,6 +25,20 @@
     ]
   },
   {
+    "figure_dir": "jacs_r3_metal_iter3",
+    "provenance_path": "bench_output/jacs_r3_metal_iter3/PROVENANCE.md",
+    "headline_kv": {
+      "mean \u0394d": "+0.000 \u00c5"
+    },
+    "freeform_bullets": [
+      "**46 iter-3 filled models paired against crystals**",
+      "**11 crystals carry metal ions** (25 %); 35 metal-free.",
+      "**58 metal-donor contacts scored** across the 11 metallo-enzymes.",
+      "**max |\u0394d| = 0.000 \u00c5**",
+      "**58 / 58 (100 %) preserved** \u2014 no `lost` (crystal-only) or"
+    ]
+  },
+  {
     "figure_dir": "jctc_r2_clash",
     "provenance_path": "bench_output/jctc_r2_clash/PROVENANCE.md",
     "headline_kv": {

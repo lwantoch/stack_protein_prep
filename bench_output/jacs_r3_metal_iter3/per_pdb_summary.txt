@@ -1,0 +1,46 @@
+[OK]   1JCN: no metal contacts
+[OK]   1UOU: no metal contacts
+[OK]   2JDO: no metal contacts
+[OK]   2XNM: no metal contacts
+[OK]   2YCF: crystal→metal-coord scan: 1 metals, 2 donor contacts (MG 2) | fruton→metal-coord scan: 1 metals, 2 donor contacts (MG 2)
+[OK]   2Z3Y: no metal contacts
+[OK]   3BHY: no metal contacts
+[OK]   3FZS: no metal contacts
+[OK]   3ILZ: no metal contacts
+[OK]   3S95: crystal→metal-coord scan: 2 metals, 2 donor contacts (NA 2) | fruton→metal-coord scan: 2 metals, 2 donor contacts (NA 2)
+[OK]   3ZCW: crystal→metal-coord scan: 1 metals, 1 donor contacts (MG 1) | fruton→metal-coord scan: 1 metals, 1 donor contacts (MG 1)
+[OK]   4JJ7: no metal contacts
+[OK]   4X7Q: no metal contacts
+[OK]   4XAQ: no metal contacts
+[OK]   5EW8: no metal contacts
+[OK]   5GRN: no metal contacts
+[OK]   5K00: no metal contacts
+[OK]   5M7U: no metal contacts
+[OK]   5OTE: no metal contacts
+[OK]   5U5T: no metal contacts
+[OK]   6HVD: no metal contacts
+[OK]   6JQR: no metal contacts
+[OK]   6KZD: no metal contacts
+[OK]   6NRH: no metal contacts
+[OK]   6O5I: no metal contacts
+[OK]   6PYR: no metal contacts
+[OK]   6Q7D: no metal contacts
+[OK]   6S5K: no metal contacts
+[OK]   6VPM: crystal→metal-coord scan: 2 metals, 4 donor contacts (MG 4) | fruton→metal-coord scan: 2 metals, 4 donor contacts (MG 4)
+[OK]   6X0T: no metal contacts
+[OK]   6YA6: crystal→metal-coord scan: 2 metals, 8 donor contacts (ZN 8) | fruton→metal-coord scan: 2 metals, 8 donor contacts (ZN 8)
+[OK]   6YOJ: no metal contacts
+[OK]   6ZHO: no metal contacts
+[OK]   7B7R: crystal→metal-coord scan: 2 metals, 4 donor contacts (MG 4) | fruton→metal-coord scan: 2 metals, 4 donor contacts (MG 4)
+[OK]   7DUA: no metal contacts
+[OK]   7QUE: no metal contacts
+[OK]   7SXF: crystal→metal-coord scan: 1 metals, 3 donor contacts (CA 3) | fruton→metal-coord scan: 1 metals, 3 donor contacts (CA 3)
+[OK]   7UL2: crystal→metal-coord scan: 1 metals, 2 donor contacts (NA 2) | fruton→metal-coord scan: 1 metals, 2 donor contacts (NA 2)
+[OK]   7Z5X: no metal contacts
+[OK]   8A27: no metal contacts
+[OK]   8C2Z: crystal→metal-coord scan: 3 metals, 5 donor contacts (MN 5) | fruton→metal-coord scan: 3 metals, 5 donor contacts (MN 5)
+[OK]   8DSC: no metal contacts
+[OK]   8FKC: no metal contacts
+[OK]   8HTS: no metal contacts
+[OK]   8Q68: no metal contacts
+[OK]   9E3M: crystal→metal-coord scan: 7 metals, 27 donor contacts (NA 3, ZN 24) | fruton→metal-coord scan: 7 metals, 27 donor contacts (NA 3, ZN 24)
