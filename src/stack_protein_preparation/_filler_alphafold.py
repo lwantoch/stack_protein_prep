@@ -436,6 +436,7 @@ def run_alphafold_fallback_for_chain(
                 _refine.n_conformers_kept == 0 and _refine.n_conformers_built > 0
             )
             _fast_clash_count = 0
+            _fast_omega_gain = 0
             if not _fast_needs_retry and final_model_path.is_file():
                 try:
                     from stack_protein_preparation._filler_quality_check import (
@@ -444,15 +445,22 @@ def run_alphafold_fallback_for_chain(
                     _b_qc = _qc(template_pdb_path)
                     _f_qc = _qc(final_model_path)
                     _fast_clash_count = _f_qc.n_clash_pairs - _b_qc.n_clash_pairs
-                    if _fast_clash_count > 20:
+                    _fast_omega_gain = (
+                        _f_qc.n_omega_non_planar - _b_qc.n_omega_non_planar
+                    )
+                    # 2026-08-23: also trigger slow on ω-non-planar gain ≥ 3.
+                    # Observed on 8Q68 in bench_20260823_1414: fast-refine
+                    # produced +197 residues but 24 broken ω bonds; the old
+                    # trigger only fired on clash>20 and missed this cleanly.
+                    if _fast_clash_count > 20 or _fast_omega_gain >= 3:
                         _fast_needs_retry = True
                 except Exception:  # noqa: BLE001
                     pass
             if _fast_needs_retry:
                 _debug(
                     f"Fast refine unsatisfactory (n_kept={_refine.n_conformers_kept}, "
-                    f"clash_gain={_fast_clash_count}) -- retrying with "
-                    f"refine.slow + 5 conformers"
+                    f"clash_gain={_fast_clash_count}, omega_np_gain={_fast_omega_gain}) "
+                    f"-- retrying with refine.slow + 5 conformers"
                 )
                 _refine_slow = refine_loops_via_modeller(
                     input_pdb_path=spliced_path,
