@@ -157,7 +157,7 @@ def load_metrics_dir(directory: str | Path) -> dict[str, dict]:
     return out
 
 
-def _to_float_or_none(value) -> float | None:
+def _to_float_or_none(value: object) -> float | None:
     if value is None:
         return None
     try:

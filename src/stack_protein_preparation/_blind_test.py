@@ -30,7 +30,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 
 @dataclass(frozen=True)
@@ -172,14 +172,14 @@ def mask_crystal_pdb(
     return output_pdb_path
 
 
-def _load_model(pdb_path: Path):
+def _load_model(pdb_path: Path) -> Any:
     from Bio.PDB import PDBParser
     struct = PDBParser(QUIET=True).get_structure("m", str(pdb_path))
     return next(iter(struct))
 
 
-def _index_residues(model) -> dict[tuple[str, int], object]:
-    out: dict[tuple[str, int], object] = {}
+def _index_residues(model: Any) -> dict[tuple[str, int], Any]:
+    out: dict[tuple[str, int], Any] = {}
     for chain in model:
         cid = chain.id
         for res in chain:
@@ -189,11 +189,11 @@ def _index_residues(model) -> dict[tuple[str, int], object]:
     return out
 
 
-def _atom_distance(a, b) -> float:
+def _atom_distance(a: Any, b: Any) -> float:
     return float(a - b)
 
 
-def _backbone_rmsd(res_a, res_b) -> float | None:
+def _backbone_rmsd(res_a: Any, res_b: Any) -> float | None:
     """RMSD over backbone atoms present in both residues."""
     values: list[float] = []
     for name in ("N", "CA", "C", "O"):
