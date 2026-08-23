@@ -63,7 +63,7 @@ def _process_one(af: Path, tmp: Path) -> dict:
             for lo, hi in _detect_missing_windows(set(cb.keys()), sorted(ab.keys())):
                 gaps.append((cid, lo, hi))
 
-        signal.signal(signal.SIGALRM, _timeout); signal.alarm(600)
+        signal.signal(signal.SIGALRM, _timeout); signal.alarm(900)
         try:
             t0 = time.time()
             refine_loops_via_modeller(
@@ -72,9 +72,28 @@ def _process_one(af: Path, tmp: Path) -> dict:
                 n_conformers=3, refine_level='fast',
                 reject_new_chirality_d=True,
             )
+            # Adaptive fast → slow retry (mirrors _filler_alphafold.py trigger,
+            # a75e077 2026-08-23).  Compare ω-non-planar + clash gain of the
+            # fast-refined structure vs the crystal baseline; if either
+            # threshold is exceeded, retry with slow + 5 conformers.
+            try:
+                _b_qc = check_model_quality(C)
+                _f_qc = check_model_quality(ref)
+                _clash_gain = _f_qc.n_clash_pairs - _b_qc.n_clash_pairs
+                _omega_gain = _f_qc.n_omega_non_planar - _b_qc.n_omega_non_planar
+                if _clash_gain > 20 or _omega_gain >= 3:
+                    print(f"    adaptive-slow retry ({pdb}): clash_gain={_clash_gain} omega_gain={_omega_gain}", flush=True)
+                    refine_loops_via_modeller(
+                        input_pdb_path=sp, output_pdb_path=ref,
+                        gap_ranges_by_chain=gaps,
+                        n_conformers=5, refine_level='slow',
+                        reject_new_chirality_d=True,
+                    )
+            except Exception as _exc:
+                print(f"    adaptive-slow check failed ({pdb}): {_exc!r}", flush=True)
             refine_time = time.time() - t0
         except TimeoutError_:
-            refine_time = 600.0
+            refine_time = 900.0
             ref.write_bytes(sp.read_bytes())
         finally:
             signal.alarm(0)
