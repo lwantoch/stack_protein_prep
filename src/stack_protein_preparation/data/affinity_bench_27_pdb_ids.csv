@@ -1,0 +1,31 @@
+# newbench_27 — the "new affinity benchmark" (27 PDBs on /mnt/netapp1/Store_othcxlwa/newbench_27/)
+# User mandate 2026-08-24: this is 1 of the 4 evaluation sets.
+# 1 has AF-alignment ready, 26 use BL-Pose (crystal-as-is) fallback.
+pdb_id
+1K4Y
+2XU3
+3DF9
+3I06
+4A5S
+4B6L
+4L7G
+4QB3
+4X7Q
+5HJS
+5HU9
+5M7U
+5OTE
+6E1Z
+6NRH
+6Z1T
+7D5B
+8A27
+8ELC
+8X92
+8ZP2
+9D9I
+9GJ1
+9J9D
+9OJO
+9SI4
+9Y9N

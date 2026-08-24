@@ -70,6 +70,29 @@ def load_holdout_ids() -> list[str]:
     return [ln for ln in lines if PDB_ID_RE.match(ln)]
 
 
+def _load_packaged_csv_ids(filename: str) -> list[str]:
+    text = (
+        resources.files("stack_protein_preparation")
+        .joinpath(f"data/{filename}").read_text()
+    )
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.startswith("#")]
+    if lines and not PDB_ID_RE.match(lines[0]):
+        lines = lines[1:]
+    return [ln for ln in lines if PDB_ID_RE.match(ln)]
+
+
+def load_stresstest_30() -> list[str]:
+    """USER MANDATE 2026-08-24: 30 random PDBs drawn from MMBSA_200
+    (seed 20260824) used as STRESS TEST (BL-Pose fallback when no AF)."""
+    return _load_packaged_csv_ids("stresstest_30_pdb_ids.csv")
+
+
+def load_affinity_bench_27() -> list[str]:
+    """USER MANDATE 2026-08-24: newbench_27 = the AFFINITY BENCHMARK
+    (27 PDBs on /mnt/netapp1/Store_othcxlwa/newbench_27/)."""
+    return _load_packaged_csv_ids("affinity_bench_27_pdb_ids.csv")
+
+
 def load_split(
     split: str,
     lustre_root: Path | str | None = None,
@@ -83,13 +106,20 @@ def load_split(
     import os
     if split == "holdout":
         return load_holdout_ids()
+    if split == "stresstest_30":
+        return load_stresstest_30()
+    if split == "affinity_bench_27":
+        return load_affinity_bench_27()
 
     lustre = Path(lustre_root or os.environ.get("LUSTRE", "")) / "MMBSA_200"
     if split == "train":
         return _load_ids_from_dir(lustre / "MMBSA_75")
-    if split == "val":
+    if split in ("val", "test"):
         return _load_ids_from_dir(lustre / "MMBSA_125")
-    raise ValueError(f"unknown split {split!r}; expect train|val|holdout")
+    raise ValueError(
+        f"unknown split {split!r}; "
+        f"expect train|val|test|holdout|stresstest_30|affinity_bench_27"
+    )
 
 
 def filter_to_af_ready(pdb_ids: Iterable[str], fruton_root: Path | str) -> list[str]:

@@ -1,0 +1,34 @@
+# MMBSA_200 stress-test set subset — 30 random stress-test PDBs (seed 20260824)
+# User mandate 2026-08-24: this is THE new stress-test set test set.
+# Fallback: when AF alignment missing, use BL-Pose (crystal-as-is).
+pdb_id
+1SQN
+1UNQ
+2F71
+2WEL
+2YCF
+3WF7
+4A69
+4DRI
+4OBO
+5AFN
+5J2X
+5JFW
+5ZJW
+6E1Z
+6KKB
+6O5I
+6PYR
+6QJU
+6T29
+6YOJ
+7JGW
+7KBG
+7NPC
+7QUE
+8QZD
+8ZP2
+9D9I
+9GJ1
+9KWL
+9Y9N

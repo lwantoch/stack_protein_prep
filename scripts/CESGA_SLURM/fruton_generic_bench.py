@@ -529,14 +529,52 @@ def _process_one(pdb_id: str, tmp: Path, fruton_root: Path) -> dict:
             "delivery": ProteinDeliveryReport(pdb=pdb_id, model_written=False).to_dict(),
         }
     if af is None:
-        # We can still produce a "delivered" model — just no gap fill possible.
-        # For now, mark as skipped so the aggregator distinguishes.
+        # BL-Pose fallback (user mandate 2026-08-24): no AF alignment ->
+        # take the crystal-with-bound-ligand AS-IS as the MD starting
+        # model. No gap fill, but we still produce a loadable model +
+        # audit report showing what would need external gap-fill.
+        components: list[ComponentConfidence] = []
+        components.append(ComponentConfidence(
+            component_type="gap_fill",
+            name="BL-Pose fallback (no AF alignment)",
+            confidence=Confidence.MEDIUM,
+            reason=(
+                "no AF alignment on disk for this protein → BL-Pose "
+                "fallback: crystal-with-bound-ligand shipped as-is; "
+                "REMARK 465 residues remain unfilled"
+            ),
+            suggested_action=(
+                "if the missing residues matter, supply an AF alignment "
+                "(colabfold on the UniProt sequence) or route through a "
+                "different template model"
+            ),
+            method="bl_pose_crystal_asis",
+        ))
+        # Detect metals + cofactors in the crystal even without gap fill
+        try:
+            metals, cofactors = _extract_hetatm_records(crystal)
+            paper_evidence = ""
+            paper_md = crystal.parent / "paper_evidence.md"
+            if paper_md.is_file():
+                paper_evidence = paper_md.read_text(errors="replace")
+            heme_systems = detect_heme_systems(crystal)
+            fes_clusters = detect_fes_clusters(crystal)
+            consumed = {"HEM","HEB","HEC","HEA","HAS","HEO","HEZ","SRM","COH",
+                        "SF4","F4S","F3S","FES","FE2","FEO","CFN","ICS"}
+            residual_cof = [c for c in cofactors if c[0] not in consumed]
+            for h in heme_systems: components.append(h.to_component_confidence())
+            for f in fes_clusters: components.append(f.to_component_confidence())
+            components.extend(_collect_metal_confidence(metals, paper_evidence))
+            components.extend(_collect_cofactor_confidence(residual_cof))
+        except Exception as _e:
+            print(f"    BL-Pose HETATM scan FAILED ({pdb_id}): {_e!r}", flush=True)
         return {
             "pdb": pdb_id,
-            "note": "NO_AF_ALIGNMENT",
+            "note": "BL_POSE_FALLBACK",
+            "route": "bl_pose_crystal_asis",
             "delivery": ProteinDeliveryReport(
-                pdb=pdb_id, model_written=False,
-                notes="no AF alignment available; gap fill skipped",
+                pdb=pdb_id, components=components, model_written=True,
+                notes="BL-Pose fallback: shipped crystal as-is, no AF gap fill",
             ).to_dict(),
         }
 
@@ -772,7 +810,9 @@ def _process_one(pdb_id: str, tmp: Path, fruton_root: Path) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--split", required=True, choices=("train", "val", "holdout"))
+    ap.add_argument("--split", required=True,
+                    choices=("train", "val", "test", "holdout",
+                             "stresstest_30", "affinity_bench_27"))
     ap.add_argument("--index", type=int, default=None,
                     help="1-based index into the AF-ready subset (SLURM array).")
     ap.add_argument("--fruton-root", type=Path, default=FRUTON_ROOT_DEFAULT)
@@ -784,9 +824,23 @@ def main() -> int:
     else:
         tmp = Path(tempfile.mkdtemp(prefix=f"fruton_{args.split}_"))
 
+    # affinity_bench_27 lives in a separate root (newbench_27); other
+    # splits use the default FRUTON-NEW root.
+    if args.split == "affinity_bench_27":
+        fruton_root = Path("/mnt/netapp1/Store_othcxlwa/newbench_27")
+    else:
+        fruton_root = fruton_root
+
     all_ids = load_split(args.split)
-    ready = filter_to_af_ready(all_ids, args.fruton_root)
-    print(f"[bench] split={args.split} total_in_split={len(all_ids)} af_ready={len(ready)} out={tmp}", flush=True)
+    # BL-Pose fallback: for holdout / stresstest_30 / affinity_bench_27
+    # DO NOT filter to AF-ready — the pipeline handles no-AF via
+    # BL-Pose crystal-as-is.  Only train / val / test require AF for
+    # meaningful gap-fill benchmarking.
+    if args.split in ("holdout", "stresstest_30", "affinity_bench_27"):
+        ready = all_ids
+    else:
+        ready = filter_to_af_ready(all_ids, fruton_root)
+    print(f"[bench] split={args.split} total={len(all_ids)} processed={len(ready)} out={tmp} root={fruton_root}", flush=True)
 
     idx_env = os.environ.get("BENCH_INDEX")
     single = args.index or (int(idx_env) if idx_env else None)
@@ -796,7 +850,7 @@ def main() -> int:
             print(f"[bench] index {single} out of range 1..{len(ready)}", flush=True)
             return 2
         pid = ready[single - 1]
-        row = _process_one(pid, tmp, args.fruton_root)
+        row = _process_one(pid, tmp, fruton_root)
         (tmp / f"{row['pdb']}.json").write_text(json.dumps(row, indent=2, default=str))
         status = row.get("delivery", {}).get("overall_status", "?")
         print(f"[bench] {row['pdb']} → {status}", flush=True)
@@ -804,7 +858,7 @@ def main() -> int:
 
     rows = []
     for pid in ready:
-        row = _process_one(pid, tmp, args.fruton_root)
+        row = _process_one(pid, tmp, fruton_root)
         rows.append(row)
         status = row.get("delivery", {}).get("overall_status", "?")
         print(f"[bench] {row['pdb']} → {status}", flush=True)
