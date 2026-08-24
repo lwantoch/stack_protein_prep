@@ -829,7 +829,7 @@ def main() -> int:
     if args.split == "affinity_bench_27":
         fruton_root = Path("/mnt/netapp1/Store_othcxlwa/newbench_27")
     else:
-        fruton_root = fruton_root
+        fruton_root = args.fruton_root
 
     all_ids = load_split(args.split)
     # BL-Pose fallback: for holdout / stresstest_30 / affinity_bench_27
