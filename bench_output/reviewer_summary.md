@@ -112,10 +112,18 @@ Freeform bullets:
 
 Provenance: `bench_output/paper_intro_progression/PROVENANCE.md`
 
+| Metric | Value |
+|---|---|
+| train | 22/22 = 100.0 % (all AF-ready) |
+| test | 24/26 = 92.3 % (2 needs_review = 7QUE + 8Q68) |
+| affinity_bench_27 | 27/27 = 100.0 % (1 AF + 26 BL-Pose fallback) |
+| stresstest_30 | 29/30 = 96.7 % (5 AF + 25 BL-Pose) |
+
 Freeform bullets:
-- **5 iterations plotted** (iter-2 → final train+val)
+- **6 iterations plotted** (iter-2 → final 4-split)
 - **Δ gate PASS iter-2 → iter-5-mini = +8.3 pp** (89.6 → 97.9)
 - **Final train+val combined = 95.8 %** (46/48) per commit `b73576d`
+- **Final 4-split (train + test + affinity_bench_27 + stresstest_30) =
 - **Δ non-planar ω = −50 %** (6 → 3, iter-3 to iter-4 measured)
-- **2 residual needs_review** at final: 7QUE + 8Q68 (catastrophic
+- **3 residual needs_review** at grand total: 7QUE + 8Q68 + 1 from
 

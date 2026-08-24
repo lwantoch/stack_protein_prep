@@ -33,5 +33,12 @@
     "gate_pass_pct": 95.8,
     "n_omega_non_planar": null,
     "notes": "commit b73576d finalize: train 100% (22/22) + val 92.3% (24/26); 2 needs_review = 7QUE + 8Q68 catastrophic splices above p99 of 199-crystal reference"
+  },
+  {
+    "iter_label": "final 4-split",
+    "n_pdbs": 105,
+    "gate_pass_pct": 97.1,
+    "n_omega_non_planar": null,
+    "notes": "commit 09facc5 grand total: train 100% (22/22) + test 92.3% (24/26) + affinity_bench_27 100% (27/27, 26 via BL-Pose) + stresstest_30 96.7% (29/30, 25 via BL-Pose). 102/105 = 97.1%. Zero not_delivered. 3 needs_review = catastrophic-splice above p99. BL-Pose fallback confirmed on 51 non-AF proteins."
   }
 ]

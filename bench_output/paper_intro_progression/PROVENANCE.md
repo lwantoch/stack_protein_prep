@@ -17,13 +17,20 @@ python scripts/plot_iteration_progression.py \
 
 ## Headline numbers
 
-- **5 iterations plotted** (iter-2 → final train+val)
+- **6 iterations plotted** (iter-2 → final 4-split)
 - **Δ gate PASS iter-2 → iter-5-mini = +8.3 pp** (89.6 → 97.9)
 - **Final train+val combined = 95.8 %** (46/48) per commit `b73576d`
-  finalize (train 100 % 22/22 + val 92.3 % 24/26)
+- **Final 4-split (train + test + affinity_bench_27 + stresstest_30) =
+  97.1 %** (102/105) per commit `09facc5`:
+    - train: 22/22 = 100.0 % (all AF-ready)
+    - test: 24/26 = 92.3 % (2 needs_review = 7QUE + 8Q68)
+    - affinity_bench_27: 27/27 = 100.0 % (1 AF + 26 BL-Pose fallback)
+    - stresstest_30: 29/30 = 96.7 % (5 AF + 25 BL-Pose)
+  Zero not_delivered; BL-Pose fallback confirmed on 51 non-AF proteins.
 - **Δ non-planar ω = −50 %** (6 → 3, iter-3 to iter-4 measured)
-- **2 residual needs_review** at final: 7QUE + 8Q68 (catastrophic
-  splices above p99 of 199-crystal reference distribution)
+- **3 residual needs_review** at grand total: 7QUE + 8Q68 + 1 from
+  stresstest_30 (all catastrophic-splice above p99 of 199-crystal
+  reference distribution)
 
 ## Iteration source data
 
