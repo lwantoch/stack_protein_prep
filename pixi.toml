@@ -25,6 +25,7 @@ pip = "*"
 pymol-open-source = "*"
 rdkit = "*"
 nbformat = ">=5.11.1,<6"
+ipykernel = ">=7.3.0,<8"
 
 [pypi-dependencies]
 openpyxl = ">=3.1.5,<4"

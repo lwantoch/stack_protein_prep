@@ -832,14 +832,10 @@ def main() -> int:
         fruton_root = args.fruton_root
 
     all_ids = load_split(args.split)
-    # BL-Pose fallback: for holdout / stresstest_30 / affinity_bench_27
-    # DO NOT filter to AF-ready — the pipeline handles no-AF via
-    # BL-Pose crystal-as-is.  Only train / val / test require AF for
-    # meaningful gap-fill benchmarking.
-    if args.split in ("holdout", "stresstest_30", "affinity_bench_27"):
-        ready = all_ids
-    else:
-        ready = filter_to_af_ready(all_ids, fruton_root)
+    # Since 2026-08-24 (BL-Pose fallback landed): NEVER filter to AF-ready.
+    # No-AF proteins get the crystal-as-is BL-Pose path; AF-ready ones get
+    # the splice+refine gap-fill.  User mandate: "benche alle 199".
+    ready = all_ids
     print(f"[bench] split={args.split} total={len(all_ids)} processed={len(ready)} out={tmp} root={fruton_root}", flush=True)
 
     idx_env = os.environ.get("BENCH_INDEX")
