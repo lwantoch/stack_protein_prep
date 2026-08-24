@@ -274,30 +274,189 @@ if len(df):
                 display(pc[["component_type", "confidence", "method", "reason", "suggested_action"]])
 """
 
-PYMOL_CELL = """\
-# OPTIONAL — connect to laptop PyMOL to spot-check any protein
-# Requires the reverse tunnel (see top-of-notebook instructions).
+PYMOL_CONNECT_CELL = """\
+# Connect to laptop PyMOL via reverse tunnel (localhost:9123)
+# Requires: pymol -R running on laptop + ssh -R 9123:localhost:9123 to ft3
+from pymol_remote.client import PymolSession
+pm = PymolSession(hostname="localhost", port=9123, timeout=10.0)
+print("PyMOL connected. Loaded objects:", pm.get_names())
+"""
+
+
+PYMOL_HELPERS_CELL = """\
+# --- Visual review helpers -------------------------------------------------
+# All functions render into the laptop PyMOL GUI via the reverse tunnel.
+# Each helper reads the per-PDB JSON emitted by FRUTON's generic bench
+# driver + the actual crystal/final PDB on disk.
+import pathlib, json, os
+
+def _pdb_json(pdb_id: str) -> dict:
+    for csv_path in CSV_PATHS:
+        art_dir = pathlib.Path(os.path.expandvars(csv_path)).parent
+        f = art_dir / f"{pdb_id}.json"
+        if f.is_file():
+            return json.loads(f.read_text())
+    return {}
+
+
+def _crystal_path(pdb_id: str) -> pathlib.Path | None:
+    p = pathlib.Path(CRYSTAL_ROOT) / pdb_id / f"{pdb_id}.pdb"
+    return p if p.is_file() else None
+
+
+def _final_pdb_path(pdb_id: str) -> pathlib.Path | None:
+    # Bench driver stores per-protein artefact PDBs under artefacts dir
+    for csv_path in CSV_PATHS:
+        art_dir = pathlib.Path(os.path.expandvars(csv_path)).parent
+        # Match either <pdb>_final.pdb (splice path) or the crystal itself
+        # (BL-Pose fallback ships crystal-as-is).
+        cand = list(art_dir.parent.rglob(f"{pdb_id}_final.pdb"))
+        if cand: return cand[0]
+    return _crystal_path(pdb_id)
+
+
+def _gap_ranges_from_json(d: dict) -> list[tuple[str, int, int]]:
+    # Try to recover per-gap boundaries from the per-PDB record.  The
+    # current bench driver emits n_gaps + rolled_gaps at protein level
+    # but not per-gap ranges; fall back to '(chain, resnum-1, resnum+1)'
+    # around REMARK 465 residues in the crystal.
+    ranges = []
+    crystal = _crystal_path(d.get("pdb", ""))
+    if crystal:
+        current: tuple[str, int, int] | None = None
+        for line in crystal.read_text(errors="replace").splitlines():
+            if not line.startswith("REMARK 465"):
+                continue
+            parts = line.split()
+            if len(parts) < 5: continue
+            try:
+                resnum = int(parts[-1])
+                chain = parts[-2]
+            except ValueError:
+                continue
+            if current is None:
+                current = (chain, resnum, resnum)
+            elif chain == current[0] and resnum == current[2] + 1:
+                current = (chain, current[1], resnum)
+            else:
+                ranges.append(current)
+                current = (chain, resnum, resnum)
+        if current: ranges.append(current)
+    return ranges
+
+
+def show_gaps(pdb_id: str):
+    \"\"\"Load crystal (grey) + FRUTON final (blue), highlight gap residues red.\"\"\"
+    d = _pdb_json(pdb_id)
+    crystal = _crystal_path(pdb_id)
+    final = _final_pdb_path(pdb_id)
+    pm.do("reinitialize")
+    pm.do("bg_color white")
+    if crystal:
+        pm.do(f"load {crystal}, crystal")
+        pm.do("color grey70, crystal"); pm.do("show cartoon, crystal")
+    if final and final != crystal:
+        pm.do(f"load {final}, final")
+        pm.do("color skyblue, final"); pm.do("show cartoon, final")
+    # Highlight gap-region residues in the final model
+    for chain, lo, hi in _gap_ranges_from_json(d):
+        sel = f"final and chain {chain} and resi {lo}-{hi}"
+        pm.do(f"color red, {sel}")
+        pm.do(f"show sticks, {sel} and not name C+N+O+CA")
+    pm.do("zoom polymer")
+    print(f"{pdb_id}: crystal={crystal.name if crystal else 'None'}, "
+          f"final={final.name if final else 'None'}, "
+          f"gap_ranges={_gap_ranges_from_json(d)}")
+
+
+def show_active_site_protonation(pdb_id: str, cutoff: float = 5.0):
+    \"\"\"Colour residues around metals / active-site by their protonation state.
+
+    HID orange, HIE yellow, HIP red, CYM green, CYS grey,
+    ASH cyan (protonated Asp), GLH cyan (protonated Glu),
+    TYM salmon (tyrosinate), LYN magenta (neutral Lys).
+    \"\"\"
+    final = _final_pdb_path(pdb_id)
+    if not final:
+        print(f"no final pdb for {pdb_id}"); return
+    pm.do("reinitialize"); pm.do("bg_color white")
+    pm.do(f"load {final}, mdl")
+    pm.do("color grey80, mdl"); pm.do("show cartoon, mdl")
+    # Detect metal-containing HETATMs so we can zoom on the active site
+    pm.do("show spheres, mdl and hetatm and elem Zn+Fe+Cu+Mg+Ca+Mn+Ni+Co+Mo")
+    pm.do("color orange, mdl and resn HID")
+    pm.do("color yellow, mdl and resn HIE")
+    pm.do("color red,    mdl and resn HIP")
+    pm.do("color green,  mdl and resn CYM")
+    pm.do("color grey40, mdl and resn CYS")
+    pm.do("color cyan,   mdl and resn ASH+GLH")
+    pm.do("color salmon, mdl and resn TYM")
+    pm.do("color magenta,mdl and resn LYN")
+    # Sticks on any residue whose Cα is within cutoff of a metal
+    pm.do(f"show sticks, mdl and byres (mdl and elem Zn+Fe+Cu+Mg+Ca+Mn+Ni+Co+Mo) around {cutoff}")
+    pm.do("zoom mdl and elem Zn+Fe+Cu+Mg+Ca+Mn+Ni+Co+Mo, 10")
+    print(f"{pdb_id}: shown active site with protonation colour code")
+    print("   HID=orange, HIE=yellow, HIP=red, CYM=green, ASH/GLH=cyan, "
+          "TYM=salmon, LYN=magenta")
+
+
+def show_literature_reference(pdb_id: str):
+    \"\"\"If a paper_evidence.md or lit_image.png exists next to the crystal,
+    display it inline in the notebook.\"\"\"
+    from IPython.display import display, Markdown, Image
+    crystal = _crystal_path(pdb_id)
+    if not crystal:
+        print(f"no crystal for {pdb_id}"); return
+    pdir = crystal.parent
+    md = pdir / "paper_evidence.md"
+    img = None
+    for candidate in (pdir / "lit_image.png", pdir / "figure.png",
+                      pdir / "paper_figure.png", pdir / "site.png"):
+        if candidate.is_file():
+            img = candidate; break
+    if md.is_file():
+        display(Markdown(f"### Paper evidence for {pdb_id}\\n"))
+        display(Markdown(md.read_text()))
+    else:
+        print(f"no paper_evidence.md for {pdb_id} (expected at {md})")
+    if img:
+        display(Markdown(f"### Literature image for {pdb_id}"))
+        display(Image(str(img)))
+    else:
+        print(f"no lit image found for {pdb_id} in {pdir}")
+
+
+print("Helpers loaded:")
+print("  show_gaps(pdb_id)                       — crystal grey + final blue, gaps red")
+print("  show_active_site_protonation(pdb_id)    — protonation colour code around metals")
+print("  show_literature_reference(pdb_id)       — inline paper_evidence + lit image")
+"""
+
+
+PYMOL_DEMO_CELL = """\
+# Demo — change PDB_ID to any protein from the audit table.
+# Requires PyMOL connection above.
+DEMO_PDB = "8Q68"    # ← change me
 try:
-    from pymol_remote.client import PymolSession
-    pm = PymolSession(hostname="localhost", port=9123, timeout=5.0)
-    print("PyMOL connected. Loaded objects:", pm.get_names())
-
-    def show_crystal(pdb_id: str):
-        path = pathlib.Path(CRYSTAL_ROOT) / pdb_id / f"{pdb_id}.pdb"
-        if not path.is_file():
-            print(f"crystal not found: {path}")
-            return
-        pm.do("reinitialize")
-        pm.do("bg_color white")
-        pm.do(f"load {path}, crystal")
-        pm.do("show cartoon")
-        pm.do("color skyblue, crystal")
-        print(f"loaded {path.name}")
-
-    print("Usage: show_crystal('8Q68')  # to display any PDB in laptop PyMOL")
+    show_gaps(DEMO_PDB)
 except Exception as e:
-    print(f"PyMOL not available (reverse tunnel not set up?): {e!r}")
-    print("Skip this cell if you don't need visual review.")
+    print(f"show_gaps failed: {e!r}")
+"""
+
+
+PYMOL_PROTONATION_DEMO_CELL = """\
+try:
+    show_active_site_protonation(DEMO_PDB)
+except Exception as e:
+    print(f"show_active_site_protonation failed: {e!r}")
+"""
+
+
+PYMOL_LIT_DEMO_CELL = """\
+try:
+    show_literature_reference(DEMO_PDB)
+except Exception as e:
+    print(f"show_literature_reference failed: {e!r}")
 """
 
 
@@ -327,8 +486,24 @@ def build_notebook(cfg: dict) -> nbf.NotebookNode:
         nbf.v4.new_code_cell(METHOD_MIX_CELL),
         nbf.v4.new_markdown_cell("## Per-protein drill-down"),
         nbf.v4.new_code_cell(DRILLDOWN_CELL),
-        nbf.v4.new_markdown_cell("## Optional — PyMOL spot-check"),
-        nbf.v4.new_code_cell(PYMOL_CELL),
+        nbf.v4.new_markdown_cell(
+            "## Visual review — PyMOL windows\n\n"
+            "The following cells render into the **laptop PyMOL GUI** via the "
+            "reverse tunnel (`-R 9123:localhost:9123`).  Skip if you only want "
+            "the audit CSV analysis.\n\n"
+            "Provides three helpers:\n\n"
+            "- `show_gaps(pdb_id)` — crystal (grey) + FRUTON final (blue), gap-fill residues in red\n"
+            "- `show_active_site_protonation(pdb_id)` — final model, protonation colour-coded around metals\n"
+            "- `show_literature_reference(pdb_id)` — inline paper_evidence.md + lit image if present\n"
+        ),
+        nbf.v4.new_code_cell(PYMOL_CONNECT_CELL),
+        nbf.v4.new_code_cell(PYMOL_HELPERS_CELL),
+        nbf.v4.new_markdown_cell("### Demo: reproduced gaps in PyMOL"),
+        nbf.v4.new_code_cell(PYMOL_DEMO_CELL),
+        nbf.v4.new_markdown_cell("### Demo: active-site protonation colour-code"),
+        nbf.v4.new_code_cell(PYMOL_PROTONATION_DEMO_CELL),
+        nbf.v4.new_markdown_cell("### Demo: paper evidence + literature image (inline)"),
+        nbf.v4.new_code_cell(PYMOL_LIT_DEMO_CELL),
     ]
     nb["cells"] = cells
     return nb
