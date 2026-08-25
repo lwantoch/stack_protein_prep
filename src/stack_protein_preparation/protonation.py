@@ -705,7 +705,7 @@ def protonate_variant_structure(
         ],
     )
 
-    return protonate_selected_structure(
+    result = protonate_selected_structure(
         input_pdb=input_pdb,
         output_pdb=output_pdb,
         input_source=input_source,
@@ -719,6 +719,43 @@ def protonate_variant_structure(
         ignore_input_hydrogens=True,
         variant_label=variant_label,
     )
+
+    # Post-protonation guarantee: gmx pdb2gmx sometimes emits C-terminal
+    # residues without backbone O + OXT (particularly when the input PDB
+    # from the filler stage had unusual altlocs or the C-terminal residue
+    # was next to a numbering-jump boundary). Downstream tools that expect
+    # standard PDB terminals (Meeko, RDKit-based docking prep) then fail
+    # with 'No template matched residue X' errors even though tleap and
+    # gmx grompp both auto-add the missing terminals.
+    #
+    # Reconstruct any missing terminal oxygens geometrically here so the
+    # emitted prepared/<variant>/<pdb>.pdb is Meeko-ready by contract.
+    try:
+        if Path(output_pdb).is_file():
+            from stack_protein_preparation._terminal_oxygen_repair import (
+                repair_pdb_terminal_oxygens_in_place,
+            )
+            repair_summary = repair_pdb_terminal_oxygens_in_place(Path(output_pdb))
+            if repair_summary.get("chains_needing_repair", 0) > 0:
+                _append_log_block(
+                    module_log_path,
+                    "protonate_variant_structure:terminal_oxygen_repair",
+                    [
+                        f"pdb_id: {pdb_id}  variant: {variant_label}",
+                        f"chains_repaired: {repair_summary['chains_needing_repair']}",
+                        f"details: {repair_summary['added']}",
+                    ],
+                )
+    except Exception as _term_exc:  # noqa: BLE001
+        _append_log_block(
+            module_log_path,
+            "protonate_variant_structure:terminal_oxygen_repair_failed",
+            [
+                f"pdb_id: {pdb_id}  variant: {variant_label}",
+                f"exception: {_term_exc!r}",
+            ],
+        )
+    return result
 
 
 def protonate_protein_structure(
