@@ -61,9 +61,11 @@ from stack_protein_preparation.pipeline_state import (
     FILLER_DIRECTORY_COLUMN_NAME,
     FILLER_MODEL_PATH_COLUMN_NAME,
     FILLER_MODEL_SOURCE_COLUMN_NAME,
+    FILLER_PER_LOOP_PLDDT_COLUMN_NAME,
     FILLER_STATUS_COLUMN_NAME,
     GAP_BOUNDARIES_COLUMN_NAME,
     GAP_SIZES_COLUMN_NAME,
+    GEOMETRIC_BREAKS_COLUMN_NAME,
     HAS_GAPS_COLUMN_NAME,
     HAS_COFACTORS_COLUMN_NAME,
     HAS_LIGANDS_COLUMN_NAME,
@@ -74,6 +76,7 @@ from stack_protein_preparation.pipeline_state import (
     INTERNAL_CAPPING_OUTPUT_PATH_COLUMN_NAME,
     INTERNAL_CAPPING_STATUS_COLUMN_NAME,
     N_GAPS_COLUMN_NAME,
+    N_GEOMETRIC_BREAKS_COLUMN_NAME,
     PDB_DIRECTORY_COLUMN_NAME,
     PDB_ID_COLUMN_NAME,
     PREPARED_DIRECTORY_COLUMN_NAME,
@@ -1322,7 +1325,32 @@ def _stage_amber_parameters_for_protein(
                 db = str(res.get("database", "")).strip()
                 if db.lower() == "phosaa14sb":
                     has_phosaa14sb = True
-                if amber_dat_dir is not None:
+                # phosaa14SB MUST be loaded via `source leaprc.phosaa14SB` — the
+                # leaprc macro also injects `addAtomTypes` for CG/OV/OT and
+                # `loadamberparams frcmod.phosaa14SB`. A bare
+                # `loadOff amber_params/phosaa14SB.lib` line misses both and
+                # tleap will error with "atom type CG undefined" on any
+                # phospho-serine/threonine/tyrosine residue.
+                if db.lower() == "phosaa14sb":
+                    lr = "source leaprc.phosaa14SB"
+                    if lr not in extra_leaprc:
+                        extra_leaprc.append(lr)
+                # Forcefield_PTM (Khoury 2014) is NOT shipped with AmberTools —
+                # there is no `leaprc.Forcefield_PTM` file and there is no
+                # bundled `.lib` file either. Emitting `source leaprc.Forcefield_PTM`
+                # unconditionally (the previous fallback) makes tleap error out
+                # with "leaprc file not found". Users must download params from
+                # https://selene.princeton.edu/FFPTM/ or re-derive via the RESP
+                # scaffold. Flag as incomplete instead of emitting a broken line.
+                elif db.lower() in ("forcefield_ptm", "ff_ptm"):
+                    resname_ff = str(res.get("resname", "")).strip().upper()
+                    incomplete_notes.append(
+                        f"{resname_ff}: Forcefield_PTM parameters not shipped with "
+                        f"AmberTools — download from https://selene.princeton.edu/FFPTM/ "
+                        f"or re-derive via RESP (scaffold in the residue's resp/ dir). "
+                        f"ff03-based, verify ff14SB compatibility."
+                    )
+                elif amber_dat_dir is not None:
                     lib_src = amber_dat_dir / "lib" / f"{db}.lib"
                     if lib_src.is_file():
                         lib_dst = params_dir / f"{db}.lib"
@@ -1430,6 +1458,66 @@ def _stage_amber_parameters_for_protein(
                 incomplete_notes.append(
                     f"{', '.join(sorted(transition_elements))}: MCPB parameters missing."
                 )
+
+    # ── normalize atom names (FRUTON -> AMBER) on the prepared PDB(s) ────────
+    # gmx pdb2gmx emits GROMACS-style hydrogen names; AMBER ff14SB expects a
+    # slightly different scheme (HX1/2 -> HX2/3, ILE CD -> CD1, HIS -> HID/
+    # HIE/HIP by which H is present, drop OC1/OC2 + CYM HG, PRO H1/H2 -> H2/H3).
+    # Running the rename after all other prep + before tleap_build.in is
+    # written means tleap will find the atom names it expects.
+    from stack_protein_preparation._atom_rename import rename_atoms_in_pdb
+    for _pdb in (src_pdb, src_pdb.with_name(f"{src_pdb.stem}_WAT.pdb")):
+        if _pdb.is_file():
+            try:
+                rename_atoms_in_pdb(_pdb, in_place=True)
+            except Exception as _rename_error:
+                _log_fruton_exception(
+                    f"stage_amber_parameters:atom_rename:{pdb_id}", _rename_error
+                )
+
+    # ── auto-parametrize detected cofactors via antechamber ──────────────────
+    # FRUTON detects ~40+ cofactor resnames but historically never generated
+    # .mol2/.frcmod for them. Here we run antechamber (AM1-BCC/GAFF2) +
+    # parmchk2 per unique cofactor and stage the outputs so tleap can load
+    # them. Cofactors that already ship in well-known AMBER contrib
+    # libraries (Bryce group NAD/FAD/HEM/SAM/ATP/..., iron-sulfur clusters)
+    # are skipped with a note pointing at the correct library.
+    cofactor_src = prepared_variant_dir / "cofactor.pdb"
+    if cofactor_src.is_file() and cofactor_src.stat().st_size > 0:
+        try:
+            from stack_protein_preparation._cofactor_params import (
+                parametrize_cofactors,
+            )
+            cofactor_manifest = parametrize_cofactors(
+                cofactor_pdb_path=cofactor_src,
+                output_dir=params_dir,
+                skip_known_library_cofactors=True,
+            )
+            for entry in cofactor_manifest.get("cofactors", []):
+                resname = entry.get("resname", "").strip().upper()
+                if entry.get("status") == "success" and entry.get("mol2") and entry.get("frcmod"):
+                    frcmod_lines.append(f"loadAmberParams amber_params/{resname}.frcmod")
+                    mol2_loads.append(
+                        f"{resname} = loadMol2 amber_params/{resname}.mol2"
+                    )
+                elif entry.get("status") == "skipped_library":
+                    incomplete_notes.append(
+                        f"{resname}: cofactor requires external AMBER contrib params "
+                        f"({entry.get('message', '')}). Antechamber AM1-BCC not applied."
+                    )
+                elif entry.get("status") == "failed":
+                    incomplete_notes.append(
+                        f"{resname}: antechamber parametrization failed "
+                        f"({entry.get('message', '')}); supply .mol2/.frcmod manually."
+                    )
+            # Write the manifest for downstream consumers / reviewers.
+            (params_dir / "cofactor_params_manifest.json").write_text(
+                json.dumps(cofactor_manifest, indent=2), encoding="utf-8"
+            )
+        except Exception as _cof_error:
+            _log_fruton_exception(
+                f"stage_amber_parameters:cofactor_params:{pdb_id}", _cof_error
+            )
 
     # ── write tleap_build.in ─────────────────────────────────────────────────
     struct_name = src_pdb.name  # e.g. 1A5H.pdb
@@ -2122,6 +2210,21 @@ def run_pipeline() -> None:
                 json.dumps(gap_windows) if gap_windows else ""
             )
 
+            # NEW: undeclared geometric backbone breaks -- contiguous residue
+            # numbering but C-N distance > peptide_bond_cutoff. Detect-and-flag
+            # only; downstream stages do not yet auto-fill these.
+            n_geom_breaks = int(gap_summary.get("n_geometric_breaks", 0))
+            geom_breaks = gap_summary.get("geometric_breaks", []) or []
+            pipeline_record[N_GEOMETRIC_BREAKS_COLUMN_NAME] = str(n_geom_breaks)
+            pipeline_record[GEOMETRIC_BREAKS_COLUMN_NAME] = (
+                json.dumps(geom_breaks) if geom_breaks else ""
+            )
+            if n_geom_breaks > 0:
+                _screen_notice(
+                    f"{pdb_id}: {n_geom_breaks} undeclared backbone break(s) "
+                    "-- see GEOMETRIC_BREAKS field"
+                )
+
             max_gap_size = max(gap_sizes) if gap_sizes else 0
             if max_gap_size > 5:
                 summary["max_gap_gt_5"] += 1
@@ -2246,6 +2349,43 @@ def run_pipeline() -> None:
                 pipeline_record[FILLER_STATUS_COLUMN_NAME] = STATUS_WARNING
             else:
                 pipeline_record[FILLER_STATUS_COLUMN_NAME] = STATUS_WARNING
+
+            # NEW: per-loop plDDT extraction from the filled model. For
+            # AlphaFold fills, the B-factor column carries per-residue plDDT
+            # [0, 100] — we mean it per gap segment. For MODELLER fills or
+            # unknown/hybrid sources, plDDT is left as None (mean_bfactor is
+            # still recorded).
+            try:
+                from stack_protein_preparation._filler_plddt import (
+                    compute_per_loop_plddt,
+                    parse_gap_ranges_from_remark_465,
+                )
+                per_loop_plddt: list = []
+                model_path = filler_result.final_model_path
+                model_source = str(
+                    pipeline_record.get(FILLER_MODEL_SOURCE_COLUMN_NAME, "") or ""
+                ).lower()
+                if (
+                    model_path is not None
+                    and model_path.exists()
+                    and model_source in ("alphafold", "modeller")
+                ):
+                    raw_pdb = pdb_dir / f"{pdb_id}.pdb"
+                    if raw_pdb.is_file():
+                        gap_ranges = parse_gap_ranges_from_remark_465(raw_pdb)
+                        per_loop_plddt = compute_per_loop_plddt(
+                            af_model_path=model_path,
+                            gap_ranges=gap_ranges,
+                            method=model_source,
+                        )
+                pipeline_record[FILLER_PER_LOOP_PLDDT_COLUMN_NAME] = (
+                    json.dumps(per_loop_plddt) if per_loop_plddt else ""
+                )
+            except Exception as plddt_error:
+                _log_fruton_exception(
+                    f"step_9:filler:per_loop_plddt:{pdb_id}", plddt_error
+                )
+                pipeline_record[FILLER_PER_LOOP_PLDDT_COLUMN_NAME] = ""
         _save_step_checkpoint(pipeline_record_list, 9, "filler")
     else:
         _screen_notice(f"step 9 skipped (rerunning from step {from_step})")

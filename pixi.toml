@@ -24,6 +24,12 @@ modeller = "*"
 pip = "*"
 pymol-open-source = "*"
 rdkit = "*"
+# Meeko is used by _meeko_gate.py to validate that FRUTON's protonation
+# output is actually consumable by the downstream AutoDock receptor prep.
+# Without this, we would only discover receptor failures much later during
+# docking. Meeko lives on conda-forge; 0.7+ has the Polymer.from_pdb_string
+# API used by the gate.
+meeko = ">=0.7,<0.8"
 nbformat = ">=5.11.1,<6"
 ipykernel = ">=7.3.0,<8"
 

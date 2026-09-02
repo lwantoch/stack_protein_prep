@@ -634,6 +634,16 @@ def summarize_gaps(
     all_gaps = [g for gaps in grouped.values() for g in gaps]
     sizes = [g["gap_size"] for g in all_gaps]
 
+    # Also scan for UNDECLARED geometric backbone breaks (contiguous residue
+    # numbering but C-N distance > peptide_bond_cutoff). These are distinct
+    # from numbering-jump gaps handled above.
+    grouped_geom = geometric_breaks_by_chain_for_pdb(
+        pdb_path,
+        peptide_bond_cutoff_angstrom=peptide_bond_cutoff_angstrom,
+        residue_range=residue_range,
+    )
+    all_geom_breaks = [b for bs in grouped_geom.values() for b in bs]
+
     return {
         "has_gaps": bool(all_gaps),
         "n_gaps": len(all_gaps),
@@ -641,7 +651,65 @@ def summarize_gaps(
         "total_missing_residues": sum(sizes),
         "gap_sizes": sizes,
         "chains_with_gaps": sorted(grouped),
+        "n_geometric_breaks": len(all_geom_breaks),
+        "geometric_breaks": all_geom_breaks,
     }
+
+
+def geometric_breaks_by_chain_for_pdb(
+    pdb_path: str | Path,
+    *,
+    peptide_bond_cutoff_angstrom: float = 1.8,
+    residue_range: str = "",
+) -> dict[str, list[dict[str, Any]]]:
+    """Detect UNDECLARED geometric backbone breaks: pairs of protein residues
+    with contiguous numbering (jump <= 1) whose C(prev) -> N(next) distance
+    exceeds `peptide_bond_cutoff_angstrom`. Peptide bond length is ~1.33 A.
+
+    These are NOT numbering-jump gaps (handled by gaps_by_chain_for_pdb) --
+    they are cases where the PDB deposit does not declare a missing segment
+    (no REMARK 465, no numbering skip) but the structure has a physical
+    fragment-split. Seen in constructs with undeclared linker cleavage or
+    older deposits with legacy annotation (e.g. 6Z1T chain B, 8ZP2, 9OJO).
+
+    Returns dict keyed by chain_id -> list of break records:
+        {chain, prev_res, next_res, prev_resname, next_resname,
+         peptide_cn_distance_angstrom, peptide_bond_cutoff_angstrom}
+    """
+    pdb = PDBFile(str(Path(pdb_path)))
+    atom_xyz_by_index = _collect_atom_positions_by_index(pdb)
+    relevant_chain_id_set = _get_relevant_chain_id_set(
+        pdb=pdb,
+        atom_xyz_by_index=atom_xyz_by_index,
+        residue_range=residue_range,
+    )
+
+    out: dict[str, list[dict[str, Any]]] = {}
+    for chain in pdb.topology.chains():
+        residues = _collect_chain_protein_residues(chain, atom_xyz_by_index)
+        if len(residues) < 2:
+            continue
+        chain_id = residues[0]["chain"]
+        if relevant_chain_id_set and chain_id not in relevant_chain_id_set:
+            continue
+        for prev_res, next_res in zip(residues, residues[1:]):
+            prev_n = prev_res["resnum"]
+            next_n = next_res["resnum"]
+            if next_n - prev_n > 1:
+                continue  # numbering-jump gap -- handled by the other detector
+            d = _get_peptide_cn_distance(prev_res, next_res)
+            if d is None or d <= peptide_bond_cutoff_angstrom:
+                continue
+            out.setdefault(chain_id, []).append({
+                "chain": chain_id,
+                "prev_res": prev_n,
+                "prev_resname": prev_res["resname"],
+                "next_res": next_n,
+                "next_resname": next_res["resname"],
+                "peptide_cn_distance_angstrom": round(float(d), 2),
+                "peptide_bond_cutoff_angstrom": peptide_bond_cutoff_angstrom,
+            })
+    return out
 
 
 # ---------------------------------------------------------------------------

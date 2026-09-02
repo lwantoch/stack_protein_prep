@@ -571,6 +571,98 @@ def protonate_selected_structure(
                 [str(_restore_exc)],
             )
 
+    # ------------------------------------------------------------------
+    # Meeko compatibility gate + one-shot OpenMM H-repair retry.
+    # pdb2gmx returning rc=0 does NOT guarantee the file is consumable by
+    # Meeko (the downstream docking prep). Meeko trips on H-naming that
+    # is legal under GROMACS but breaks RDKit's valence perception, on
+    # non-standard termini, on missing CCD templates, and on missing bond
+    # records. We only auto-repair the `valence` class here (OpenMM
+    # Modeller.addHydrogens is a well-scoped fix for that specific bucket);
+    # other classes are reported as advisory metadata so the caller can
+    # decide whether to reject the receptor.
+    meeko_gate_before: dict[str, object] = {}
+    meeko_gate_after: dict[str, object] = {}
+    meeko_gate_degraded: dict[str, object] = {}
+    openmm_h_repair: dict[str, object] = {}
+    meeko_verdict = "unknown"
+    if protonation_success and output_pdb.is_file():
+        try:
+            from stack_protein_preparation._meeko_gate import validate_pdb_for_meeko
+            _pre = validate_pdb_for_meeko(output_pdb)
+            meeko_gate_before = {
+                "ok": _pre.ok,
+                "error_class": _pre.error_class,
+                "message": _pre.message[:400],
+                "exception_type": _pre.exception_type,
+            }
+            _append_log_block(
+                module_log_path,
+                "protonate_selected_structure:meeko_gate_pre",
+                [f"{k}: {v}" for k, v in meeko_gate_before.items()],
+            )
+            if _pre.ok:
+                meeko_verdict = "strict_pass"
+            else:
+                if _pre.error_class == "valence":
+                    from stack_protein_preparation._openmm_h_repair import (
+                        repair_hydrogens_openmm,
+                    )
+                    _r = repair_hydrogens_openmm(output_pdb, ph=ph)
+                    openmm_h_repair = {
+                        "ok": _r.ok,
+                        "n_hydrogens_added": _r.n_hydrogens_added,
+                        "error_message": _r.error_message[:400],
+                    }
+                    _append_log_block(
+                        module_log_path,
+                        "protonate_selected_structure:openmm_h_repair",
+                        [f"{k}: {v}" for k, v in openmm_h_repair.items()],
+                    )
+                    if _r.ok:
+                        _fill_pdb_element_column(output_pdb)
+                        _post = validate_pdb_for_meeko(output_pdb)
+                        meeko_gate_after = {
+                            "ok": _post.ok,
+                            "error_class": _post.error_class,
+                            "message": _post.message[:400],
+                            "exception_type": _post.exception_type,
+                        }
+                        _append_log_block(
+                            module_log_path,
+                            "protonate_selected_structure:meeko_gate_post",
+                            [f"{k}: {v}" for k, v in meeko_gate_after.items()],
+                        )
+                        if _post.ok:
+                            meeko_verdict = "repaired_strict_pass"
+                # If still not passing (either openmm didn't apply or didn't
+                # rescue), try the tolerant Meeko path: allow_bad_res=True
+                # drops non-recognised residues instead of aborting the
+                # polymer build. This turns adjacent_smarts / no_template /
+                # padding failures into a usable-but-degraded receptor. No
+                # pdbfixer, no extra dependency — Meeko's own escape hatch.
+                if meeko_verdict == "unknown":
+                    _deg = validate_pdb_for_meeko(output_pdb, allow_bad_res=True)
+                    meeko_gate_degraded = {
+                        "ok": _deg.ok,
+                        "error_class": _deg.error_class,
+                        "message": _deg.message[:400],
+                        "exception_type": _deg.exception_type,
+                    }
+                    _append_log_block(
+                        module_log_path,
+                        "protonate_selected_structure:meeko_gate_degraded",
+                        [f"{k}: {v}" for k, v in meeko_gate_degraded.items()],
+                    )
+                    meeko_verdict = "degraded_pass" if _deg.ok else "fail"
+        except Exception as _gate_exc:
+            _append_log_block(
+                module_log_path,
+                "protonate_selected_structure:meeko_gate_error",
+                [f"{type(_gate_exc).__name__}: {_gate_exc}"],
+            )
+            meeko_verdict = "gate_error"
+
     error_message = ""
     if not protonation_success:
         stderr_preview = _preview_text(result.stderr)
@@ -661,6 +753,11 @@ def protonate_selected_structure(
         "topology_nonempty": topology_nonempty,
         "position_restraints_exists": position_restraints_exists,
         "position_restraints_nonempty": position_restraints_nonempty,
+        "meeko_verdict": meeko_verdict,
+        "meeko_gate_pre_json": json.dumps(meeko_gate_before) if meeko_gate_before else "",
+        "meeko_gate_post_json": json.dumps(meeko_gate_after) if meeko_gate_after else "",
+        "meeko_gate_degraded_json": json.dumps(meeko_gate_degraded) if meeko_gate_degraded else "",
+        "openmm_h_repair_json": json.dumps(openmm_h_repair) if openmm_h_repair else "",
     }
 
     if variant_label is not None:
